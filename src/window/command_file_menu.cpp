@@ -361,7 +361,7 @@ INT_PTR __stdcall AviOutDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
         EnumChildWindows(hDlg, RenameVideoDialogStatic, 0);
         const HWND main = MainHwnd(app);
         int start = 0;
-        int end = std::max(0, app->state.lastRegisteredFrame);
+        int end = static_cast<int>(app->state.lastRegisteredFrame);
         char frameText[32]{};
         GetWindowTextA(GetDlgItem(main, panel::kPlayStartFrameEdit),
                        frameText, sizeof(frameText));
