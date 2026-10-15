@@ -499,16 +499,27 @@ bool RegisterMorphKeyFromRecord(unsigned char* model, const unsigned char* rec,
     const std::uint32_t frame =
         static_cast<std::uint32_t>(frameOffset) + Rd32(rec + 32);
 
-    int morphIdx = 0;
     const int morphCnt = static_cast<int>(mdl::Mdl(m)->morphCount);
     if (morphCnt <= 0) return true;
-    const rinmotiondance::mdl::MorphRecord* mrec = rinmotiondance::mdl::Morphs(m);
-    while (std::strcmp(reinterpret_cast<const char*>(rec),
-                       reinterpret_cast<const char*>(mrec)) != 0) {
-        if (++morphIdx >= morphCnt) return true;
-        mrec += 136;
+    const mdl::MorphRecord* morphs = mdl::Morphs(m);
+    if (morphs == nullptr) return true;
+    const char* name = reinterpret_cast<const char*>(rec);
+    int morphIdx = -1;
+    for (int i = 0; i < morphCnt; ++i) {
+        if (std::strncmp(name, morphs[i].name, 15) == 0) {
+            morphIdx = i;
+            break;
+        }
     }
-    if (morphIdx == -1) return true;
+    if (morphIdx < 0) {
+        for (int i = 0; i < morphCnt; ++i) {
+            if (std::strncmp(name, morphs[i].nameEn, 15) == 0) {
+                morphIdx = i;
+                break;
+            }
+        }
+    }
+    if (morphIdx < 0) return true;
 
     int cur = morphIdx;
     if (keys[cur].frame < frame) {
