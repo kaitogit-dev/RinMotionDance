@@ -1,11 +1,3 @@
-// ===========================================================================
-// RinMotionDance - the per-model runtime record
-// ===========================================================================
-// x86 layout pinned byte-exact (0x4CCF4); x64 architecture-specific
-// storage is pinned against independently binary-mined anchors.
-// Placeholder names (f<off>/v<off>/pad*) are promoted to real names as
-// semantics are recovered - never guessed.
-// ===========================================================================
 #pragma once
 
 #include <cstddef>
@@ -48,172 +40,136 @@ struct PmxMaterialMorphPools {
 using rinmotiondance::RawPad;
 
 struct ModelRecord {
-    void* hwnd;  // 0  (dialog owner (0x4BF42B this[0]))
-    std::uint32_t vertexCount;  // 4  (this[1])
-    void* vertexBuffer;  // 8  (FVF 0x112, 32 B/vtx)
-    void* vertexBuffer2;  // 12  (FVF 0x042, 16 B/vtx)
-    void* indexBuffer;  // 16
-    std::uint32_t indexCount;  // 20  (this[5])
-    void* indices;  // 24  (WORD*)
-    std::uint32_t materialCount;  // 28  (this[7])
-    ModelMaterialRecord* materials;  // 32 (runtime material table)
-    std::uint32_t* boneKeyCursors;  // 36  (one cursor per bone)
-    unsigned char* boneTrackActive;  // 40  (one flag per bone)
-    std::uint32_t* morphKeyCursors;  // 44  (one cursor per morph)
-    unsigned char* morphTrackActive;  // 48  (one flag per morph)
-    std::uint32_t displayKeyCursor;  // 52
-    unsigned char displayTrackActive;  // 56
-    RawPad<3> gap0;  // 57..60 (unrecovered)
-    ::rinmotiondance::PhysicsScene* scenePtr;  // 60  (shared Bullet/D3D physics scene)
+    void* hwnd;  
+    std::uint32_t vertexCount;  
+    void* vertexBuffer;  
+    void* vertexBuffer2;  
+    void* indexBuffer;  
+    std::uint32_t indexCount;  
+    void* indices;  
+    std::uint32_t materialCount;  
+    ModelMaterialRecord* materials;  
+    std::uint32_t* boneKeyCursors;  
+    unsigned char* boneTrackActive;  
+    std::uint32_t* morphKeyCursors;  
+    unsigned char* morphTrackActive;  
+    std::uint32_t displayKeyCursor;  
+    unsigned char displayTrackActive;  
+    RawPad<3> gap0;  
+    ::rinmotiondance::PhysicsScene* scenePtr;  
     StandardSkeletonPose standardPose;
     SkeletonHistory skeletonHistory;
     std::uint8_t poseTraceRecording;
     void* poseTraceBuffer;
-    std::uint8_t pmxTextEncoding;        // 8624  (0 UTF-16; x64 PMX loader)
-    std::uint8_t pmxAdditionalUvCount;   // 8625
-    std::uint8_t pmxVertexIndexSize;     // 8626
-    std::uint8_t pmxTextureIndexSize;    // 8627
-    std::uint8_t pmxBoneIndexSize;       // 8628
-    std::uint8_t pmxMorphIndexSize;      // 8629
-    std::uint8_t pmxMaterialIndexSize;   // 8630
-    std::uint8_t pmxRigidIndexSize;      // 8631
-    // Unrecovered PMX bookkeeping before the flattened morph counts.
+    std::uint8_t pmxTextEncoding;        
+    std::uint8_t pmxAdditionalUvCount;   
+    std::uint8_t pmxVertexIndexSize;     
+    std::uint8_t pmxTextureIndexSize;    
+    std::uint8_t pmxBoneIndexSize;       
+    std::uint8_t pmxMorphIndexSize;      
+    std::uint8_t pmxMaterialIndexSize;   
+    std::uint8_t pmxRigidIndexSize;      
 #if defined(_M_X64)
     RawPad<60> pmxReserved;
 #else
     RawPad<52> pmxReserved;
 #endif
-    std::uint32_t morph0Count;  // 8684  (model_skinning / dialog_helpers)
+    std::uint32_t morph0Count;  
     PmxUvMorphCounts uvMorphCounts;
-    std::int32_t boneMorphCount;  // 8708  (pmx_load boneMorphTotal store)
-    RawPad<12> gap6;  // 8712..8724 (unrecovered)
-    PmdVertexMorphEntry* morph0Table;  // 8724  (16-byte PMD morph entries)
+    std::int32_t boneMorphCount;  
+    RawPad<12> gap6;  
+    PmdVertexMorphEntry* morph0Table;  
     BoneMorphOffsetRecord* boneMorphTable;
-    // The reference destructor releases this slot, but no producer or
-    // element semantics have been established. Keep its ownership explicit.
     void* reservedMorphTable;
     PmxUvMorphTables uvMorphTables;
     PmxMaterialMorphPools materialMorphPools;
-    // Free keyframe-slot scan cursor.  x64: +0x22B8 = 8888, shared by the
-    // bone-key pool (0x7FF7CB4E9958, 0x7FF7CB4EA46F), the morph-key pool
-    // (0x7FF7CB48E416) and the display-key pool (0x7FF7CB48E5EA); the cursor
-    // only ever advances.  8836 (0x2274) has zero x64 references.
-    std::int32_t searchCursor;  // x86 8768; x64 8888 (0x22B8)
-    std::int32_t maxBoneLayer;  // x86 8772; x64 8892 (maximum PMX bone transform layer)
-    char name[50];  // Runtime capacity; PMD stores only 20 bytes on disk.
+    std::int32_t searchCursor;  
+    std::int32_t maxBoneLayer;  
+    char name[50];  
     char nameEn[50];
-    char comment[256];  // 8876
-    char commentEn[256];  // 9132
+    char comment[256];  
+    char commentEn[256];  
 #if defined(_M_X64)
-    // x64 PMX loader sub_1400A9AC0 stores its four text pointers at
-    // +0x2528..+0x2540; the four-byte gap aligns the first qword.
     RawPad<4> pmxTextAlignment;
 #endif
-    wchar_t* pmxTextBuffers[4];  // JP name, EN name, JP comment, EN comment
-    wchar_t path[256];  // 9404  (resolved model path 0x24BC)
-    BoneRecord* boneTable;  // 9916  (604/624-byte bone records; x64 anchor 10056 verified)
-    IkChain* ikChains;  // 9920  (24/32-byte chain records)
-    MorphRecord* morphs;  // 9924  (136/192-byte morph records; x64 0x2758)
-    PmdVertex* rawVertices;  // 9928  (40-byte PMD vertex records; x64 same)
-    PmxVertex* pmxVertices;  // 9932  (188-byte PMX working vertices; x64 0x2768)
-    void* groupNames;  // 9936  (101-byte facial group names; x64 0x2770)
-    unsigned char groupCount;  // 9940  (pmd_load grpCountPtr)
-    RawPad<3> gap11;  // 9941..9944 (unrecovered)
-    void* rbGroups;  // 9944  (46-byte rigid group records)
-    FrameGroup* displayFrames;  // 9948  (46-byte display frame records; x64 0x2788)
-    BoneKey* boneKeys;  // 9952  (60-byte bone key records; x64 0x2790)
-    MorphKey* morphKeys;  // 9956  (20-byte morph key records; x64 0x2798)
-    DisplayKey* displayKeys;  // 9960  (28/40-byte display key records; x64 0x27A0)
-    UndoRing undoRings[2];  // 9964  (two consecutive 30-slot rings; x64 slots grow 28 -> 40 bytes)
-    unsigned char comboSelIndex;  // 11644  (0x460430)
-    unsigned char comboSelIndex2;  // 11645
-    RawPad<2> gap12;  // 11646..11648 (unrecovered)
-    std::uint32_t morphCount;  // 11648  (pmd/pmx loaders _read(fh, m+11648, 2/4); x64 twin 0x310C)
-    std::uint32_t boneCount;  // 11652  (x64 twin 12560)
-    std::uint32_t ikChainCount;  // 11656
-    unsigned char displayState;  // 11660  (from app)
-    unsigned char loadComplete;  // 11661
-    RawPad<2> gap13;  // 11662..11664 (unrecovered)
-    std::int32_t selectedBone;  // 11664  (current bone index; -1 means none)
-    unsigned char* boneSelection;  // 11668  (one byte per bone)
-    unsigned char* bonePhysicsState;  // 11672  (one byte per bone)
-    std::int32_t selectedMorphs[4];  // 11676  (X/Y/Z/other morph selectors)
-    unsigned char facialFrameCount;  // 11692  (display/facial frame groups)
-    RawPad<3> gap14;  // 11693..11696 (unrecovered)
-    std::uint32_t rigidBodyCount;  // 11696  (pmd/pmx/physics)
-    // Post-load lookup tables, indexed respectively by bone and morph.
-    // The x64 PMX loader allocates them at +0x3148 and +0x3150.
-    std::uint32_t* boneKeyIndices;  // 11700 (x64 0x3148)
-    std::uint32_t* morphKeyIndices;  // 11704 (x64 0x3150)
+    wchar_t* pmxTextBuffers[4];  
+    wchar_t path[256];  
+    BoneRecord* boneTable;  
+    IkChain* ikChains;  
+    MorphRecord* morphs;  
+    PmdVertex* rawVertices;  
+    PmxVertex* pmxVertices;  
+    void* groupNames;  
+    unsigned char groupCount;  
+    RawPad<3> gap11;  
+    void* rbGroups;  
+    FrameGroup* displayFrames;  
+    BoneKey* boneKeys;  
+    MorphKey* morphKeys;  
+    DisplayKey* displayKeys;  
+    UndoRing undoRings[2];  
+    unsigned char comboSelIndex;  
+    unsigned char comboSelIndex2;  
+    RawPad<2> gap12;  
+    std::uint32_t morphCount;  
+    std::uint32_t boneCount;  
+    std::uint32_t ikChainCount;  
+    unsigned char displayState;  
+    unsigned char loadComplete;  
+    RawPad<2> gap13;  
+    std::int32_t selectedBone;  
+    unsigned char* boneSelection;  
+    unsigned char* bonePhysicsState;  
+    std::int32_t selectedMorphs[4];  
+    unsigned char facialFrameCount;  
+    RawPad<3> gap14;  
+    std::uint32_t rigidBodyCount;  
+    std::uint32_t* boneKeyIndices;  
+    std::uint32_t* morphKeyIndices;  
 #if defined(_M_X64)
-    // The two pointer fields above grow by eight bytes on x64; preserve the
-    // directly recovered offsets of the following timeline fields.
 #endif
-    // Bone-list line bookkeeping written by PostLanguageSweep (0x42F1E0) and
-    // read by the panel paint (0x414610) and the name-column click path
-    // (0x446A70): the frame-1 head line, the 200 per-line type bytes (1 =
-    // bone row / 2 = face row / rigid type otherwise) and the 200 per-line
-    // records (bone index, rigid index or -1-morph; -999 = no record).
-    // x86 11708/11712/11912; x64 0x3158/0x315C/0x3224 (E-build click
-    // handler reads the type bytes at [model+0x315C] and the records at
-    // [model+0x3224], 0x7FF7CB45A2CE / 0x7FF7CB459F00).
-    std::int32_t boneListSelLine;         // 11708 x86 / 0x3158 x64
-    unsigned char boneListRowType[200];   // 11712 x86 / 0x315C x64
-    std::int32_t boneListRowRecord[200];  // 11912 x86 / 0x3224 x64
-    std::int32_t boneListRows;  // 12712  (scrollbar 0x47C0A0)
-    std::int32_t boneListPos;  // 12716
-    std::uint32_t maxFrame;  // 12720  (model timeline upper bound)
-    std::uint32_t undoState[2];  // 12724  (bone_edit_undo)
-    unsigned char undoDirty;  // 12732  (undo snapshot pending)
-    unsigned char redoDirty;  // 12733  (redo snapshot pending)
-    unsigned char postLoadFlag2;  // 12734
-    RawPad<1> gap16;  // 12735..12736 (unrecovered)
-    float edgeScale;  // 12736  (model_skinning/render)
-    unsigned char physicsFlags;  // 12740  (pmd/pmx/post_load)
-    RawPad<3> gap17;  // 12741..12744 (unrecovered)
-    RigidRecord* rigidTable;  // 12744  (172/192-byte records; x64 0x3568)
-    JointRecord* jointTable;  // 12748  (140/152-byte records; x64 0x3570)
-    std::uint32_t rigidCount;  // 12752  (x64 0x3578)
-    std::uint32_t jointCount;  // 12756  (x64 0x357C)
-    // Model-file directory and the ten PMD toon file names share the range
-    // immediately after the physics tables.  Together they occupy exactly
-    // the formerly opaque 1512-byte region on both ABIs.
-    wchar_t modelDirectory[256];       // 12760..13272
-    char pmdToonFileNames[10][100];    // 13272..14272
-    unsigned char toonFlag;  // 14272  (post_load_init)
-    RawPad<3> gap19;  // 14273..14276 (unrecovered)
-    std::uint32_t toonShared;  // 14276  (model_renderers)
+    std::int32_t boneListSelLine;         
+    unsigned char boneListRowType[200];   
+    std::int32_t boneListRowRecord[200];  
+    std::int32_t boneListRows;  
+    std::int32_t boneListPos;  
+    std::uint32_t maxFrame;  
+    std::uint32_t undoState[2];  
+    unsigned char undoDirty;  
+    unsigned char redoDirty;  
+    unsigned char postLoadFlag2;  
+    RawPad<1> gap16;  
+    float edgeScale;  
+    unsigned char physicsFlags;  
+    RawPad<3> gap17;  
+    RigidRecord* rigidTable;  
+    JointRecord* jointTable;  
+    std::uint32_t rigidCount;  
+    std::uint32_t jointCount;  
+    wchar_t modelDirectory[256];       
+    char pmdToonFileNames[10][100];    
+    unsigned char toonFlag;  
+    RawPad<3> gap19;  
+    std::uint32_t toonShared;  
     SkeletonJoints currentJoints;
     RawPad<12> skeletonReserved;
-    float lightDir[3];  // 14568
-    float legIkXOffset;  // 14580 (height-normalized left/right leg IK X correction)
-    std::int32_t matMisc;  // 14584
-    // Set once the model owns a display/IK key track.  The original uses
-    // this as the cheap gate before walking displayKeys; it is distinct from
-    // the per-frame displayTrackActive cursor state near the record head.
-    unsigned char displayKeyframesPresent;  // 14588
-    // Per-model copy of the app-wide OpenNI runtime version.  Menu command
-    // 292 (auto frame record) pushes the app byte (x86 0xA03EA / x64
-    // 0xA137E) into every loaded model; the bone/physics probes read it
-    // back as a capability gate (>= 14 / >= 15).  x64 twin at model+0x3CA5
-    // (0x7FF7CB47033B..342: movzx eax,[rbx+0A137Eh]; mov [rcx+3CA5h],al).
-    unsigned char openniVersion;  // 14589
-    unsigned char physicsMode;  // 14590  (SetMenuItemInfo gate)
-    RawPad<1> gap25;  // 14591..14592 (unrecovered)
-    std::uint32_t displayRootBone;  // 14592 (x64 0x3CA8; first PMX display-frame bone)
-    // Undo snapshot deduplication.  The x64 E build doubles the array to
-    // 600000 bytes at model+0x3CAC (memset 0x927C0, x64 0x7FF7CB4E819F);
-    // the four alignment bytes before boneOrderTable (x64 0x96470) come
-    // from pointer alignment, so the tail anchors below still hold.
+    float lightDir[3];  
+    float legIkXOffset;  
+    std::int32_t matMisc;  
+    unsigned char displayKeyframesPresent;  
+    unsigned char openniVersion;  
+    unsigned char physicsMode;  
+    RawPad<1> gap25;  
+    std::uint32_t displayRootBone;  
 #if defined(_M_X64)
-    unsigned char keyVisitMap[600000];  // 15532 (0x3CAC)
+    unsigned char keyVisitMap[600000];  
 #else
-    unsigned char keyVisitMap[300000];  // 14596
+    unsigned char keyVisitMap[300000];  
 #endif
-    BoneOrderEntry* boneOrderTable;  // owned array; x86 314596, x64 0x96470
-    std::uint32_t boneOrderCount;  // 314600  (x64 0x96478)
-    std::int32_t centerBone;  // 314604  (physics_frame 0x4B3460)
-    std::int32_t frameRegistrationSelection;  // 314608  (combo 434 selection)
+    BoneOrderEntry* boneOrderTable;  
+    std::uint32_t boneOrderCount;  
+    std::int32_t centerBone;  
+    std::int32_t frameRegistrationSelection;  
 };
 
 #if !defined(_M_X64)
@@ -495,7 +451,6 @@ static_assert(offsetof(ModelRecord, boneOrderCount) == 0x96478,
 #endif
 
 
-// Recovered tracking and PMX fields must never alias one another.
 #if defined(_M_X64)
 static_assert(offsetof(ModelRecord, standardPose) == 120);
 static_assert(offsetof(ModelRecord, skeletonHistory) == 392);
@@ -523,4 +478,4 @@ static_assert(offsetof(ModelRecord, materialMorphPools) == 8756);
 static_assert(offsetof(ModelRecord, currentJoints) == 14280);
 #endif
 
-}  // namespace rinmotiondance::mdl
+}  

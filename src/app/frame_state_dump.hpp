@@ -1,10 +1,3 @@
-// ===========================================================================
-// Porting-era diagnostics: whole-app state snapshots under
-// RINMOTIONDANCE_STATE_DUMP_DIR, used to diff the port against the original
-// binaries.  Compiled only with -DRINMOTIONDANCE_DIAG (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stubs below keep the call
-// sites valid and inline away to nothing.
-// ===========================================================================
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
@@ -43,11 +36,6 @@ inline void DumpFrameEntryState(MMDApp* app,
     if (fopen_s(&stream, path, "wb") != 0 || stream == nullptr)
         return;
 
-    // Diagnostic-only legacy-offset dump: JSON keys stay frozen to the
-    // original x86 offsets.  Reads are arch-native now (the xlate table is
-    // gone) - on x86 they hit the pinned members; on x64 the numbered keys
-    // report that architecture's blob at the same address, exactly as the
-    // old identity fallback did for unmapped offsets.
     const unsigned char* blob =
         reinterpret_cast<const unsigned char*>(&app->state);
     const auto u8 = [blob](std::size_t offset) {
@@ -153,22 +141,20 @@ inline void DumpFrameEntryState(MMDApp* app,
     std::fprintf(stream, "    \"main.window_rect\": [%ld, %ld, %ld, %ld]",
                  mainWindow.left, mainWindow.top,
                  mainWindow.right, mainWindow.bottom);
-    D3DRenderer* render = app->Renderer();  // app+0xA06C4
+    D3DRenderer* render = app->Renderer();  
     std::uint32_t overlayScaleBits = 0;
     float overlayScale = 0.0f;
     std::int32_t backbufferWidth = 0;
     std::int32_t backbufferHeight = 0;
     if (render != nullptr) {
-        // dump byte layout is frozen: read the members, memcpy to the
-        // (bit-preserving) local snapshot below exactly as before
         std::memcpy(&backbufferWidth, &render->screenWidth,
-                    sizeof(backbufferWidth));   // wrapper+120036 (0x1D4E4)
+                    sizeof(backbufferWidth));   
         std::memcpy(&backbufferHeight, &render->screenHeight,
-                    sizeof(backbufferHeight));  // wrapper+120040 (0x1D4E8)
+                    sizeof(backbufferHeight));  
         std::memcpy(&overlayScaleBits, &render->viewScale,
-                    sizeof(overlayScaleBits));  // wrapper+120048 (0x1D4F0)
+                    sizeof(overlayScaleBits));  
         std::memcpy(&overlayScale, &render->viewScale,
-                    sizeof(overlayScale));      // wrapper+120048 (0x1D4F0)
+                    sizeof(overlayScale));      
     }
     comma();
     std::fprintf(stream, "    \"render.01D4E4.i32\": %d",
@@ -540,7 +526,7 @@ inline void DumpRequestedFrameState(MMDApp* app) {
     }
 }
 
-#else  // !RINMOTIONDANCE_DIAG
+#else  
 
 inline void DumpFrameEntryState(MMDApp*,
                                 const char* = "frame_state.json",
@@ -548,6 +534,6 @@ inline void DumpFrameEntryState(MMDApp*,
 
 inline void DumpRequestedFrameState(MMDApp*) {}
 
-#endif  // RINMOTIONDANCE_DIAG
+#endif  
 
-}  // namespace rinmotiondance
+}  

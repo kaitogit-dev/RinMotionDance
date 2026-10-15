@@ -13,8 +13,6 @@ int main() {
     auto* bytes = static_cast<unsigned char*>(::operator new(mdl::kSize));
     std::memset(bytes, 0, mdl::kSize);
     ModelInitDefaults(bytes);
-    // This is the same lifetime as a cancelled or failed model load.
-    // No rendering device or physics scene is required for an empty model.
     ModelDispose(bytes);
     ::operator delete(bytes);
 

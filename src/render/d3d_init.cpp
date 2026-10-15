@@ -1,20 +1,3 @@
-// ===========================================================================
-// VA 0x00408020 - InitD3D  (original: sub_408020, 0x845 bytes)
-// ===========================================================================
-// Direct3D9 subsystem bootstrap, called at the top of UI creation
-// (0x00466D20 @ 0x466D5B, i.e. during WM_CREATE).  The render object is
-// the D3DRenderer restored in include/rinmotiondance/d3d_wrapper.hpp (original
-// field offsets pinned there by static_assert on both architectures).
-//
-// Flow: monitor enum -> Direct3DCreate9 -> format probing (CheckDeviceType +
-// CheckDepthStencilMatch 75/77/80 + multisample ladder 8/4/2/1) ->
-// CreateDevice 7-attempt ladder (HAL/64 fmt22,21 -> SW/64 -> soft flags ->
-// SW/64,32 -> REF/64,32) -> caps gate (VS/PS major >= 2) -> HDR RT +
-// sprite + effect (res 118 SM3 / 117 SM2; technique desc 'r' check ->
-// SetFloat("SKII1", 600/500)) -> aspect + PerspectiveFovLH(PI/4, aspect,
-// 1.0f, 10000.0f) -> SetTransform(PROJECTION) -> render states (0x406E90)
-// -> backbuffer/depth handles -> lockable capture render target.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -33,7 +16,6 @@
 namespace rinmotiondance {
 namespace {
 
-// VA 0x00406E50 - fnEnum: track the largest monitor dimensions.
 BOOL CALLBACK EnumMonitorsMax(HMONITOR, HDC, LPRECT rect, LPARAM lParam) {
     auto* renderer = reinterpret_cast<D3DRenderer*>(lParam);
     const std::int32_t w = rect->right - rect->left;
@@ -46,13 +28,9 @@ BOOL CALLBACK EnumMonitorsMax(HMONITOR, HDC, LPRECT rect, LPARAM lParam) {
 void ReleaseCom(void* object) {
     if (object == nullptr)
         return;
-    reinterpret_cast<IUnknown*>(object)->Release();  // vtable slot 2
+    reinterpret_cast<IUnknown*>(object)->Release();  
 }
 
-// Porting-era error/state dumps under RINMOTIONDANCE_STATE_DUMP_DIR /
-// RINMOTIONDANCE_VB_DUMP_DIR (CMake option RINMOTIONDANCE_DIAG, default
-// OFF); the OFF stubs below keep the call sites valid and inline away to
-// nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void DumpCreateDeviceFailure(const D3DPRESENT_PARAMETERS& pp,
                              const HRESULT* attempts, int attemptCount,
@@ -142,13 +120,12 @@ inline void DumpEffectFailure(HRESULT, int, void*) {}
 inline void DumpEffectStatus(bool, int, int, int, int, D3DRenderer*) {}
 #endif
 
-}  // namespace
+}  
 
 bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
-    D3DRenderer* r = app->Renderer();                               // 657092
+    D3DRenderer* r = app->Renderer();                               
     if (r == nullptr)
         return false;
-    // The required D3DX import is resolved by Windows before WinMain.
     auto* d3dx = &d3dx::Get();
     constexpr bool haveD3dx = true;
 
@@ -156,7 +133,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
     EnumDisplayMonitors(nullptr, nullptr, EnumMonitorsMax,
                         reinterpret_cast<LPARAM>(r));
 
-    IDirect3D9* d3d = Direct3DCreate9(D3D_SDK_VERSION /*0x20*/);
+    IDirect3D9* d3d = Direct3DCreate9(D3D_SDK_VERSION  );
     r->d3d9 = d3d;
     if (d3d == nullptr) {
         MessageBoxA(hwnd,
@@ -169,20 +146,18 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
                       "\x58\x82\xF0\x83\x70\x83\x73\x83\x52\x83\x93"
                       "\x82\xC9\x83\x43\x83\x93\x83\x58\x83\x67\x81"
                       "\x5B\x83\x8B\x82\xB5\x82\xC4\x89\xBA\x82\xB3"
-                      "\x82\xA2",  // x64 0x7FF7CB54A338
+                      "\x82\xA2",  
 
             "Direct3D::Init", MB_OK);
         return false;
     }
 
-    // back-buffer format preference: A8R8G8B8(21) unless unsupported -> X8R8G8B8(22)
     r->backbufferFormat = static_cast<D3DFORMAT>(21);
     if (FAILED(d3d->CheckDeviceType(0, D3DDEVTYPE_HAL,
-                                    D3DFMT_X8R8G8B8 /*22*/,
-                                    D3DFMT_A8R8G8B8 /*21*/, TRUE)))
+                                    D3DFMT_X8R8G8B8  ,
+                                    D3DFMT_A8R8G8B8  , TRUE)))
         r->backbufferFormat = static_cast<D3DFORMAT>(22);
 
-    // depth format ladder: D24S8(75) -> D24X8(77) -> D16(80)
     const D3DFORMAT bbFmt = r->backbufferFormat;
     r->presentParameters.AutoDepthStencilFormat =
         static_cast<D3DFORMAT>(75);
@@ -199,21 +174,19 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
                 static_cast<D3DFORMAT>(80);
     }
 
-    // presentation parameters (fields land on the object layout exactly)
     D3DPRESENT_PARAMETERS pp;
     std::memset(&pp, 0, sizeof(pp));
     pp.BackBufferWidth = r->screenWidth;
     pp.BackBufferHeight = r->screenHeight;
     pp.BackBufferFormat = bbFmt;
     pp.BackBufferCount = 1;
-    pp.SwapEffect = D3DSWAPEFFECT_DISCARD /*1*/;
+    pp.SwapEffect = D3DSWAPEFFECT_DISCARD  ;
     pp.hDeviceWindow = hwnd;
     pp.Windowed = TRUE;
     pp.EnableAutoDepthStencil = TRUE;
     pp.AutoDepthStencilFormat = r->presentParameters.AutoDepthStencilFormat;
-    pp.PresentationInterval = 0x80000000;   // D3DPRESENT_INTERVAL_IMMEDIATE
+    pp.PresentationInterval = 0x80000000;   
 
-    // multisample ladder 8 -> 4 -> 2 -> 1 (both depth-format candidates)
     DWORD quality = 0;
     auto msProbe = [&](D3DFORMAT fmt, DWORD type) {
         DWORD q = 0;
@@ -253,11 +226,8 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
         pp.MultiSampleQuality = quality ? quality - 1 : 0;
         r->multisampleAvailable = 1;
     }
-    // mirror into the object (later code reads the embedded copy)
     r->presentParameters = pp;
 
-    // CreateDevice ladder: HAL/64 fmt22, HAL/64 fmt21, (soft flags) HAL/64,
-    // HAL/32, REF/64, REF/32 - exactly the original retry sequence.
     IDirect3DDevice9** deviceSlot = &r->device;
     HRESULT attempts[7]{};
     int attemptCount = 0;
@@ -267,7 +237,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
         attempts[attemptCount++] = result;
         return result;
     };
-    HRESULT hr = createDevice(D3DDEVTYPE_HAL, 0x40 /*HARDWARE VP*/);
+    HRESULT hr = createDevice(D3DDEVTYPE_HAL, 0x40  );
     if (FAILED(hr)) {
         r->backbufferFormat = static_cast<D3DFORMAT>(22);
         r->presentParameters.BackBufferFormat = D3DFMT_X8R8G8B8;
@@ -280,7 +250,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
             pp.SwapEffect = static_cast<D3DSWAPEFFECT>(3);
             pp.MultiSampleType = D3DMULTISAMPLE_NONE;
             pp.MultiSampleQuality = 0;
-            pp.Flags = 1;                        // lockable back buffer
+            pp.Flags = 1;                        
             r->multisampleAvailable = 0;
             hr = createDevice(D3DDEVTYPE_HAL, 0x40);
             if (FAILED(hr)) {
@@ -290,7 +260,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
                 hr = createDevice(D3DDEVTYPE_HAL, 0x40);
                 if (FAILED(hr)) {
                     hr = createDevice(D3DDEVTYPE_HAL,
-                                      0x20 /*SOFTWARE VP*/);
+                                      0x20  );
                     if (FAILED(hr)) {
                         hr = createDevice(D3DDEVTYPE_REF, 0x40);
                         if (FAILED(hr)) {
@@ -313,33 +283,17 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
     }
     IDirect3DDevice9* device = r->device;
 
-    // caps: raw dword reads at the original offsets (Ghidra split locals)
     D3DCAPS9 caps;
     if (FAILED(device->GetDeviceCaps(&caps)))
-        return true;                       // original proceeds regardless
-    // x64 0x7FF7CB4280E1: renderer+240048 mirrors caps+0x6C, which is
-    // D3DCAPS9::MaxAnisotropy (MaxTextureWidth/Height live at +0x58/+0x5C
-    // in this struct, pushing MaxAnisotropy to +0x6C; MaxStreams is the
-    // far later +0xBC).  render_states feeds this field to
-    // D3DSAMP_MAXANISOTROPY.  The old +0x70 read picked MaxVertexW (float
-    // bits) and delivered a garbage anisotropy cap.
+        return true;                       
     r->shaderModelCaps =
         static_cast<std::int32_t>(caps.MaxAnisotropy);
-    // The original stack-local labels are displaced by one dword around
-    // GetDeviceCaps.  The actual fields consumed at 0x4084DA..0x408533 are
-    // MaxTextureWidth/Height and the VS/PS version dwords.  Reading the
-    // apparent Hex-Rays offsets (+5C/+60, +C8/+D0) instead selects
-    // MaxTextureHeight/MaxVolumeExtent and, critically,
-    // MaxVertexShaderConst/PixelShader1xMaxValue.  On modern hardware that
-    // produces the observed bogus gate values VS=1, PS=224 and disables the
-    // complete effect/reflection renderer.
     const std::int32_t maxTexW = static_cast<std::int32_t>(
         caps.MaxTextureWidth);
     const std::int32_t maxTexH = static_cast<std::int32_t>(
         caps.MaxTextureHeight);
     r->maxTextureWidth = maxTexW;
     r->maxTextureHeight = maxTexH;
-    // BYTE1 of caps dwords +0xC8/+0xD0 = VS/PS major version gates
     const int vsMajor = (caps.VertexShaderVersion >> 8) & 0xFF;
     const int psMajor = (caps.PixelShaderVersion >> 8) & 0xFF;
 
@@ -352,10 +306,9 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
         r->renderTargetHeight = rtH;
 
         if (SUCCEEDED(d3dx->createTexture(device, rtW, rtH, 1,
-                                          D3DUSAGE_RENDERTARGET /*1*/,
-                                          static_cast<D3DFORMAT>(114) /*A16B16G16R16F*/,
-                                          D3DPOOL_DEFAULT /*0*/, &r->hdrTexture))) {
-            // sprite texture from the embedded PNG (res 0x67)
+                                          D3DUSAGE_RENDERTARGET  ,
+                                          static_cast<D3DFORMAT>(114)  ,
+                                          D3DPOOL_DEFAULT  , &r->hdrTexture))) {
             HRSRC res = FindResourceA(hModule, MAKEINTRESOURCEA(0x67), "PNG");
             DWORD size = SizeofResource(nullptr, res);
             HGLOBAL glob = LoadResource(hModule, res);
@@ -369,7 +322,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
 
             IDirect3DSurface9** shadowDepth = &r->shadowDepthSurface;
             if (FAILED(device->CreateDepthStencilSurface(
-                    rtW, rtH, static_cast<D3DFORMAT>(77) /*D24X8*/,
+                    rtW, rtH, static_cast<D3DFORMAT>(77)  ,
                     D3DMULTISAMPLE_NONE, 0, FALSE, shadowDepth, nullptr))) {
                 if (*spriteSurf) { (*spriteSurf)->Release(); *spriteSurf = nullptr; }
                 if (r->hdrTexture) { r->hdrTexture->Release(); r->hdrTexture = nullptr; }
@@ -383,19 +336,12 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
                     effectResult = d3dx->createEffectFromResA(
                         device, nullptr, MAKEINTRESOURCEA(118), nullptr,
                         nullptr, 0, nullptr, effect, &effectErrors);
-                    r->shaderModel3 = 1;                            // SM3
+                    r->shaderModel3 = 1;                            
                 } else {
                     effectResource = 117;
                     effectResult = d3dx->createEffectFromResA(
                         device, nullptr, MAKEINTRESOURCEA(117), nullptr,
                         nullptr, 0, nullptr, effect, &effectErrors);
-                    // Level-0 format of the HDR texture decides the integer
-                    // the effect receives under the name "SKII1": 114 ==
-                    // D3DFMT_R32F ('r') -> 600 plus the shader-model-3 flag,
-                    // anything else -> 500.  (In the original this is
-                    // IDirect3DTexture9::GetLevelDesc followed by
-                    // ID3DXBaseEffect::SetInt - x86 vtable bytes 0x44 on the
-                    // texture and 0x68 on the effect.)
                     if (*effect != nullptr) {
                         D3DSURFACE_DESC levelDesc{};
                         r->hdrTexture->GetLevelDesc(0, &levelDesc);
@@ -426,20 +372,19 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
     }
     DumpEffectStatus(haveD3dx, vsMajor, psMajor, maxTexW, maxTexH, r);
 
-    // aspect + projection: PerspectiveFovLH(PI/4, aspect, 1.0f, 10000.0f)
     const float aspect = static_cast<float>(
         static_cast<double>(r->screenWidth) /
         static_cast<double>(r->screenHeight));
     r->aspectRatio = aspect;
     if (haveD3dx) {
         d3dx::D3DXMATRIXF proj;
-        d3dx->perspectiveFovLH(&proj, 0.7853981852531433f /*PI/4, 0x529698*/,
-                               aspect, 1.0f, 10000.0f /*0x529618*/);
-        device->SetTransform(D3DTS_PROJECTION /*3*/,
+        d3dx->perspectiveFovLH(&proj, 0.7853981852531433f  ,
+                               aspect, 1.0f, 10000.0f  );
+        device->SetTransform(D3DTS_PROJECTION  ,
                              reinterpret_cast<const D3DMATRIX*>(&proj));
     }
 
-    InitRenderStates(app);                                         // 0x406E90
+    InitRenderStates(app);                                         
 
     r->viewScale = 1.0f;
     device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO,
@@ -450,7 +395,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
         device->CreateRenderTarget(
             r->screenWidth, r->screenHeight,
             r->backbufferFormat,
-            D3DMULTISAMPLE_NONE, 0, TRUE /*lockable*/,
+            D3DMULTISAMPLE_NONE, 0, TRUE  ,
             &r->captureSurface, nullptr) != D3D_OK)
         r->multisampleAvailable = 1;
 
@@ -459,11 +404,8 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
                                   &r->stereoHandle)))
         r->stereoEnabled = 0;
 
-    // 内置 MMEffect：设备与内置标准效果均已就绪，注册宿主窗口/标准效果。
-    // 实际 Initialize 保持原版的惰性时机（首个 BeginScene）。InitD3D 运行
-    // 于 WM_CREATE 期间，app->Hwnd() 尚未赋值——传参数句柄。
     mme::OnDeviceCreated(app, hwnd);
     return true;
 }
 
-}  // namespace rinmotiondance
+}  

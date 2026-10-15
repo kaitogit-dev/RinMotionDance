@@ -6,8 +6,6 @@
 
 int main() {
     using Rows = std::vector<std::pair<std::string, std::string>>;
-    // Null device + accessory metadata avoids GPU/scene initialization while
-    // exercising the production ModelData basename and pure mapping query.
     mme::ModelData ray(nullptr, 1, "C:\\effects\\ray-mmd\\ray.x", 0, 0, nullptr);
     mme::ModelData otherRay(nullptr, 2, "C:\\effects\\ray-mmd\\ray.x", 0, 0, nullptr);
     mme::ModelData controller(nullptr, 3, "C:\\effects\\ray_controller.pmx", 0, 0, nullptr);
@@ -45,10 +43,6 @@ int main() {
     expect({{"a\\*b.pmx", "literal.fx"}}, &literalStar, &ray, 0, "backslash escapes wildcard");
     expect({{"a\\", "invalid.fx"}}, &literalStar, &ray, -1, "trailing escape must not match");
 
-    // Representative rows copied in declaration order from Ray's
-    // Shader/textures.fxsub. The three normal startup objects match the
-    // trailing hide row in FogMap/LightMap/EnvLightMap, even though the sky
-    // filename lives inside a directory named Skybox.
     const Rows fog = {
         {"GroundFog*.*", "./Fog/GroundFog/ground_fog.fx"},
         {"AtmosphericFog*.*", "./Fog/AtmosphericFog/atmospheric_fog.fx"},
@@ -95,8 +89,6 @@ int main() {
 
     expect({{controller.filename(), "unexpected.fx"}, {"*", "hide"}},
            &controller, &ray, 1, "full path must not steal the fallback row");
-    // A stage is one model with many materials. Hiding its sky material
-    // must not hide the parent, siblings, another instance, or another tab.
     mme::MmeEmmSetSubsetShown(&sky, 7, false);
     check(sky.shown() && !mme::MmeEmmEffectiveSubsetShown(&sky, 7)
           && mme::MmeEmmEffectiveSubsetShown(&sky, 0), "Main sky-only visibility");
@@ -121,8 +113,6 @@ int main() {
           && mme::MmeOffscreenObjectShown(target, &sky, &ray, 7), "Explicit subset wins over inherited parent");
     mme::MmeEmmClearSubsetShows(&sky);
 
-    // The host passes the wide loaded filename through the engine's own
-    // code page, never the fixed-size SJIS export or CRT C-locale fallback.
     const std::wstring wideName = L"C:\\stage\\\u573a\u666f_\u7a7a.pmx";
     BOOL lost = FALSE;
     if (GetACP() != CP_UTF8)

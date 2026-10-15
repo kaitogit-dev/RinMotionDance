@@ -1,14 +1,3 @@
-// ===========================================================================
-// Model keyframe edit helpers used by the left frame editor.
-//   0x0049D410  append one touched bone-key record to the undo slot
-//               ( -> AppendBoneKeyToUndo)
-//   0x004A0080  SnapshotPoseBeforeFrameChange: snapshot
-//               the current pose/selection before changing frame
-//   0x004A02C0  SyncModelEditControls: synchronize model
-//               manipulation controls
-//   0x004A1510  SnapshotSelectedKeysForUndo: create an
-//               undo snapshot for selected display keys
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -138,9 +127,6 @@ void ResetBoneInterpolation(mdl::BoneKey& record, int lane) {
     record.interpolation[lane + 12] = 107;
 }
 
-// VA 0x0049D4D0: regenerate one automatically-smoothed position lane after
-// inserting/overwriting a bone key.  Rotation (lane 3) always receives the
-// original default Bezier tuple.
 void RebuildBoneInterpolation(unsigned char* model, int index, int lane) {
     mdl::BoneKey* const keys = mdl::BoneKeys(model);
     mdl::BoneKey& record = keys[index];
@@ -225,9 +211,9 @@ void BoneKeyOverflow(unsigned char* model) {
     }
 }
 
-}  // namespace
+}  
 
-void AppendBoneKeyToUndo(unsigned char* model, int index) {  // VA 0x0049D410
+void AppendBoneKeyToUndo(unsigned char* model, int index) {  
     if (model == nullptr)
         return;
     unsigned char* visited = mdl::Mdl(model)->keyVisitMap;
@@ -243,7 +229,7 @@ void AppendBoneKeyToUndo(unsigned char* model, int index) {  // VA 0x0049D410
     ++count;
 }
 
-int RegisterBonePoseAtFrame(unsigned char* model, int boneIndex,  // VA 0x004B38A0
+int RegisterBonePoseAtFrame(unsigned char* model, int boneIndex,  
               std::uint32_t frame, int mode) {
     if (model == nullptr)
         return static_cast<int>(frame);
@@ -313,9 +299,6 @@ int RegisterBonePoseAtFrame(unsigned char* model, int boneIndex,  // VA 0x004B38
         AppendBoneKeyToUndo(model, current);
         fill(current);
     } else {
-        // x64 sub_7FF7CB4E9DB0 @0x7FF7CB4EA46F：空闲槽扫描从持久游标
-        // searchCursor（model+0x22B8）起步，命中占用槽时游标随扫描推进、
-        // 只增不减——写法与 RegisterBoneKey（key_registrars.cpp）一致。
         int freeIndex = static_cast<int>(mdl::Mdl(model)->searchCursor);
         if (keys[freeIndex].frame != 0) {
             for (;;) {
@@ -355,7 +338,7 @@ int RegisterBonePoseAtFrame(unsigned char* model, int boneIndex,  // VA 0x004B38
     return static_cast<int>(frame);
 }
 
-void RegisterSelectedBoneKeys(unsigned char* model, int frame, int mode) {  // VA 0x004C2080
+void RegisterSelectedBoneKeys(unsigned char* model, int frame, int mode) {  
     if (model == nullptr)
         return;
 
@@ -459,10 +442,6 @@ void SnapshotSelectedKeysForUndo(unsigned char* model, int frame) {
     }
 }
 
-// Original inline block 0x43F15E..0x43F60D in 0x43E970.  DeleteMarkedKeyframes has
-// just made the deletion snapshot at the current cursor.  Type 4 tells
-// Undo/Redo to chain that entry with the type-2 snapshot opened here for the
-// transformed records which are about to be inserted.
 void BeginRangeScaleBoneUndo(unsigned char* model, int frame,
                              int transformedKeyCount) {
     if (model == nullptr || transformedKeyCount <= 0)
@@ -488,10 +467,7 @@ void BeginRangeScaleBoneUndo(unsigned char* model, int frame,
                 sizeof(mdl::Mdl(model)->keyVisitMap));
 }
 
-// VA 0x004A09E0: delete every marked model-mode key.  The three key arrays
-// retain their fixed-capacity slots; non-root records are unlinked and reset,
-// while root records keep their track-head role with default values.
-void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
+void DeleteMarkedModelKeys(unsigned char* model, int frame) {  
     if (model == nullptr) return;
     mdl::BoneKey* const boneKeys = mdl::BoneKeys(model);
     mdl::MorphKey* const morphKeys = mdl::MorphKeys(model);
@@ -521,7 +497,6 @@ void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
                     sizeof(mdl::Mdl(model)->keyVisitMap));
     }
 
-    // Reset every display/IK key record.
     for (std::size_t i = 0; i < mdl::kDisplayKeyCapacity; ++i) {
         mdl::DisplayKey& rec = displayKeys[i];
         if (rec.allocated == 0) continue;
@@ -548,7 +523,6 @@ void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
         rec.previous = 0;
     }
 
-    // Reset every morph key record.
     for (std::size_t i = 0; i < mdl::kMorphKeyCapacity; ++i) {
         mdl::MorphKey& rec = morphKeys[i];
         if (rec.allocated == 0) continue;
@@ -598,9 +572,7 @@ void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
     }
 }
 
-// VA 0x004A1870: undo one ring entry, capturing the displaced state into the
-// parallel redo ring at 0x2A34. Type 4 entries are chained recursively by MMD.
-void UndoModelEdit(unsigned char* model, std::int32_t& frame) {  // VA 0x004A1870
+void UndoModelEdit(unsigned char* model, std::int32_t& frame) {  
     if (model == nullptr) return;
     int cursor = static_cast<int>(mdl::Mdl(model)->undoState[0]);
     auto& undo = UndoAt(model, cursor);
@@ -655,9 +627,7 @@ void UndoModelEdit(unsigned char* model, std::int32_t& frame) {  // VA 0x004A187
         UndoModelEdit(model, frame);
 }
 
-// VA 0x004A2490: redo the parallel-ring entry selected by advancing the
-// cursor. Type 2/4 restores complete 60-byte key records byte-for-byte.
-void RedoModelEdit(unsigned char* model, std::int32_t& frame) {  // VA 0x004A2490
+void RedoModelEdit(unsigned char* model, std::int32_t& frame) {  
     if (model == nullptr) return;
     int cursor = static_cast<int>(mdl::Mdl(model)->undoState[0]) + 1;
     if (cursor >= 30) cursor = 0;
@@ -687,7 +657,7 @@ void RedoModelEdit(unsigned char* model, std::int32_t& frame) {  // VA 0x004A249
         RedoModelEdit(model, frame);
 }
 
-void ResetDisplayKeyCursor(unsigned char* model) {  // VA 0x004A4A00
+void ResetDisplayKeyCursor(unsigned char* model) {  
     if (model == nullptr)
         return;
     mdl::DisplayKey* const displayKeys = mdl::DisplayKeys(model);
@@ -735,10 +705,7 @@ void SyncModelEditControls(unsigned char* model) {
     }
 }
 
-// Exported entry for the frame-line delete command (0x43A650) - the body
-// above is the verbatim port of VA 0x0049D4D0 but lives in the anonymous
-// namespace.  VA 0x0049D4D0.
-void RebuildBoneKeyInterpolation(unsigned char* model, int index, int lane) {  // VA 0x0049D4D0
+void RebuildBoneKeyInterpolation(unsigned char* model, int index, int lane) {  
     RebuildBoneInterpolation(model, index, lane);
 }
 
@@ -757,7 +724,6 @@ void mdl::SelectPhysicsOnBoneKeys(ModelRecord& model) {
         for (;;) {
             if (key->physicsDisabled == 0)
                 key->allocated = 1;
-            // The original treats the link as signed when testing the sentinel.
             if (static_cast<std::int32_t>(key->next) <= 0)
                 break;
             key = &model.boneKeys[key->next];
@@ -765,4 +731,4 @@ void mdl::SelectPhysicsOnBoneKeys(ModelRecord& model) {
     }
 }
 
-}  // namespace rinmotiondance
+}  

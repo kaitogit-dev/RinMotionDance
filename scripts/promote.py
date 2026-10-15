@@ -34,9 +34,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INCLUDE = os.path.join(ROOT, "include")
 SRC = os.path.join(ROOT, "src")
 
-# ---------------------------------------------------------------------------
-# source harvesting
-# ---------------------------------------------------------------------------
 
 def iter_sources():
     for base in (SRC, os.path.join(INCLUDE, "rinmotiondance")):
@@ -75,7 +72,7 @@ def usage_index():
         text = read(path)
         rel = os.path.relpath(path, ROOT).replace("\\", "/")
         if rel in skip:
-            continue  # a constant's own definition is not a usage
+            continue  
         is_app = rel == "include/rinmotiondance/mmd_app.hpp"
         in_src = rel.startswith("src")
         for name, rx in word.items():
@@ -88,9 +85,6 @@ def usage_index():
     return usage
 
 
-# ---------------------------------------------------------------------------
-# report mode
-# ---------------------------------------------------------------------------
 
 def cmd_report():
     per_file = []
@@ -113,9 +107,6 @@ def cmd_report():
     return 0
 
 
-# ---------------------------------------------------------------------------
-# ledger mode
-# ---------------------------------------------------------------------------
 
 def classify(entry):
     if entry["mmd_app"] == 0 and entry["src"] == 0 \
@@ -164,7 +155,6 @@ def cmd_apply(map_path):
                 continue
             name, _, expr = ln.partition("=")
             mapping[name.strip()] = expr.strip()
-    # expand aliases: any constant sharing a mapped constant's byte offset
     by_value = defaultdict(list)
     for name, value, _ in parse_offsets():
         by_value[value].append(name)
@@ -182,8 +172,6 @@ def cmd_apply(map_path):
         text = read(path)
         orig = text
         for name, expr in expanded.items():
-            # receiver-attached or bare call forms; exact offset only;
-            # \s* lets multi-line calls (constant on the next line) match
             ns = r'\s*(?:rinmotiondance::)?(?:offsets|off)::'
             for pat, rep in (
                 (r'(?:->|\.)?raw<[^>()+]*>\(' + ns + name + r'\s*\)', expr),

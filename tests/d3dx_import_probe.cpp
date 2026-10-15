@@ -4,7 +4,6 @@
 #include "rinmotiondance/d3dx_dyn.hpp"
 
 int main(int argc, char** argv) {
-    // The loader-failure test verifies that this marker is never reached.
     if (argc == 2) {
         FILE* marker = nullptr;
         if (fopen_s(&marker, argv[1], "wb") != 0) return 2;

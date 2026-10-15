@@ -1,9 +1,3 @@
-# Dual-process bone-record dumper v2.
-#   python mdump2.py <exe> <pmm> <out.json> [--orig]
-# Original x64: app pointer at module_base + 0x1445F8 (WinMain global).
-# Port: scan the module image for the g_Block pointer (validated against
-# the pinned model-slot layout).  Model slots at app+0xBE8 (255 ptrs),
-# slotIdx at app+5088; model: boneTable +10056, boneCount +12560.
 import ctypes, ctypes.wintypes as wt, json, struct, sys, time
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -313,8 +307,7 @@ def main():
         proc.kill()
         return 1
     dlg = 0
-    u32.PostMessageW(main_h, 0x111, 205, 0)   # exactly once: a second
-    # post while the first dialog is still opening leaves a stuck modal pair
+    u32.PostMessageW(main_h, 0x111, 205, 0)   
     for attempt in range(40):
         time.sleep(1.0)
         for d in all_dialogs(pid):
@@ -332,9 +325,6 @@ def main():
     kids = enum_children(dlg)
     edit = next(x for x, cn, _ in kids if cn == "Edit")
     time.sleep(2.0)
-    # WM_CHAR the path into the edit, then a real ENTER key sequence.
-    # (WM_SETTEXT + BM_CLICK only works on the original; the port's
-    # hooked common dialog needs the typed-keystroke path.)
     for ch in pmm:
         u32.PostMessageW(edit, 0x0102, ord(ch), 0)
     time.sleep(0.5)
@@ -342,7 +332,6 @@ def main():
     u32.PostMessageW(edit, 0x0102, 0x0D, 0x001C0001)
     u32.PostMessageW(edit, 0x0101, 0x0D, 0xC01C0001)
     print("path typed; waiting for load")
-    # wait until the title carries the pmm name and slot count is stable
     title_ok = False
     stable = 0
     last = None
@@ -352,8 +341,6 @@ def main():
         time.sleep(2.0)
         print("  [loop] tick", flush=True)
         buf = ctypes.create_unicode_buffer(512)
-        # GetWindowTextW blocks cross-process on a busy UI thread; use a
-        # timed WM_GETTEXT instead.
         res = ctypes.c_ulonglong()
         u32.SendMessageTimeoutW(main_h, 0x000D, 512, buf, 0x0002, 300,
                                 ctypes.byref(res))

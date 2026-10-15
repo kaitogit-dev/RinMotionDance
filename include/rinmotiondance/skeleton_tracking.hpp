@@ -5,8 +5,6 @@
 
 namespace rinmotiondance::mdl {
 
-// Names describe the tracked sensor frame; mirroring into model space is
-// performed when applying the standard pose, not when collecting samples.
 enum class TrackedJoint : std::size_t {
     Center, Torso, Neck, Head,
     RightShoulder, RightElbow, RightWrist, RightHand,
@@ -80,8 +78,6 @@ inline void PushSkeletonJointHistory(float current[3], float* history,
     }
 }
 
-// The OpenNI adapter's export uses integer joint IDs. Keep that protocol
-// mapping at this boundary, independently of ModelRecord's native layout.
 template<class GetJoint>
 void CaptureSkeletonJoints(SkeletonJoints& joints, unsigned version,
                            GetJoint&& getJoint) {
@@ -124,4 +120,4 @@ static_assert(sizeof(StandardSkeletonPose) == 17 * 4 * sizeof(float));
 static_assert(sizeof(SkeletonJoints) == 23 * 3 * sizeof(float));
 static_assert(sizeof(SkeletonHistory) == 23 * 30 * 3 * sizeof(float));
 
-}  // namespace rinmotiondance::mdl
+}  

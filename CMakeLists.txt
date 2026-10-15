@@ -5,12 +5,6 @@ project(RinMotionDance VERSION "${RMD_VERSION_MAJOR}.${RMD_VERSION_MINOR}" LANGU
 configure_file(cmake/version.hpp.in generated/rinmotiondance/version.hpp @ONLY)
 configure_file(res/version.rc.in generated/version.rc @ONLY)
 
-# ---------------------------------------------------------------------------
-# RinMotionDance: behavioural restoration of MikuMikuDance v932.
-# MikuMikuDanceE_v932x64 is the x64 reference.  The x86 binary remains a
-# source-recovery aid only; see docs/X64_RECONSTRUCTION.md for the evidence
-# and layout rules.  The porting ledger lives in docs/PORTING_STATUS.md.
-# ---------------------------------------------------------------------------
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,17 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if (MSVC)
     add_compile_options(/W3 /permissive-)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-    # The original binary tolerates implicit narrowing everywhere; keep the
-    # port close to VC9 behaviour rather than modern strictness.
     add_compile_options(/wd4267 /wd4244 /wd4245)
-    # VC9 had no C++17 aligned operator new/delete (P0035).  Without this
-    # switch our TUs allocate over-aligned Bullet objects (e.g. the 1456-byte
-    # btGeneric6DofSpringConstraint, align 16) through _aligned_malloc while
-    # the bullet275 static library's deleting destructors free them with the
-    # plain operator delete - free() on an _aligned_malloc block, which
-    # corrupts the heap and kills the process at teardown (0xC0000374,
-    # see ShutdownCleanup -> DisposePhysicsWorld).  The original shipped
-    # exactly the plain-new pairing, so this is also the faithful setting.
     add_compile_options(/Zc:alignedNew-)
 else()
     add_compile_options(-Wall -Wextra -Wno-unused-parameter)
@@ -46,14 +30,8 @@ if (NOT WIN32)
     message(FATAL_ERROR "RinMotionDance targets Windows only (Win32/DirectX9).")
 endif()
 
-# ---------------------------------------------------------------------------
-# Dependencies (provisioned by Conan; see conanfile.py / recipes/)
-# ---------------------------------------------------------------------------
 find_package(BULLET275 REQUIRED)
 
-# ---------------------------------------------------------------------------
-# Core static library: application state, math, startup chain, effect API.
-# ---------------------------------------------------------------------------
 add_library(rinmotiondance_core STATIC
     src/app/mmd_app.cpp
     src/app/globals.cpp
@@ -186,51 +164,33 @@ add_library(rinmotiondance_core STATIC
 )
 
 target_include_directories(rinmotiondance_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# 内置 MMEffect 的宿主集成面（mme_bridge → MmeHost* 声明）。
 target_include_directories(rinmotiondance_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/include)
 target_link_libraries(rinmotiondance_core PUBLIC
     BULLET275::BULLET275
-    user32      # RegisterClass / CreateWindow / MessageBox
-    gdi32       # CreateSolidBrush / GetStockObject
-    msimg32     # GradientFill (0x40DF10 panel fill)
-    comctl32    # InitCommonControls
-    shell32     # DragAcceptFiles
-    d3d9        # IDirect3DDevice9 (device slot at sub1d574+120032)
-    vfw32       # DrawDibDraw (0x4168D0) + AVIFile*/AVIStream* (0x433250 background AVI)
-    avifil32    # AVIFile/AVIStream background playback (0x4168D0)
-    ole32       # CoInitialize/CoUninitialize (0x467313 / 0x4096C0)
-    strmiids    # DirectShow IIDs/CLSIDs (recording graph 0x408F20..0x409A80)
-    uuid        # IID_IPropertyBag / IID_IAMVfwCompressDialogs etc.
+    user32      
+    gdi32       
+    msimg32     
+    comctl32    
+    shell32     
+    d3d9        
+    vfw32       
+    avifil32    
+    ole32       
+    strmiids    
+    uuid        
 )
 if (MSVC)
-    # Align the PMX skinning stride workers with the original's VCOMP90
-    # parallel regions (x64 _vcomp_fork, default static schedule).
     target_compile_options(rinmotiondance_core PRIVATE /openmp)
 endif()
 
-# ---------------------------------------------------------------------------
-# Porting-era diagnostics.  The RINMOTIONDANCE_* environment probes
-# (state dumps, A/B traces, canaries) are comparison tooling against the
-# original binaries, not product features.  Default OFF: the shipped build
-# contains none of that code.  Turn ON only while running A/B sessions:
-#   cmake -B build-x64/diag -DRINMOTIONDANCE_DIAG=ON ..
-# ---------------------------------------------------------------------------
 option(RINMOTIONDANCE_DIAG
        "Compile the porting-era diagnostics probes (RINMOTIONDANCE_* env dumps/traces)" OFF)
 if (RINMOTIONDANCE_DIAG)
     target_compile_definitions(rinmotiondance_core PUBLIC RINMOTIONDANCE_DIAG=1)
 endif()
 
-# ---------------------------------------------------------------------------
-# Main executable.  WIN32 subsystem matches the original PE header
-# (Subsystem 2, GUI).  Exports (Exp*) come from exports/RinMotionDance.def
-# exactly like the original export table at RVA 0x00141328.
-# ---------------------------------------------------------------------------
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    # x64 build embeds the original x64 manifest (amd64 dependencies +
-    # Data\MMDxShow.dll reg-free COM) - the x86 manifest's x86 assemblies
-    # make the 64-bit loader fail with STATUS_INVALID_IMAGE_FORMAT.
     set(RINMOTIONDANCE_GEN_RES res/gen_resources_x64.res)
 else()
     set(RINMOTIONDANCE_GEN_RES res/gen_resources.res)
@@ -246,15 +206,11 @@ add_executable(RinMotionDance WIN32
 
 target_link_libraries(RinMotionDance PRIVATE
     rinmotiondance_core
-    winmm      # timeGetTime - main loop timing
-    dsound     # original timeline/audio subsystem initialization (0x4C2470)
+    winmm      
+    dsound     
     user32
 )
 
-# gen_resources.res re-embeds the original .rsrc byte-exact; link.exe accepts
-# .res directly as an input file (CMake itself would classify it as <None>).
-# /MANIFEST:NO keeps the linker from adding a default manifest on top of the
-# original one embedded through the .res.
 target_link_options(RinMotionDance PRIVATE
     "/MAP:${CMAKE_CURRENT_BINARY_DIR}/RinMotionDance.map"
     "/MANIFEST:NO"
@@ -262,18 +218,9 @@ target_link_options(RinMotionDance PRIVATE
 )
 set_target_properties(RinMotionDance PROPERTIES
     OUTPUT_NAME "RinMotionDance"
-    # Export the 37 Exp* symbols from the .def file (ordinals 1..37).
     ENABLE_EXPORTS ON
 )
 
-# ---------------------------------------------------------------------------
-# MMDxShow.dll - the companion DirectShow push-source filter.  Built for both
-# architectures: the x86 build pins the VC8 original's layout
-# (../MikuMikuDanceE_v932/Data/MMDxShow.dll), the x64 build pins the VC10
-# rebuild (../MikuMikuDanceE_v932x64/Data/MMDxShow.dll) - the per-flavour
-# static_asserts live in src/mmdxshow/mmdxshow.hpp.  Both originals export
-# the same ordinals 1..5 via the .def (no per-arch def needed).
-# ---------------------------------------------------------------------------
 add_library(MMDxShow SHARED
     src/mmdxshow/dll_main.cpp
     src/mmdxshow/enumerators.cpp
@@ -292,7 +239,6 @@ set_target_properties(MMDxShow PROPERTIES
     OUTPUT_NAME "MMDxShow"
 )
 
-# Effect engine linked directly into the host; no proxy or injection DLL.
 include(cmake/D3dxRuntime.cmake)
 add_library(MMEffect STATIC
     third_party/mmeffect/src/mme_host.cpp
@@ -322,26 +268,25 @@ add_library(MMEffect STATIC
 target_include_directories(MMEffect PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/include
     PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/src/mmhack   # mmhack_state.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include          # d3dx_dyn.hpp（运行时 d3dx9 转发）
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/src/mmhack   
+    ${CMAKE_CURRENT_SOURCE_DIR}/include          
 )
 target_compile_definitions(MMEffect PUBLIC RINMOTIONDANCE_MME_EMBEDDED=1)
 target_link_libraries(MMEffect PUBLIC D3DXRuntime)
 target_link_libraries(MMEffect PRIVATE
-    user32       # 窗口/菜单/消息
-    gdi32        # GDI+ 底层
-    gdiplus      # 动画纹理（GIF/APNG 解码）
-    comctl32     # 分配对话框列表视图
-    comdlg32     # 特效文件选择对话框
+    user32       
+    gdi32        
+    gdiplus      
+    comctl32     
+    comdlg32     
     shell32
     ole32
-    winmm        # timeGetTime
+    winmm        
     shlwapi
     advapi32
 )
 target_link_libraries(RinMotionDance PRIVATE MMEffect)
 
-# Resource IDs are distinct from the host. Icon child IDs are explicit too.
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(MME_ICON_RES ${CMAKE_CURRENT_BINARY_DIR}/mme_icon.res)
 add_custom_command(
@@ -522,7 +467,6 @@ if(BUILD_TESTING)
         target_include_directories(${test} PRIVATE include)
         add_test(NAME ${test} COMMAND ${test})
     endforeach()
-    # Requires the Microsoft D3DX9 runtime installed for the target architecture.
     add_test(NAME mme_d3dx_runtime COMMAND mme_regression --runtime)
     add_executable(d3dx_import_probe tests/d3dx_import_probe.cpp)
     target_include_directories(d3dx_import_probe PRIVATE include)

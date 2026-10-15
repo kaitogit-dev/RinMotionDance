@@ -19,8 +19,6 @@ int main() {
         std::uintptr_t(second.get()) > UINT32_MAX);
     first->order = 1;
     second->order = 0;
-    // Use nonadjacent slots and object bytes unrelated to slot indices.
-    // This catches both the pointer-as-index write and the old selected-byte read.
     std::array<mdl::AccessoryRecord*, 255> slots{};
     slots[7] = first.get();
     slots[254] = second.get();
@@ -46,7 +44,7 @@ int main() {
           "Renaming must follow the reordered object");
     check(arrays.modelIndices[0] == 0 && arrays.modelIndices[1] == 99,
           "Accessory edits must not overwrite model indices or zero initialization");
-    arrays.accessoryIndices.reset();  // Cancel/OK close releases only its workspace.
+    arrays.accessoryIndices.reset();  
     check(!arrays.accessoryIndices && arrays.modelIndices[1] == 99,
           "Closing one dialog must retain the other workspace");
     arrays.accessoryIndices.reset(new std::int32_t[2]);

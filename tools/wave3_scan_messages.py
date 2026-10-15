@@ -65,8 +65,6 @@ for p in root.rglob('*'):
     text2 = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)
     text2 = re.sub(r'//[^\n]*', ' ', text2)
     for pos, matched, args in calls(text2):
-        # SendDlgItemMessage takes (hwnd, id, msg, ...): message is arg 2;
-        # SendMessage/PostMessage take (hwnd, msg, ...): message is arg 1.
         base = re.search(r'(\w+)\s*$', matched.rstrip('(')).group(1)
         stem = base.lower()
         if stem.endswith(('a', 'w')) and stem[:-1].endswith('message'):

@@ -1,6 +1,3 @@
-# Normal, non-delay-loaded imports from the architecture's original runtime.
-# LIB /DEF consumes the compiler's symbol decoration without linking the
-# signature bodies into any product. The resulting .lib contains imports only.
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(D3DX_RUNTIME_NAME d3dx9_43)

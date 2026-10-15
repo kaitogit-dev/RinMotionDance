@@ -14,8 +14,6 @@ X86_WORD_TYPES = frozenset({
     "LPCSTR", "LPCVOID", "LPCWSTR", "UINT", "float", "int",
     "unsigned int", "unsigned long",
 })
-# A type keyword must not be mistaken for an optional parameter name:
-# for example, unsigned long long is not unsigned long named "long".
 TYPE_KEYWORDS = frozenset({
     "bool", "char", "char8_t", "char16_t", "char32_t", "const", "double",
     "enum", "float", "int", "long", "short", "signed", "struct",
@@ -26,9 +24,6 @@ TYPE_KEYWORDS = frozenset({
 def validate_x86_word_parameter(parameter):
     """Reject declarations whose x86 argument width has not been established."""
     parameter = " ".join(parameter.split())
-    # Pointee size does not affect the width of an ordinary x86 pointer.
-    # Arrays, references, function pointers and other declarators deliberately
-    # require explicit support instead of guessing their calling convention.
     if re.fullmatch(r"[A-Za-z_]\w*(?:\s+[A-Za-z_]\w*)*\s*"
                     r"(?:\*\s*(?:(?:const|volatile)\s*)?)+"
                     r"(?:[A-Za-z_]\w*)?", parameter):
@@ -57,9 +52,6 @@ def main():
     definitions = [f"LIBRARY {args.runtime}.dll", "EXPORTS"]
     signatures = ["// Build-only signature metadata; never linked into the executable."]
     for name, parameters in functions:
-        # All current D3DX arguments are pointers, floats or 32-bit scalars.
-        # Reject future by-value 64-bit/aggregate declarations rather than
-        # silently producing an incorrect x86 stack decoration.
         parts = [p.strip() for p in parameters.split(",") if p.strip() not in ("", "void")]
         for parameter in parts:
             validate_x86_word_parameter(parameter)

@@ -47,7 +47,6 @@ int main() {
     prune();
     check(released == 1, "Repeated frames must not release twice");
 
-    // The host allocator may reuse the unloaded object's address/identity.
     liveIds[1] = true;
     check(registerObject(1), "Reused host identity must register a new object");
     check(registered == 3 && byId.size() == 2,

@@ -6,9 +6,6 @@
 #include "rinmotiondance/accessory_layout.hpp"
 
 namespace rinmotiondance {
-// These dialogs reused one untyped scratch slot in the original application.
-// Both contain 32-bit slot indices, never object pointers. Separate owners keep
-// model and accessory slot namespaces from overwriting each other's workspace.
 struct DialogOrderArrays {
     std::unique_ptr<std::int32_t[]> modelIndices;
     std::unique_ptr<std::int32_t[]> accessoryIndices;
@@ -18,7 +15,6 @@ struct DialogOrderArrays {
     }
 };
 
-// Preserve the original 255-slot scan and leave unmatched entries untouched.
 template<class AccessoryAt>
 void BuildAccessoryOrderIndices(std::int32_t* order, int count,
                                AccessoryAt accessoryAt) {
@@ -47,4 +43,4 @@ std::uint8_t ApplyAccessoryOrderIndices(const std::int32_t* order, int count,
     return static_cast<std::uint8_t>(order[0]);
 }
 
-}  // namespace rinmotiondance
+}  

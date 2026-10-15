@@ -1,15 +1,3 @@
-# Wave4-A verification harness generator.
-#
-# Produces build/wave4a_verify.cpp containing:
-#   * the OLD raw-offset write sequences for the four global PMM tracks,
-#     extracted VERBATIM from git HEAD's src/io/pmm_save.cpp (HEAD is the
-#     correct baseline: the only foreign working-tree edit to that file is a
-#     panel-constant rename outside these blocks),
-#   * the NEW typed writers + CountSparseTrackFrames extracted VERBATIM from
-#     the working-tree src/io/pmm_save.cpp,
-#   * the real pmm_io_common.hpp readers and real layout headers.
-# main() compares old vs new output byte streams over randomized tracks, and
-# checks reader field mappings with marker streams.
 import subprocess, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -67,12 +55,11 @@ def plain_fn_to_fn(src, signature, new_name):
     """Cut `void name(int fd, T& key) { ... }` (brace-matched) and rename."""
     i = src.index(signature)
     inner, _ = brace_body(src, i)
-    params = signature[:signature.rindex(')') + 1]  # 'void Old(int fd, T&)'
-    params = params[params.index('('):]              # '(int fd, T&)'
+    params = signature[:signature.rindex(')') + 1]  
+    params = params[params.index('('):]              
     return ('static void %s%s {%s\n}\n' % (new_name, params, inner))
 
 blocks = {}
-# --- OLD record-0 + sparse blocks (HEAD text) ---
 blocks['old_cam_rec0'] = dedent(slice_between(
     OLD, '    W(fd, cam + 0x00, 4);', '    {  // sparse scan over camera keys'))
 blocks['old_cam_sparse'] = dedent(slice_between(
@@ -95,12 +82,10 @@ blocks['old_shadow_sparse'] = dedent(slice_between(
     OLD, '    {  // sparse scan over self-shadow keys 1..9999 (0x18 stride)',
     '    // ---- 10. config2'))
 
-# --- NEW typed writers + count template (working tree) ---
 blocks['new_writers'] = slice_between(
     NEW, 'void WritePmmCameraKey(int fd, const mdl::CameraKey& key) {',
     '// Shift-JIS texts from the original .rdata')
 
-# --- NEW sparse call sites (working tree) ---
 blocks['new_cam_sparse'] = dedent(slice_between(
     NEW, '    {  // sparse scan over camera keys 1..9999 (sizeof(mdl::CameraKey) stride)',
     '    // camera misc (0x41CE85..0x41CF3E)'))
@@ -109,22 +94,18 @@ blocks['new_light_sparse'] = dedent(slice_between(
     '    // light misc (0x41D207..0x41D28F)'))
 blocks['new_sel_sparse'] = dedent(slice_between(
     NEW, '    {  // sparse scan over selection keys 1..9999',
-    # marker tracks the working-tree rename selfShadowCfgOrUint32 ->
-    # selfShadowEnabled (Wave5 header cleanup); same block boundary
     '    {\n        const unsigned char b = s->state.selfShadowEnabled'))
 blocks['new_shadow_sparse'] = dedent(slice_between(
     NEW, '    {  // sparse scan over self-shadow keys 1..9999',
     '    // ---- 10. config2'))
 
 old_readers = []
-# v1 plain functions (HEAD)
 old_readers.append(plain_fn_to_fn(
     OLDV1, 'void ReadV1BoneKey(int fd, mdl::BoneKey& key) {',
     'old_v1_ReadV1BoneKey'))
 old_readers.append(plain_fn_to_fn(
     OLDV1, 'void ReadV1MorphKey(int fd, mdl::MorphKey& key) {',
     'old_v1_ReadV1MorphKey'))
-# v1 lambdas (HEAD)
 old_readers.append(lambda_to_fn(
     OLDV1, 'const auto readCamRecord = [&](mdl::CameraKey& key) {',
     'mdl::CameraKey', 'old_v1_readCamRecord'))
@@ -137,15 +118,12 @@ old_readers.append(lambda_to_fn(
 old_readers.append(lambda_to_fn(
     OLDV1, 'const auto readSelRecord =',
     'mdl::SelfShadowKey', 'old_v1_readSelRecord'))
-# v2 plain functions (HEAD) - rename to avoid clashing with the shared
-# template/overloads pulled in from pmm_io_common.hpp
 old_readers.append(plain_fn_to_fn(
     OLDV2, 'void ReadPmmBoneKey(int fd, mdl::BoneKey& key) {',
     'old_v2_ReadPmmBoneKey'))
 old_readers.append(plain_fn_to_fn(
     OLDV2, 'void ReadPmmMorphKey(int fd, mdl::MorphKey& key) {',
     'old_v2_ReadPmmMorphKey'))
-# v2 lambdas (HEAD)
 old_readers.append(lambda_to_fn(
     OLDV2, 'const auto readCamRecord = [&](mdl::CameraKey& key) {',
     'mdl::CameraKey', 'old_v2_readCamRecord'))

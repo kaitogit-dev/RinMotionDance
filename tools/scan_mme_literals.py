@@ -1,4 +1,3 @@
-# 扫描 MME 模块源码中的字符串字面量原始高位字节（编码依赖点）。
 import glob
 import re
 

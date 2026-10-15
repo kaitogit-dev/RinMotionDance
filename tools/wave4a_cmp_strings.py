@@ -1,11 +1,7 @@
-# Wave4-A pre-check: extract C string constants from pmm_load_v1.cpp /
-# pmm_load_v2.cpp and byte-compare every same-named pair.  Only byte-identical
-# constants may move into the shared header.
 import re, sys
 
 def extract(path):
     src = open(path, encoding='utf-8').read()
-    # const wchar_t kX[] = L"..." "..." ;   /   const char kX[] = "..." ... ;
     out = {}
     no_comment = re.sub(r'//[^\n]*', '', src)
     for m in re.finditer(
@@ -37,9 +33,8 @@ def extract(path):
                 else:
                     b.append(ord(c) & 0xFF); i += 1
             if wide:
-                pass  # decoded per-char below instead
+                pass  
         if wide:
-            # rebuild wide: walk parts again emitting UTF-16LE units
             b = bytearray()
             for p in parts:
                 i = 0

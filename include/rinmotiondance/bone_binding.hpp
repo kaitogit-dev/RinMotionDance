@@ -7,14 +7,11 @@
 
 namespace rinmotiondance::mdl {
 
-// One external-parent selector, shared by playback, PMM and the edit dialog.
-// Slot zero represents the model root. The dialog edits a separate copy of
-// these records, including the active frame interval.
 struct BoneOrderEntry {
     std::int32_t boneIndex;
     std::uint32_t windowStart;
     std::uint32_t windowEnd;
-    std::int32_t linkedModel;  // -1 none, -2 ground, otherwise model slot
+    std::int32_t linkedModel;  
     std::int32_t linkedBone;
 };
 static_assert(std::is_trivially_copyable_v<BoneOrderEntry>);
@@ -42,4 +39,4 @@ inline void DetachBoneBindings(BoneOrderEntry* entries, std::size_t count,
     }
 }
 
-}  // namespace rinmotiondance::mdl
+}  

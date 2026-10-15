@@ -1,6 +1,3 @@
-// Typed D3DX effect calls shared by the host renderers.
-// The COM declaration handles x86/x64 dispatch; original VA/slot evidence is
-// retained in reports/audit10_mme_render.md and the owning call-site notes.
 #pragma once
 
 #include <cstring>
@@ -60,4 +57,4 @@ inline HRESULT OnResetDevice(void* effect) {
     return Effect(effect)->OnResetDevice();
 }
 
-} // namespace rinmotiondance::fx
+} 

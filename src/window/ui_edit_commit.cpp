@@ -1,53 +1,3 @@
-// ===========================================================================
-// VA 0x00463640 - EditCommit  (original: sub_463640, 0xB2A bytes)
-// VA 0x0044BEF0 - EditCommitTail  (original: sub_44BEF0)
-// VA 0x00464170 - EditSubclassProc  (original: sub_464170)
-// VA 0x0040EC90 - TrackbarSubclassProc  (original: sub_40EC90)
-// ===========================================================================
-// sub_464170 is the wndproc installed on the 29 numeric EDIT controls of
-// sub_466D20 (0x467BE4..0x46A8E7): on VK_RETURN it commits the edit
-// (sub_463640) and returns focus to the main window; on WM_KILLFOCUS it
-// commits with the newly focused window as the argument.  Everything else
-// forwards to the captured EDIT class proc at app+0xA08D0 (stored once, at
-// the first install site 0x467BD7 - all 29 controls share the class proc).
-//
-// sub_40EC90 is the wndproc installed on the 13 msctls_trackbar32 controls:
-// WM_LBUTTONUP merely refocuses the main window (keyboard shortcuts keep
-// working after a slider drag), everything forwards to the trackbar class
-// proc captured once at 0x4686E2 into app+0xA0CDC.
-//
-// sub_463640 dispatches per control id (argument = the edit's HWND):
-//   417  frame number  - atol -> app+0x980; >0x80000000 resets to 0/"0";
-//        0x432FA0 + PostViewRefresh tail
-//   461-466  center/rotation mirrors - parsed value scaled into the work
-//        record (647588..96 / 647540..48) and echoed into the paired
-//        trackbar (455..460) via TBM_SETPOS; RefreshRequest(-2) tail
-//   448  fov degrees -> app+647656, slider 447 echo, projection rebuild
-//        (PerspectiveFovLH fov*0.01745329238474369, aspect from the
-//        wrapper at +0x1D4EC, zn 1.0, zf 100000.0) + SetTransform slot 3;
-//        RefreshRequest(-1) tail
-//   478-485  light-accessory fields (gated on accessory != null; index
-//        byte app+647536 into the 0x9DD70 array): rgb 532/536/540 direct,
-//        direction 544/548/552 as deg*PI/180 (PI = 3.141592025756836 -
-//        the float-truncated literal), 556 direct, 485 clamps to [0,1]
-//        into +1184 and rewrites the edit text "%3.2f"; tail
-//        RefreshRequest(acc index)
-//   561  -> app+658732 = (10000-v)/100000, slider 560 echo, -3 tail
-//   506/511/516/521  morph values into the 136-stride morph records of the
-//        active model (slot app+0x910 into app+0x780; index at model+
-//        11676/80/84/88, records at model+9924, value at +48), sliders
-//        505/510/515/520 echo x100
-// Every path ends in sub_44BEF0, which additionally owns the camera/bone
-// position-rotation edits 544..550 (bone mode writes the 604-stride bone
-// record +320..328/+332 via the Z*X*Y euler composition and the dirty mark
-// at model+11672; camera mode writes app+820..828/784..792/657628) and
-// finishes with RefreshRequest(-1)+PostViewRefresh when it handled one.
-//
-// Reference: ../translated/MikuMikuDance/fcn_00463640.cpp (rough), live
-// IDA decompilation + disassembly of 0x463640/0x44BEF0/0x464170/0x40EC90
-// (the asm is authoritative for the subclass-proc slots: Hex-Rays prints
-// decoy indices for both Block+... reads).
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -67,34 +17,23 @@
 
 namespace rinmotiondance {
 
-// Dependencies still stubbed (stubs.cpp): RefreshAfterFrameApply frame-apply
-// refresh chain (real body: ui_frame_step.cpp), PushBoneEditUndo bone-edit
-// keyframe register.
-void RefreshAfterFrameApply(MMDApp* app);          // VA 0x00432FA0
-void PushBoneEditUndo(MMDApp* app);                       // VA 0x0042D6E0
-void RefreshRequest(int area);                     // VA 0x00440AC0 (ui_refresh)
+void RefreshAfterFrameApply(MMDApp* app);          
+void PushBoneEditUndo(MMDApp* app);                       
+void RefreshRequest(int area);                     
 
-// Deg->rad literal of 0x463640/0x44BEF0: dbl_52BB20 bits 0x3F91DF46A0000000
-// (also used by the projection rebuild at 0x4639D5).
 static constexpr double kDegToRad = 0.01745329238474369;
-// PI literal of the euler conversions (float-truncated 24-bit mantissa).
 static constexpr double kPiLit = 3.141592025756836;
 
 namespace {
 
-// Active model = slot array app+0x780 indexed by byte app+0x910.
 unsigned char* SlotModel(MMDApp* app) {
     return app->SelectedModel();
 }
 
-// Light accessory = array app+0x9DD70 indexed by byte app+0x9E170.
 mdl::AccessoryRecord* LightAccessory(MMDApp* app) {
     return app->AccessorySlot(app->SelectedAccessorySlot());
 }
 
-// Z*X*Y euler composition of the 547/548/549 bone-rotation commits:
-// D3DXMatrixRotationZ x rotX x rotY, result quaternion into the bone record
-// (+332 inside the 604-stride bone array).
 void ComposeEulerToBone(MMDApp* app, unsigned char* model, int sel) {
     d3dx::D3DXMATRIXF rot{};
     d3dx::D3DXMATRIXF tmp{};
@@ -110,18 +49,15 @@ void ComposeEulerToBone(MMDApp* app, unsigned char* model, int sel) {
     rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
 }
 
-}  // namespace
+}  
 
-// ---------------------------------------------------------------------------
-// VA 0x0044BEF0 - per-edit tail; owns ids 544..550 (see file header).
-// ---------------------------------------------------------------------------
 void CommitEditControlTail(MMDApp* app, HWND edit) {
     HWND base = app->FloatingWindow();
     if (base == nullptr)
         base = app->MainWindow();
     const bool cameraMode = app->CameraMode() != 0;
 
-    if (edit == GetDlgItem(base, panel::kReadoutPosXEdit)) {           // 0x44BF31
+    if (edit == GetDlgItem(base, panel::kReadoutPosXEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -141,7 +77,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutPosYEdit)) {           // 0x44BFE5
+    if (edit == GetDlgItem(base, panel::kReadoutPosYEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -161,7 +97,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutPosZEdit)) {           // 0x44C099
+    if (edit == GetDlgItem(base, panel::kReadoutPosZEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         double v = atof(text);
@@ -176,14 +112,14 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
             PostViewRefresh(app);
             return;
         }
-        if (app->CameraParentModel() >= 0)         // attached-camera mirror
+        if (app->CameraParentModel() >= 0)         
             v = -v;
         app->CameraPositionZ() = static_cast<float>(v);
         RefreshRequest(-1);
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutRotXEdit)) {           // 0x44C158
+    if (edit == GetDlgItem(base, panel::kReadoutRotXEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -213,7 +149,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutRotYEdit)) {           // 0x44C2C7
+    if (edit == GetDlgItem(base, panel::kReadoutRotYEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -227,8 +163,8 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
         if (sel >= 0) {
             PushBoneEditUndo(app);
-            app->state.eulerX =      // re-convert stored
-                static_cast<float>(                        // degrees
+            app->state.eulerX =      
+                static_cast<float>(                        
                     static_cast<double>(
                         app->state.eulerX) *
                     kPiLit / 180.0);
@@ -244,7 +180,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutRotZEdit)) {           // 0x44C434
+    if (edit == GetDlgItem(base, panel::kReadoutRotZEdit)) {           
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -274,7 +210,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    if (edit == GetDlgItem(base, panel::kReadoutDistEdit) && cameraMode) {  // 0x44C561
+    if (edit == GetDlgItem(base, panel::kReadoutDistEdit) && cameraMode) {  
         char text[256];
         GetWindowTextA(edit, text, 100);
         const double v = atof(text);
@@ -283,18 +219,15 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         PostViewRefresh(app);
         return;
     }
-    PostViewRefresh(app);                           // 0x44C5B1 fallthrough
+    PostViewRefresh(app);                           
 }
 
-// ---------------------------------------------------------------------------
-// VA 0x00463640 - edit commit (see file header for the per-id behaviour).
-// ---------------------------------------------------------------------------
 void CommitEditControl(MMDApp* app, HWND edit) {
     auto& s = *app;
     const HWND main = s.MainWindow();
-    s.state.enterKeyState = 1;    // 0x463672 dword store
+    s.state.enterKeyState = 1;    
 
-    if (edit == GetDlgItem(main, panel::kCurrentFrameEdit)) {            // frame number
+    if (edit == GetDlgItem(main, panel::kCurrentFrameEdit)) {            
         char text[256];
         GetWindowTextA(edit, text, 8);
         const long v = atol(text);
@@ -308,7 +241,7 @@ void CommitEditControl(MMDApp* app, HWND edit) {
         CommitEditControlTail(app, edit);
         return;
     }
-    if (edit == GetDlgItem(main, panel::kLightColorEditR) ||            // center x
+    if (edit == GetDlgItem(main, panel::kLightColorEditR) ||            
         edit == GetDlgItem(main, panel::kLightColorEditG) || edit == GetDlgItem(main, panel::kLightColorEditB)) {
         char text[256];
         GetWindowTextA(edit, text, 8);
@@ -322,7 +255,7 @@ void CommitEditControl(MMDApp* app, HWND edit) {
         CommitEditControlTail(app, edit);
         return;
     }
-    if (edit == GetDlgItem(main, panel::kLightDirEditX) ||            // rot x/y/z mirror
+    if (edit == GetDlgItem(main, panel::kLightDirEditX) ||            
         edit == GetDlgItem(main, panel::kLightDirEditY) || edit == GetDlgItem(main, panel::kLightDirEditZ)) {
         char text[256];
         GetWindowTextA(edit, text, 8);
@@ -336,7 +269,7 @@ void CommitEditControl(MMDApp* app, HWND edit) {
         CommitEditControlTail(app, edit);
         return;
     }
-    if (edit == GetDlgItem(main, panel::kFovEdit)) {            // fov + projection
+    if (edit == GetDlgItem(main, panel::kFovEdit)) {            
         char text[256];
         GetWindowTextA(edit, text, 8);
         const float v = static_cast<float>(atol(text));
@@ -357,7 +290,6 @@ void CommitEditControl(MMDApp* app, HWND edit) {
         CommitEditControlTail(app, edit);
         return;
     }
-    // 478..485: light-accessory fields (id = 0x1DE..0x1E5).
     {
         mdl::AccessoryRecord* acc = LightAccessory(app);
         int lightId = 0;
@@ -380,8 +312,7 @@ void CommitEditControl(MMDApp* app, HWND edit) {
                     static_cast<float>(v / 180.0 * kPiLit);
             } else if (lightId == 484) {
                 acc->scale = static_cast<float>(v);
-            } else {                                 // 485: clamp + rewrite
-                // v7 = 0; if (v < 0 || (v7 = 1, v > 1)) v = v7
+            } else {                                 
                 double out = v;
                 if (v < 0.0)
                     out = 0.0;
@@ -400,17 +331,17 @@ void CommitEditControl(MMDApp* app, HWND edit) {
             CommitEditControlTail(app, edit);
             return;
         }
-        if (lightId != 0) {                          // acc == null: tail only
+        if (lightId != 0) {                          
             RefreshRequest(s.SelectedAccessorySlot());
             CommitEditControlTail(app, edit);
             return;
         }
     }
-    if (edit == GetDlgItem(main, panel::kSelfShadowRangeEdit)) {            // 0x231 shadow range
+    if (edit == GetDlgItem(main, panel::kSelfShadowRangeEdit)) {            
         char text[256];
         GetWindowTextA(edit, text, 8);
         const double v = atof(text);
-        s.state.physicsInterval =   // 0xA0D2C
+        s.state.physicsInterval =   
             static_cast<float>((10000.0 - v) / 100000.0);
         SendMessageA(GetDlgItem(main, panel::kSelfShadowRangeSlider), TBM_SETPOS, 1,
                      static_cast<LPARAM>(static_cast<int>(v)));
@@ -418,9 +349,6 @@ void CommitEditControl(MMDApp* app, HWND edit) {
         CommitEditControlTail(app, edit);
         return;
     }
-    // 506/511/516/521: morph values of the active model.  The four controls
-    // address the four selector slots in order; their control IDs are spaced
-    // by five, but their model fields are consecutive.
     {
         int morphEdit = 0;
         if (edit == GetDlgItem(main, panel::kMorphEdit0)) morphEdit = 506;
@@ -444,17 +372,14 @@ void CommitEditControl(MMDApp* app, HWND edit) {
             return;
         }
     }
-    CommitEditControlTail(app, edit);                           // default tail
+    CommitEditControlTail(app, edit);                           
 }
 
-// ---------------------------------------------------------------------------
-// VA 0x00464170 - EDIT subclass proc.
-// ---------------------------------------------------------------------------
 LRESULT CALLBACK EditSubclassProc(HWND hWnd, UINT Msg, WPARAM wParam,
                                   LPARAM lParam) {
     MMDApp* app = g_Block;
     if (Msg == WM_KEYDOWN) {
-        if (wParam == 13) {                          // VK_RETURN
+        if (wParam == 13) {                          
             CommitEditControl(app, hWnd);
             SetFocus(app->MainWindow());
             return 0;
@@ -467,9 +392,6 @@ LRESULT CALLBACK EditSubclassProc(HWND hWnd, UINT Msg, WPARAM wParam,
         hWnd, Msg, wParam, lParam);
 }
 
-// ---------------------------------------------------------------------------
-// VA 0x0040EC90 - trackbar subclass proc.
-// ---------------------------------------------------------------------------
 LRESULT CALLBACK TrackbarSubclassProc(HWND hWnd, UINT Msg, WPARAM wParam,
                                       LPARAM lParam) {
     MMDApp* app = g_Block;
@@ -480,13 +402,6 @@ LRESULT CALLBACK TrackbarSubclassProc(HWND hWnd, UINT Msg, WPARAM wParam,
         hWnd, Msg, wParam, lParam);
 }
 
-// ---------------------------------------------------------------------------
-// The 42 SetWindowLongPtrA(GWLP_WNDPROC) install sites of sub_466D20
-// (0x467BE4..0x46A8E7), in original per-site order.  The first EDIT (417)
-// additionally captures the EDIT class proc into app+0xA08D0 (0x467BD7) and
-// the first trackbar (447) captures the trackbar class proc into
-// app+0xA0CDC (0x4686E2); every later site only installs.
-// ---------------------------------------------------------------------------
 void InstallControlSubclasses(MMDApp* app, HWND hwnd) {
     static const int kEditIds[] = {
         417, 448, 461, 462, 463, 464, 465, 466,
@@ -500,13 +415,13 @@ void InstallControlSubclasses(MMDApp* app, HWND hwnd) {
 
     HWND firstEdit = GetDlgItem(hwnd, panel::kCurrentFrameEdit);
     app->OriginalEditProc() = reinterpret_cast<WNDPROC>(
-        GetWindowLongPtrA(firstEdit, GWLP_WNDPROC));     // 0x467BD7
+        GetWindowLongPtrA(firstEdit, GWLP_WNDPROC));     
     SetWindowLongPtrA(firstEdit, GWLP_WNDPROC,
                    reinterpret_cast<LONG_PTR>(EditSubclassProc));
 
     HWND firstTrack = GetDlgItem(hwnd, panel::kFovSlider);
     app->OriginalTrackbarProc() = reinterpret_cast<WNDPROC>(
-        GetWindowLongPtrA(firstTrack, GWLP_WNDPROC));    // 0x4686E2
+        GetWindowLongPtrA(firstTrack, GWLP_WNDPROC));    
     SetWindowLongPtrA(firstTrack, GWLP_WNDPROC,
                    reinterpret_cast<LONG_PTR>(TrackbarSubclassProc));
 
@@ -560,4 +475,4 @@ void InstallControlSubclass(MMDApp* app, HWND control, int id) {
     }
 }
 
-}  // namespace rinmotiondance
+}  

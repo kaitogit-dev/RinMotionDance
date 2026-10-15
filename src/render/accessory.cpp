@@ -1,11 +1,3 @@
-// ===========================================================================
-// Accessory object, loader and render helpers
-//   0x00460B30  application slot/UI loader
-//   0x004C4A10  fixed-function renderer
-//   0x004C52D0  shadow-map renderer
-//   0x004C55C0  effect renderer
-//   0x004C5F40  .x/.vac object loader
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -30,16 +22,12 @@
 
 namespace rinmotiondance {
 void RefreshRequest(int area);
-void PostLanguageSweep2(MMDApp* app);  // VA 0x0040D070, was declared here as
-                                       // 0x40D070 (real body: ui_view_refresh.cpp)
+void PostLanguageSweep2(MMDApp* app);  
 
 namespace {
 
 using Matrix = d3dx::D3DXMATRIXF;
 
-// Effect calls go through the shared slot-numbered helpers in
-// fx_slots.hpp; the old byte-offset spells (232/88/128/152/156/252/256/
-// 264/268) were x86-only and silently landed on halved slots on x64.
 
 void Identity(Matrix* value) {
     std::memset(value, 0, sizeof(*value));
@@ -50,12 +38,9 @@ void Identity(Matrix* value) {
 void ReleaseCom(void* object) {
     if (object == nullptr)
         return;
-    reinterpret_cast<IUnknown*>(object)->Release();  // vtable slot 2
+    reinterpret_cast<IUnknown*>(object)->Release();  
 }
 
-// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
-// valid and inlines away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void TraceAccessoryLoadStage(const char* stage, const void* value) {
     const char* directory = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
@@ -104,8 +89,6 @@ void AccessoryPlacement(MMDApp* app, void* accessory, Matrix* world) {
     api.multiply(world, world, &part);
 
     const int modelSlot = mdl::Accessory(accessory)->parentModel;
-    // x64 0x7FF7CB4C19F3 只判 parentModel == -1（cmp dword[r10+240h],-1），
-    // 无上界检查；这里的上界取槽容量防止越界索引槽数组
     if (modelSlot < 0 || modelSlot >= kModelSlotCount)
         return;
     auto* model = app->ModelSlot(modelSlot);
@@ -120,13 +103,6 @@ void AccessoryPlacement(MMDApp* app, void* accessory, Matrix* world) {
     api.multiply(world, world, reinterpret_cast<Matrix*>(bone->matInit));
 }
 
-// Faithful transcription of sub_4C4A10's per-material texture setup
-// (0x4C4D86..0x4C4FFC).  The original runs NO preamble here - the device
-// cascade is restored by the post-draw reset in RenderAccessoryFixedOne.
-// Sphere/sub textures sample via CAMERASPACENORMAL (0x10000) through the
-// half-texel matrix diag(0.5, -0.5, 0) + translation (0.5, 0.5) built once
-// in the prologue; the old reconstruction used CAMERASPACEREFLECTIONVECTOR
-// and no transform.
 void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
                            IDirect3DDevice9* device, DWORD material,
                            IDirect3DTexture9* screenTexture) {
@@ -139,10 +115,6 @@ void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
         ? paths[material].sphere
         : L"";
 
-    // x64 sub_7FF7CB4FD350 序言自 rdata 0x7FF7CB54A4F0 整体加载的常量矩阵：
-    // diag(0.5, -0.5, 0) 加平移 _41=0.5、_42=0.5（COUNT2 下 u'=0.5u+0.5、
-    // v'=-0.5v+0.5）；缺平移会差半单位并出现负坐标回绕。类型 4/5 写
-    // D3DTS_TEXTURE1 用的同一矩阵（0x...d9d0 / 0x...daa0）。
     D3DMATRIX sphereTexel{};
     sphereTexel._11 = 0.5f;
     sphereTexel._22 = -0.5f;
@@ -152,7 +124,7 @@ void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
     sphereTexel._44 = 1.0f;
 
     switch (type) {
-    case 1:  // 0x4C4D94: sphere modulate
+    case 1:  
         device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
         device->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
                                      D3DTTFF_COUNT2);
@@ -160,7 +132,7 @@ void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
         device->SetTransform(D3DTS_TEXTURE0, &sphereTexel);
         device->SetTexture(0, CachedTexture(sub, first));
         break;
-    case 2:  // 0x4C4E2A: sphere add
+    case 2:  
         device->SetTransform(D3DTS_TEXTURE0, &sphereTexel);
         device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_ADD);
         device->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
@@ -168,11 +140,11 @@ void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
         device->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0x10000);
         device->SetTexture(0, CachedTexture(sub, first));
         break;
-    case 3:  // 0x4C4EBC: screen texture
+    case 3:  
         device->SetTexture(0, screenTexture);
         break;
-    case 4:  // 0x4C4EE0: sub texture, stage-1 modulate
-    case 5:  // 0x4C4F25: sub texture, stage-1 add
+    case 4:  
+    case 5:  
         device->SetTexture(0, CachedTexture(sub, first));
         device->SetTransform(D3DTS_TEXTURE1, &sphereTexel);
         device->SetTextureStageState(1, D3DTSS_COLOROP,
@@ -182,15 +154,12 @@ void ConfigureFixedTexture(void* accessory, D3DRenderer* sub,
         device->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 0x10000);
         device->SetTexture(1, CachedTexture(sub, second));
         break;
-    default:  // 0x4C4FE6: plain texture
+    default:  
         device->SetTexture(0, CachedTexture(sub, first));
         break;
     }
 }
 
-// 0x4C505F..0x4C50D9: after every DrawSubset the original restores the
-// fixed cascade (stage 0 back to MODULATE/passthrough, stage 1 disabled)
-// so the next material - and later passes - start from a known state.
 void ResetAccessoryTextureStages(IDirect3DDevice9* device) {
     device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
     device->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
@@ -206,10 +175,6 @@ IDirect3DTexture9* AccessoryScreenTexture(MMDApp* app) {
         : app->CaptureTexture();
 }
 
-// The original order lookup dereferences the slot pointer directly; the
-// plain null check keeps the empty slots out of the walk exactly like the
-// reachable original behaviour (same form Wave1-C left in
-// accessory_paste.cpp's ApplyAccessoryTrack).
 void* FindAccessoryByOrder(MMDApp* app, int order) {
     for (int slot = 0; slot < 255; ++slot) {
         void* accessory = app->AccessorySlot(slot);
@@ -278,8 +243,6 @@ void RenderAccessoryFixedOne(MMDApp* app, void* accessory,
     } else {
         for (DWORD i = 0; i < count; ++i) {
             ++mdl::Accessory(accessory)->currentMaterial;
-            // 0x4C4D86: texture states first, then the material copy
-            // (alpha scaled by +1184) immediately before the subset draw.
             ConfigureFixedTexture(accessory, sub, device, i,
                                   AccessoryScreenTexture(app));
             D3DMATERIAL9 material = materials[i];
@@ -290,8 +253,6 @@ void RenderAccessoryFixedOne(MMDApp* app, void* accessory,
         }
     }
     mdl::Accessory(accessory)->currentMaterial = -1;
-    // 0x4C50FD..0x4C5141: color write off, world restore - and no texture
-    // unbinding (the original leaves the last bindings in place).
     device->SetRenderState(static_cast<D3DRENDERSTATETYPE>(143), FALSE);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&base));
@@ -402,25 +363,15 @@ bool LoadOneTexture(D3DRenderer* sub, void* accessory, DWORD material,
     return LoadTextureShared(wrapperBytes, destination) != 0;
 }
 
-// ---- "Cannot find xfile!!" (x64 sub_7FF7CB4FC560 not-found paths) -------
-// 0x7FF7CB551448: JP caption "アクセサリ読込"; 0x7FF7CB552858: JP text
-// "xファイルが見つかりません" (SJIS, byte-exact).
 constexpr char kCaptionLoadAccessoryJp[] =
     "\x83\x41\x83\x4E\x83\x5A\x83\x54\x83\x8A\x93\xC7\x8D\x9E";
 constexpr char kMsgCannotFindXfileJp[] =
     "x\x83\x74\x83\x40\x83\x43\x83\x8B\x82\xAA\x8C\xA9\x82\xC2\x82\xA9"
     "\x82\xE8\x82\xDC\x82\xB9\x82\xF1";
-// 0x7FF7CB551458: JP twin of the caller's "This is not x_file." text
-// ("正しいｘファイルではありません").
 constexpr char kMsgNotXFileJp[] =
     "\x90\xB3\x82\xB5\x82\xA2\x82\x98\x83\x74\x83\x40\x83\x43\x83\x8B"
     "\x82\xC5\x82\xCD\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1";
 
-// The original object loader pops this box (uType 0) on every not-found
-// path - empty resolved path, missing directory separator, and a failed
-// open of the resolved file - before returning 0 to the caller (which then
-// adds its own "This is not x_file." box, mirroring the double prompt of
-// the original).
 void ShowCannotFindXfile(MMDApp* app) {
     const bool english = app->state.englishUI != 0;
     MessageBoxA(static_cast<HWND>(app->Hwnd()),
@@ -433,18 +384,14 @@ void ShowCannotFindXfile(MMDApp* app) {
                 MB_OK);
 }
 
-}  // namespace
+}  
 
-// VA 0x004C4700 - moved out of the anonymous namespace so the PMM loaders
-// (0x459221 / 0x4541D9) and the shutdown chain (0x462F9C / 0x46324D) bind to
-// this one definition instead of the old no-op stub.
 void DisposeAccessory(void* accessory) {
     if (accessory == nullptr)
         return;
     mdl::AccessoryRecord& record = *mdl::Accessory(accessory);
     ReleaseCom(record.mesh);
     record.mesh = nullptr;
-    // Preserve the original materials, texture types, texture paths order.
     ::operator delete(record.materials);
     record.materials = nullptr;
     ::operator delete(record.textureTypes);
@@ -459,7 +406,7 @@ bool LoadAccessoryObject(MMDApp* app, void* accessory, const wchar_t* path) {
     PathResolutionWorkspace& paths = app->PathWorkspace();
     const wchar_t* resolved = ResolveUserFilePath(paths, path);
     if (resolved[0] == L'\0') {
-        ShowCannotFindXfile(app);  // x64 sub_7FF7CB4FC5CC path
+        ShowCannotFindXfile(app);  
         return false;
     }
 
@@ -467,7 +414,7 @@ bool LoadAccessoryObject(MMDApp* app, void* accessory, const wchar_t* path) {
     wcscpy_s(source, resolved);
     wchar_t* tail = wcsrchr(source, L'\\');
     if (tail == nullptr) {
-        ShowCannotFindXfile(app);  // x64 sub_7FF7CB4FC768 path
+        ShowCannotFindXfile(app);  
         return false;
     }
     mdl::AccessoryRecord& record = *mdl::Accessory(accessory);
@@ -477,8 +424,6 @@ bool LoadAccessoryObject(MMDApp* app, void* accessory, const wchar_t* path) {
     SetCurrentDirectoryW(source);
     wcscpy_s(record.sourcePath, resolved);
 
-    // The original opens the resolved file before the .vac split; a failed
-    // open is the third "Cannot find xfile!!" path (x64 sub_7FF7CB4FC71F).
     FILE* probe = nullptr;
     if (_wfopen_s(&probe, resolved, L"r") != 0 || probe == nullptr) {
         ShowCannotFindXfile(app);
@@ -598,13 +543,13 @@ void SetEditFloat(HWND hwnd, int id, const char* format, float value) {
 
 
 void DeleteAccessory(mdl::AccessoryRecord* accessory,
-                     int releaseObject) {                              // 0x40A6F0
+                     int releaseObject) {                              
     DisposeAccessory(accessory);
     if ((releaseObject & 1) != 0)
         ::operator delete(accessory);
 }
 
-void LoadAccessoryFile(const wchar_t* path) {                   // 0x460B30
+void LoadAccessoryFile(const wchar_t* path) {                   
     MMDApp* app = g_Block;
     if (app == nullptr || path == nullptr)
         return;
@@ -618,7 +563,7 @@ void LoadAccessoryFile(const wchar_t* path) {                   // 0x460B30
             "\x83\x5a\x83\x54\x83\x8a\x82\xcc\x8d\xc5\x91\xe5\x90\x94"
             "\x82\xcd%d\x8c\xc2\x82\xdc\x82\xc5\x82\xc5\x82\xb7";
         static const char kJpAccTitle[] =
-            "\x83\x41\x83\x4e\x83\x5a\x83\x54\x83\x8a\x93\xc7\x8d\x9e";  // アクセサリ読込
+            "\x83\x41\x83\x4e\x83\x5a\x83\x54\x83\x8a\x93\xc7\x8d\x9e";  
         const bool english = app->EnglishUI() != 0;
         char text[256];
         sprintf_s(text,
@@ -701,11 +646,7 @@ void LoadAccessoryFile(const wchar_t* path) {                   // 0x460B30
     PostLanguageSweep2(app);
 }
 
-// VA 0x00413CB0 - register the accessory's current state at
-// one frame into its 10000-record key list (visible/shadow/parent fields +
-// pos/rot/scale/opacity), the same walk/overwrite/splice insert as the
-// other registrars.
-void RegisterAccessoryKey(MMDApp* app, int frameArg, int slot) {  // 0x413CB0
+void RegisterAccessoryKey(MMDApp* app, int frameArg, int slot) {  
     if (app == nullptr || slot < 0 || slot >= 255)
         return;
     auto* object = reinterpret_cast<unsigned char*>(app->AccessorySlot(slot));
@@ -773,7 +714,7 @@ void RegisterAccessoryKey(MMDApp* app, int frameArg, int slot) {  // 0x413CB0
         app->LastRegisteredFrame() = frame;
 }
 
-void RenderAccessoriesFixed(MMDApp* app) {                      // 0x4C4A10
+void RenderAccessoriesFixed(MMDApp* app) {                      
     RenderAccessoriesFixedRange(app, 0, 255);
 }
 
@@ -819,16 +760,11 @@ void RenderAccessoriesProjectedGroundShadowGeometry(MMDApp* app) {
     const D3DMATERIAL9 shadowMaterial = app->ProjectedShadowMaterial();
     device->SetMaterial(&shadowMaterial);
     device->SetTexture(0, app->ProjectedShadowRestoreTexture());
-    // x64 0x7FF7CB4C06FF：配件投射循环结束、SetMaterial/SetTexture 复位
-    // （0x7FF7CB4C06A5..0x7FF7CB4C06DD）之后、模型影走查（0x7FF7CB4C0710..）
-    // 之前，按"transparent ground shadow(&T)"开关（app+0x9FCA2）重写
-    // ALPHABLENDENABLE；pass 起始段不写 RS(27)。该字节即 PMM 存档里的
-    // projectedShadowBlendEnabled（保存点 0x7FF7CB498408）。
     device->SetRenderState(D3DRS_ALPHABLENDENABLE,
                            app->ProjectedShadowBlendEnabled());
 }
 
-void RenderAccessoriesShadow(MMDApp* app) {                     // 0x4C52D0
+void RenderAccessoriesShadow(MMDApp* app) {                     
     D3DRenderer* sub = app->Renderer();
     auto* device = sub->device;
     void* effect = sub->effect;
@@ -867,7 +803,7 @@ void RenderAccessoriesShadow(MMDApp* app) {                     // 0x4C52D0
     }
 }
 
-void RenderAccessoriesEffect(MMDApp* app) {                     // 0x4C55C0
+void RenderAccessoriesEffect(MMDApp* app) {                     
     RenderAccessoriesEffectRange(app, 0, 255);
 }
 
@@ -879,13 +815,6 @@ void RenderAccessoriesEffectRange(MMDApp* app, int firstOrder,
     if (device == nullptr || effect == nullptr)
         return;
     const float* light = reinterpret_cast<const float*>(&app->SceneLight());
-    // 0x4C593B..0x4C594F: the effect accessory renderer does not feed the
-    // raw ambient/emissive sum to EgColor.  Its RGB channels are attenuated
-    // by app+0xA0CF0 (the projected/self-shadow colour factor copied into
-    // the caller's stack immediately before sub_4C55C0).  Omitting this
-    // factor makes additive light meshes and screen/reflection accessories
-    // accumulate far too brightly, which is especially obvious in the
-    // recursive mirror of sample_v2.pmm.
     const float edgeFactor = app->ProjectedShadowAmbientIntensity();
     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     SetAccessoryLight(app, device, true);
@@ -920,11 +849,6 @@ void RenderAccessoriesEffectRange(MMDApp* app, int firstOrder,
         const float inv = 1.0f / (mdl::Accessory(accessory)->scale * 10.0f);
         d3dx::Get().scaling(&inverseScale, inv, inv, inv);
         d3dx::Get().multiply(&value, &inverseScale, &world);
-        // x64 0x7FF7CB4FE29F: "matRotate" goes through slot 39, GetMatrix -
-        // the original reads the parameter (set from ViewRotationTransform
-        // by the effect pass head, model_renderers.cpp 0x7FF7CB4C22FD)
-        // back into the buffer between the two multiplies; it is not a
-        // transpose write (SetMatrixTranspose is the untouched slot 44).
         fx::GetMatrix(effect, "matRotate", &inverseScale);
         d3dx::Get().multiply(&value, &value, &inverseScale);
         fx::SetMatrix(effect, "matWRotate", &value);
@@ -978,4 +902,4 @@ void RenderAccessoriesEffectRange(MMDApp* app, int firstOrder,
     SetAccessoryLight(app, device, false);
 }
 
-}  // namespace rinmotiondance
+}  

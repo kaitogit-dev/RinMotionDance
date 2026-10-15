@@ -1,5 +1,3 @@
-// Include the implementation to exercise its private FindFrame directly,
-// without adding a production test API or requiring an image/D3D device.
 #include "../third_party/mmeffect/src/mmeffect/anime_texture.cpp"
 
 #include <cmath>
@@ -68,12 +66,9 @@ int main()
         Check(animation, 1.0, plays == 1 ? 2 : 0);
         Check(animation, 1.25, plays == 1 ? 2 : 1);
         Check(animation, 2.0, plays == 1 || plays == 2 ? 2 : 0);
-        // Keep the quotient within int's range: the original converts to
-        // signed int before its unsigned comparison (cvttsd2si then jb).
         Check(animation, 2147483646.25, plays == 1 || plays == 2 ? 2 : 1);
         Check(animation, 2147483647.0,
               plays == 1 || plays == 2 || plays == 0x7fffffffu ? 2 : 0);
-        // Absolute-time seeking must also work backwards after a held frame.
         Check(animation, 0.25, 1);
     }
     Timeline shifted(0x80000000u);

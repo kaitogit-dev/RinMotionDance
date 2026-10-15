@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
-# Regenerate include/rinmotiondance/layout_pins.hpp into the compact
-# RINMOTIONDANCE_APP_OFF macro-table form (Wave5-A).  Parses the current
-# hand-written pin wall, applies the structural member-merge renames,
-# sorts the x86 wall by offset (== struct order) and re-emits it.
-# Verifies that the (member, offset) multiset is preserved 1:1.
 import re
 import sys
 
 SRC = "include/rinmotiondance/layout_pins.hpp"
 
-# structural renames (mechanical ones were already applied repo-wide)
 EXPR_FIXES = {
     "v9da24": "copiedBoneCount",
     "v9da24[8]": "clipboardCounts.accessories",
     "v9e178": "lightDirection[1]",
     "v9e17c": "lightDirection[2]",
-    "lightDirection": "lightDirection",  # array base keeps its pin
+    "lightDirection": "lightDirection",  
     "v9e1a8": "lightColor[1]",
     "v9e1ac": "lightColor[2]",
     "lightColor": "lightColor",
@@ -38,7 +32,6 @@ delta_re = re.compile(
     r"offsetof\(MMDAppState,\s*(\w+)\)\s*==\s*(\d+),")
 
 lines = text.splitlines()
-# split at the first column-0 '#else' -> x86 side above, x64 below
 split = next(i for i, l in enumerate(lines) if l.strip() == "#else")
 
 x86, x64 = [], []
@@ -118,7 +111,6 @@ out.append("""
 with open(SRC, "w", encoding="utf-8", newline="\n") as f:
     f.write("\n".join(out))
 
-# ---- verification: re-parse the generated file ---------------------------
 with open(SRC, encoding="utf-8") as f:
     gen = f.read()
 glines = gen.splitlines()

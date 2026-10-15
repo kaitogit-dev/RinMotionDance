@@ -40,8 +40,6 @@ int main() {
             for (bool rotate : {false, true}) {
                 accessory = initial;
                 mdl::AccessoryRecord expected = initial;
-                // These fixtures have exact final results under both x86 and
-                // x64 arithmetic, isolating field selection from rounding.
                 if (rotate) expected.rotation[axis] += dy / 50.0f;
                 else expected.position[axis] -= dy / 20.0f;
                 if (rotate) ModeAngleAdjust(app.get(), axis);

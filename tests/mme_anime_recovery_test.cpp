@@ -1,6 +1,3 @@
-// Exercise the real SetFrame and device-loss/reset walks. Only the virtual
-// texture allocator is replaced, so allocation attempts are observable without
-// depending on GPU allocation failure or dereferencing a lost texture.
 #include "../third_party/mmeffect/src/mmeffect/anime_texture.cpp"
 #include <cstdio>
 
@@ -37,7 +34,6 @@ void CheckRecovery() {
     mme::MmeAnimatedTextureSet set;
     set.impl = &impl;
 
-    // Texture loss does not transfer ownership of recovery to frame updates.
     mme::MmeAnimeOnDeviceLost(&set);
     animation.SetFrame(0.0);
     animation.SetFrame(0.5);
@@ -59,7 +55,7 @@ void CheckRecovery() {
     animation.SetFrame(0.0);
     Check(animation.CurrentFrame() == 0, "same-time frame not selected after reset");
     Check(animation.allocations == 2, "same-time replay allocated a texture");
-    set.impl = nullptr; // fixture entries and animation are stack-owned
+    set.impl = nullptr; 
 }
 }
 

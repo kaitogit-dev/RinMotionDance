@@ -1,39 +1,3 @@
-// ===========================================================================
-// Bone-drag stage of the frame driver (VA region 0x475A6E..0x477220)
-// ===========================================================================
-// When a drag is active and a model/bone is selected, modes 1..6 of the
-// SECOND-stage mode field (app+844; the first-stage dispatch at 0x46B121
-// reads app+836) are reinterpreted as bone rotation:
-//   mode 1 : rotate around the camera-space X axis
-//   mode 2 : around the camera-space Y axis
-//   mode 3 : view-plane rotation - the delta of atan2(dx,dy) between the
-//            drag origin->previous and origin->current mouse vectors,
-//            wrapped to +-6.28 rad
-//   modes 4/5/6 : around the selected bone's local axes (columns of the
-//            bone matrix at +0xB4 in "direct" mode app+650676==1, else the
-//            basis built by 0x40E670)
-// The axis is transformed into the bone's frame by the rows of the bone
-// matrix (+0xB4/+0xC4/+0xD4) and a delta quaternion (sin/cos of the scaled
-// drag angle; 0x476D6D/0x476DA3 contain no additional half-angle multiply)
-// is post-multiplied onto the bone's
-// rotation quaternion at +0x14C via D3DXQuaternionMultiply, after setting
-// the per-bone dirty flag (model+11672 array).
-//
-// Scale chain (doubles in .data, verified from the instruction stream):
-//   base angle = mouse delta * 0.005   (dbl 0x52E9C0)
-//   selector A (app+36==3)  -> *5.0    (dbl 0x52A270, coarse)
-//   selector B (app+192==3) -> *0.1    (dbl 0x52BEA8, fine)
-//   mode 3 wrap constants +-6.28       (dbl 0x52E8E0 / 0x52E8E8)
-//   accessory/light drags   *0.01      (dbl 0x52E9C8)
-//
-// When app+658292 != 0 the same modes edit records instead of the bone:
-//   accessory (app+650420==0): records at app+658300, stride 0xAC, fields
-//     +0x40/+0x44/+0x48, "%3.2f" echo to edits 715/716/717 (0x2CB..0x2CD);
-//   otherwise: records at app+658480, stride 0x8C, fields +0x30/+0x34/+0x38,
-//     echo to edits 754/755/756 (0x2F2..0x2F4).
-// The multi-selection propagation loop is ported below from
-// 0x476E42..0x477257, including its selected-root filter.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -52,11 +16,11 @@
 namespace rinmotiondance {
 namespace {
 
-constexpr double kAngBase = 0.004999999888241291; // dbl 0x52E9C0
-constexpr double kCoarse = 5.0;       // dbl 0x52A270
-constexpr double kFine = 0.10000000149011612; // dbl 0x52BEA8 (0.1f image)
-constexpr double kWrap = 6.28;        // dbl 0x52E8E8 (+) / 0x52E8E0 (-)
-constexpr double kAccDrag = 0.01;     // dbl 0x52E9C8
+constexpr double kAngBase = 0.004999999888241291; 
+constexpr double kCoarse = 5.0;       
+constexpr double kFine = 0.10000000149011612; 
+constexpr double kWrap = 6.28;        
+constexpr double kAccDrag = 0.01;     
 
 float OriginalSinTimes(float angle, float factor) {
 #if defined(_M_IX86)
@@ -90,15 +54,13 @@ float OriginalCos(float angle) {
 #endif
 }
 
-// SJIS bone-name needles (.rdata 0x52B7F0..0x52B81C); memcmp lengths in the
-// original include the NUL byte.
-const char kNeedleStrstr[] = "\x8E\x77";                    // 0x52B7F0
-const char kNameR1[] = "\x89\x45\x8E\xE8\x8E\xF1";          // 0x52B7F4 (7)
-const char kNameR2[] = "\x89\x45\x82\xD0\x82\xB6";          // 0x52B7FC (7)
-const char kNameR3[] = "\x89\x45\x98\x72";                  // 0x52B804 (5)
-const char kNameL1[] = "\x8D\xB6\x8E\xE8\x8E\xF1";          // 0x52B80C (7)
-const char kNameL2[] = "\x8D\xB6\x82\xD0\x82\xB6";          // 0x52B814 (7)
-const char kNameL3[] = "\x8D\xB6\x98\x72";                  // 0x52B81C (5)
+const char kNeedleStrstr[] = "\x8E\x77";                    
+const char kNameR1[] = "\x89\x45\x8E\xE8\x8E\xF1";          
+const char kNameR2[] = "\x89\x45\x82\xD0\x82\xB6";          
+const char kNameR3[] = "\x89\x45\x98\x72";                  
+const char kNameL1[] = "\x8D\xB6\x8E\xE8\x8E\xF1";          
+const char kNameL2[] = "\x8D\xB6\x82\xD0\x82\xB6";          
+const char kNameL3[] = "\x8D\xB6\x98\x72";                  
 
 float* Vec3Normalize(float v[3]) {
     return d3dx::Get().vec3Normalize(v, v);
@@ -178,8 +140,6 @@ bool EditModeRecord(MMDApp* app, int mode) {
     if (mode >= 4 && mode <= 6) {
         const int axis = mode - 4;
         if (app->state.physicsEditorJointPage != 0) {
-            // Physics-editor joint page: drag edits the joint rotation
-            // (dialog edits 754..756).
             auto* joints =
                 static_cast<rinmotiondance::mdl::JointRecord*>(
                     app->state.jointScratchArray);
@@ -192,7 +152,6 @@ bool EditModeRecord(MMDApp* app, int mode) {
                     value / g_AnglePiTruncated * g_AngleDegreesScale);
             }
         } else {
-            // Rigid-body page: drag edits the body rotation (715..717).
             auto* bodies =
                 static_cast<rinmotiondance::mdl::RigidRecord*>(
                     app->state.rigidScratchArray);
@@ -212,7 +171,6 @@ bool EditModeRecord(MMDApp* app, int mode) {
         const int axis = mode - 10;
         constexpr double kStep = 0.05000000074505806;
         if (app->state.physicsEditorJointPage != 0) {
-            // Joint position drag (744..746).
             auto* joints =
                 static_cast<rinmotiondance::mdl::JointRecord*>(
                     app->state.jointScratchArray);
@@ -223,8 +181,6 @@ bool EditModeRecord(MMDApp* app, int mode) {
                 EchoRecord(dialog, 744 + axis, "%5.4f", value);
             }
         } else {
-            // Rigid body: shift-drag scales the shape size (709..711),
-            // plain drag moves the body (712..714).
             auto* bodies =
                 static_cast<rinmotiondance::mdl::RigidRecord*>(
                     app->state.rigidScratchArray);
@@ -256,9 +212,9 @@ void ApplyScreenPlaneBoneMove(MMDApp* app, unsigned char* model, int mode) {
     D3DRenderer* render = app->Renderer();
     if (render == nullptr)
         return;
-    const int viewWidth = render->screenWidth;    // wrapper+120036
-    const int viewHeight = render->screenHeight;  // wrapper+120040
-    const float overlayScale = render->viewScale;  // wrapper+120048
+    const int viewWidth = render->screenWidth;    
+    const int viewHeight = render->screenHeight;  
+    const float overlayScale = render->viewScale;  
     const int outputWidth = app->RenderWidth();
     const int outputHeight = app->RenderHeight();
     if (viewWidth == 0 || viewHeight == 0 || outputHeight == 0 ||
@@ -334,14 +290,8 @@ void ApplyLocalAxisBoneMove(MMDApp* app, unsigned char* model, int mode) {
     ApplySelectedRootTranslation(model, delta);
 }
 
-}  // namespace
+}  
 
-// VA 0x0040E670 - local-axis basis matrix of the selected bone.
-// Fills a 16-float matrix: identity, unless the selected bone carries local
-// axes (bone+520..528 non-zero and model physicsMode==2 -> orthonormalized
-// basis from bone+520 and bone+532) or its name matches one of the arm
-// prefixes (memcmp/strstr above) -> 2D basis from the bone->parent(+460)
-// direction (bone+308/+312).
 void BoneLocalAxes(MMDApp* app, float out[16]) {
     for (int i = 0; i < 16; ++i)
         out[i] = 0.0f;
@@ -405,7 +355,6 @@ void BoneLocalAxes(MMDApp* app, float out[16]) {
     }
 }
 
-// VA region 0x475A6E..0x477220 - modes 1..6 of the bone-drag stage.
 void BoneEditModes(MMDApp* app) {
     const int mode = static_cast<int>(app->state.interactionDragMode);
     if (mode <= 0 || mode > 12)
@@ -434,8 +383,8 @@ void BoneEditModes(MMDApp* app) {
     auto* bones = rinmotiondance::mdl::Bones(model);
     mdl::BoneRecord& bone = bones[sel];
 
-    const bool selA = app->state.shiftModifierState == 3;  // coarse selector
-    const bool selB = app->state.ctrlModifierState == 3;   // fine selector
+    const bool selA = app->state.shiftModifierState == 3;  
+    const bool selB = app->state.ctrlModifierState == 3;   
     const auto scaleOf = [&](float base) -> float {
         if (selA)
             return static_cast<float>(kCoarse * base);
@@ -499,13 +448,10 @@ void BoneEditModes(MMDApp* app) {
         axis[1] = matWorld[6] * az + matWorld[4] * ay + matWorld[5] * ax;
         axis[2] = matWorld[10] * az + matWorld[9] * ax + matWorld[8] * ay;
     } else {
-        // modes 4/5/6 - local axes
         const float base = static_cast<float>(
             static_cast<double>(app->state.previousMouseY -
                                 app->state.mouseY) * kAngBase);
         ang = scaleOf(base);
-        // "direct" mode selector 0x9EDB4 (physicsEditorJointPage; the pre-promotion call
-        // read offset 650076, an unpinned typo of the pinned 650676)
         if (app->state.physicsEditorJointPage == 1) {
             const std::size_t k = static_cast<std::size_t>(mode - 4);
             axis[0] = matWorld[k];
@@ -529,7 +475,6 @@ void BoneEditModes(MMDApp* app) {
     }
 
     {
-        // ---- bone edit ------------------------------------------------------
         if ((bone.flags & mdl::kBoneFlagFixedAxis) ==
                 mdl::kBoneFlagFixedAxis &&
             (bone.type == mdl::BoneType::UnderIk ||
@@ -551,9 +496,6 @@ void BoneEditModes(MMDApp* app) {
         if (dirty != nullptr)
             dirty[sel] = 1;
 
-        // 0x476D6D/0x476DA3: sin/cos of the FULL drag angle (the 0.5
-        // half-angle multiplication does NOT exist in the instruction
-        // stream; var_14D4 already carries the scaled full angle)
         float dq[4] = {OriginalSinTimes(ang, axis[0]),
                        OriginalSinTimes(ang, axis[1]),
                        OriginalSinTimes(ang, axis[2]),
@@ -562,11 +504,6 @@ void BoneEditModes(MMDApp* app) {
         QuatMultiply(out, bone.rotQuat, dq);
         std::memcpy(bone.rotQuat, out, sizeof(out));
 
-        // child-bone propagation loop (0x476E42..0x477257, lifted from
-        // disassembly): every type-1/2 bone of the marked wave whose
-        // parent is also marked rotates about the selected bone's world
-        // position; kinematic pose slots +320/+332 are updated so the
-        // transform chain picks the change up.
         {
             float piv[3]{};
             BoneWorldPoint(bone, piv);
@@ -577,20 +514,20 @@ void BoneEditModes(MMDApp* app) {
                 if (!IsSelectedRoot(model, i, true))
                     continue;
                 if (dirty != nullptr)
-                    dirty[i] = 1;                    // t4 mark (0x476FB2)
+                    dirty[i] = 1;                    
                 float point[3]{};
                 BoneWorldPoint(ch, point);
                 const float off[4] = {
                     point[0] - piv[0], point[1] - piv[1], point[2] - piv[2],
                     0.0f};
                 float r1[4], r2[4];
-                QuatMultiply(r1, invq, off);         // 0x4770A6
-                QuatMultiply(r2, r1, dq);            // 0x4770FB sandwich
+                QuatMultiply(r1, invq, off);         
+                QuatMultiply(r2, r1, dq);            
                 ch.trans[0] += r2[0] - off[0];
                 ch.trans[1] += r2[1] - off[1];
                 ch.trans[2] += r2[2] - off[2];
                 float oq[4];
-                QuatMultiply(oq, ch.rotQuat, dq);    // 0x4771EB
+                QuatMultiply(oq, ch.rotQuat, dq);    
                 std::memcpy(ch.rotQuat, oq, sizeof(oq));
             }
         }
@@ -598,4 +535,4 @@ void BoneEditModes(MMDApp* app) {
     }
 }
 
-}  // namespace rinmotiondance
+}  

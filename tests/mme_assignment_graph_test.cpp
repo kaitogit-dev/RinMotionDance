@@ -147,7 +147,6 @@ int main() {
     check(ctx->renderPassList.size() == originalIds.size(), "Rebuild must retain the complete graph");
     for (size_t i=0; i<ctx->renderPassList.size(); ++i)
         check(ctx->renderPassList[i].turnId == originalIds[i], "Assignment resource IDs must remain stable");
-    // Refreshing a turn must not overwrite another assignment's controls.
     check(selfX(ba,"Self") == 11 && selfX(bb,"Self") == 22 && selfX(bc,"Self") == 33,
         "Offscreen resolution must preserve base assignment parameters");
     c->clearSubsetEffects();
@@ -155,7 +154,6 @@ int main() {
     mme::MmeSortPlanObjects(ctx, {{1,a},{2,b},{3,c},{4,leaf}});
     check(ctx->renderPassList.size() == 4, "Removing a subset retires its target and its recursive child");
     auto previousSource = bb->owner;
-    // The original compile branch supplies the first assignment directly.
     check(ba->instance == previousSource && bb->instance != previousSource,
         "Only the first assignment may use the compiled source instance");
     mme::MmeDropMaterialBindings(a);

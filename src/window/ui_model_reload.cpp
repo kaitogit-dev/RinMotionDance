@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x0040D940 / 0x0044D610 - model/camera panel refresh helpers
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -20,9 +17,9 @@
 
 namespace rinmotiondance {
 
-void SelectionReeval(MMDApp* app);  // 0x430510
-void ApplyGravityTrack(MMDApp* app);        // 0x412330
-void ApplyAccessoryTrack(MMDApp* app, int);   // 0x413120
+void SelectionReeval(MMDApp* app);  
+void ApplyGravityTrack(MMDApp* app);        
+void ApplyAccessoryTrack(MMDApp* app, int);   
 
 namespace {
 
@@ -40,8 +37,6 @@ unsigned char* ModelAt(MMDApp* app, int slot) {
 }
 
 int FindModelSlotByComboId(MMDApp* app, int comboId) {
-    // x64 twin sub_7FF7CB486B0: both comboSelIndex (model+0x3108/x86 11644)
-    // scans run to 255 (cmp ecx, 0FFh at 0x7FF7CB48724D and 0x7FF7CB48735A).
     for (int slot = 0; slot < kModelSlotCount; ++slot) {
         unsigned char* model = ModelAt(app, slot);
         if (model != nullptr && mdl::Mdl(model)->comboSelIndex == comboId)
@@ -82,9 +77,9 @@ void BonePoint(rinmotiondance::mdl::BoneRecord* bone, float out[3]) {
              matrix[10] * point[2] + matrix[14];
 }
 
-}  // namespace
+}  
 
-void PostModelReload(MMDApp* app) {  // 0x41A650
+void PostModelReload(MMDApp* app) {  
 #ifdef RINMOTIONDANCE_DIAG
     if (getenv("RINMOTIONDANCE_TRACE_REC")) {
         FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
@@ -203,10 +198,8 @@ void PostModelReload(MMDApp* app) {  // 0x41A650
                              referenceTranslation.m[3][2];
 }
 
-// (0x41A650 was a local alias wrapper of PostModelReload above - removed;
-//  callers now use the PostModelReload name directly.)
 
-void PostModelReload2(MMDApp* app) {  // 0x40D940
+void PostModelReload2(MMDApp* app) {  
     const bool cameraMode =
         app->state.optflag[0] != 0;
 
@@ -253,9 +246,6 @@ void PostModelReload2(MMDApp* app) {  // 0x40D940
                    !cameraMode && !expanded ? SW_SHOWNORMAL : SW_HIDE);
     }
 
-    // 0x40DC3A..0x40DC6D: until the bone-copy buffer contains records,
-    // paste and reverse-paste remain disabled.  A successful copy command
-    // enables both controls and stores the record count at 0x9DA24.
     if (!cameraMode &&
         app->state.optflag[5] != 0 &&
         app->state.copiedBoneCount == 0) {
@@ -285,8 +275,6 @@ void PostModelReload2(MMDApp* app) {  // 0x40D940
     }
 
     auto* model = app->SelectedModel();
-    // undoDirty/redoDirty（x64 model+0x3558/+0x3559，0x7FF7CB447074/86）：
-    // 撤消/重做按钮的开门标志。
     EnableWindow(MainControl(app, 400),
                  mdl::Mdl(model)->undoDirty != 0);
     EnableWindow(MainControl(app, 401),
@@ -303,7 +291,7 @@ void PostModelReload2(MMDApp* app) {  // 0x40D940
     ShowWindow(GetDlgItem(viewportWindow, panel::kReadoutDistEdit), SW_HIDE);
 }
 
-void RebuildModelModePanel(MMDApp* app) {  // 0x44D610
+void RebuildModelModePanel(MMDApp* app) {  
     app->state.optflag[0] = 0;
     HWND combo = MainControl(app, 433);
     SendMessageA(combo, CB_DELETESTRING, 5, 0);
@@ -335,33 +323,25 @@ void RebuildModelModePanel(MMDApp* app) {  // 0x44D610
         D3DLIGHT9& light = app->SceneLight();
         D3DVECTOR& direction = *reinterpret_cast<D3DVECTOR*>(
             app->LightDirection());
-        direction.x = -0.5f;                                   // 0x44D711
-        direction.y = -1.0f;                                   // 0x44D71D
-        direction.z = 0.5f;                                    // 0x44D726
-        // 0x44D738..0x44D765: Specular.rgb = 0.602, Direction = the
-        // 0x9E174 triple, Ambient.rgb copied from Specular, and Specular.a
-        // (0x9E1A0) keeps the old Position.x dword read at 0x44D750 - the
-        // struct copy `Specular = Ambient` used here before gave Specular.a
-        // the old Ambient.a instead.
-        const float oldPositionX = light.Position.x;           // 0x44D750
-        light.Specular.r = 0.602f;                             // 0x44D738
-        light.Specular.g = 0.602f;                             // 0x44D73B
-        light.Specular.b = 0.602f;                             // 0x44D741
-        light.Direction = direction;                           // 0x44D73E..762
-        light.Ambient.r = light.Specular.r;                    // 0x44D74D
-        light.Ambient.g = light.Specular.g;                    // 0x44D759
-        light.Ambient.b = light.Specular.b;                    // 0x44D762
-        light.Specular.a = oldPositionX;                       // 0x44D765
+        direction.x = -0.5f;                                   
+        direction.y = -1.0f;                                   
+        direction.z = 0.5f;                                    
+        const float oldPositionX = light.Position.x;           
+        light.Specular.r = 0.602f;                             
+        light.Specular.g = 0.602f;                             
+        light.Specular.b = 0.602f;                             
+        light.Direction = direction;                           
+        light.Ambient.r = light.Specular.r;                    
+        light.Ambient.g = light.Specular.g;                    
+        light.Ambient.b = light.Specular.b;                    
+        light.Specular.a = oldPositionX;                       
 
         IDirect3DDevice9* device = app->Renderer()->device;
         device->SetLight(0, &light);
     }
 }
 
-void RebuildCameraModePanel(MMDApp* app) {  // 0x44D780
-    // Rebuild the camera-mode transform combo exactly as the original does.
-    // Item four is the model-mode "all" entry; the three camera entries are
-    // appended in its place.
+void RebuildCameraModePanel(MMDApp* app) {  
     app->state.optflag[0] = 1;
     HWND combo = MainControl(app, 433);
     SendMessageA(combo, CB_DELETESTRING, 4, 0);
@@ -394,8 +374,6 @@ void RebuildCameraModePanel(MMDApp* app) {  // 0x44D780
     }
     SyncAccessoryEditPanel(app);
 
-    // 0xA0438 is the four-by-four selection/reference basis.  The original
-    // writes all sixteen floats individually; the resulting value is identity.
     float* basis = &app->CameraAttachmentBasis().m[0][0];
     std::memset(basis, 0, 16 * sizeof(float));
     basis[0] = 1.0f;
@@ -404,7 +382,7 @@ void RebuildCameraModePanel(MMDApp* app) {  // 0x44D780
     basis[15] = 1.0f;
 }
 
-void ApplyModelComboSelection(MMDApp* app) {  // 0x44D940
+void ApplyModelComboSelection(MMDApp* app) {  
     HWND hwnd = static_cast<HWND>(app->Hwnd());
     const int selection = static_cast<int>(
         SendMessageA(GetDlgItem(hwnd, panel::kMainComboModel), CB_GETCURSEL, 0, 0));
@@ -601,4 +579,4 @@ void ApplyModelComboSelection(MMDApp* app) {  // 0x44D940
     PostLanguageSweep2(app);
 }
 
-}  // namespace rinmotiondance
+}  

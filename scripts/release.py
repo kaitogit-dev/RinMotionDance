@@ -31,7 +31,6 @@ def package(build_dir, arch, output):
     for source in files.values():
         if not source.is_file():
             raise FileNotFoundError(source)
-    # Refuse to label an x86 binary as x64 (or vice versa).
     expected = {"x86": 0x14C, "x64": 0x8664}[arch]
     for name in ("RinMotionDance.exe", "Data/MMDxShow.dll"):
         data = files[name].read_bytes()

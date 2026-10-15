@@ -41,9 +41,6 @@ DEFAULT_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inc", ".inl", ".rc", ".def"}
 
-# ---------------------------------------------------------------------------
-# PE parsing
-# ---------------------------------------------------------------------------
 
 def load_sections(path):
     with open(path, "rb") as f:
@@ -58,7 +55,7 @@ def load_sections(path):
     opt = coff + 20
     if machine != 0x8664:
         raise ValueError("expected x64 PE (machine=0x%x)" % machine)
-    image_base = struct.unpack_from("<Q", data, opt + 24)[0]  # PE32+
+    image_base = struct.unpack_from("<Q", data, opt + 24)[0]  
     secs = []
     sec_off = opt + opt_size
     for i in range(nsec):
@@ -67,7 +64,6 @@ def load_sections(path):
         vsize, vaddr, rsize, rptr = struct.unpack_from("<IIII", data, off + 8)
         secs.append({"name": name, "va": image_base + vaddr, "vsize": vsize,
                      "rptr": rptr, "rsize": rsize})
-    # DataDirectory RVAs to exclude from string auditing (imports, debug, ...)
     num_dd = struct.unpack_from("<I", data, opt + 108)[0]
     dd_off = opt + 112
     dd_names = ["export", "import", "resource", "exception", "security",
@@ -88,9 +84,6 @@ def load_sections(path):
                 return s["rptr"] + (rva - (s["va"] - image_base))
         return None
 
-    # Walk IMAGE_IMPORT_DESCRIPTORs: collect dll-name VAs and every
-    # hint/name VA (+2 skips the hint word) so import names are excluded
-    # even though they live outside the small descriptor array.
     if imp_rva and imp_size:
         off = rva2off(imp_rva)
         if off is not None:
@@ -107,7 +100,7 @@ def load_sections(path):
                     th = struct.unpack_from("<Q", data, toff)[0]
                     if th == 0:
                         break
-                    if not (th & (1 << 63)):  # by-name import
+                    if not (th & (1 << 63)):  
                         hn_rva = th & 0xFFFFFFFF
                         excl.append((image_base + hn_rva + 2,
                                      image_base + hn_rva + 2 + 32, "impname"))
@@ -116,9 +109,6 @@ def load_sections(path):
     return data, secs, excl
 
 
-# ---------------------------------------------------------------------------
-# .rdata C-string scanning (ASCII + Shift-JIS)
-# ---------------------------------------------------------------------------
 
 def is_sjis_lead(b):
     return 0x81 <= b <= 0x9F or 0xE0 <= b <= 0xEF
@@ -152,7 +142,6 @@ def scan_strings(data, sec, excl, min_ascii=5, min_jp=2):
             i += 1
             continue
         if b >= 0x80:
-            # Shift-JIS string starting here (may contain ASCII inside)
             j = i
             raw = bytearray()
             jp = 0
@@ -187,7 +176,6 @@ def scan_strings(data, sec, excl, min_ascii=5, min_jp=2):
                         continue
             i += 1
             continue
-        # ASCII run
         j = i
         raw = bytearray()
         while j < n:
@@ -204,9 +192,6 @@ def scan_strings(data, sec, excl, min_ascii=5, min_jp=2):
     return out
 
 
-# ---------------------------------------------------------------------------
-# Port source corpus
-# ---------------------------------------------------------------------------
 
 ESC_RE = re.compile(rb"""\\(?:x([0-9A-Fa-f]{1,2})|([0-7]{1,3})|([nrtabfv'"\\?]))""")
 SIMPLE_ESC = {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"a": b"\a",
@@ -238,18 +223,18 @@ def strip_comments(raw: bytes):
     while i < n:
         c = raw[i]
         if st == NORMAL:
-            if c == 0x22:  # "
+            if c == 0x22:  
                 st = STR
                 out.append(c)
                 i += 1
-            elif c == 0x27:  # '
+            elif c == 0x27:  
                 st = CHR
                 out.append(c)
                 i += 1
-            elif c == 0x2F and i + 1 < n and raw[i + 1] == 0x2F:  # //
+            elif c == 0x2F and i + 1 < n and raw[i + 1] == 0x2F:  
                 st = LINE
                 i += 2
-            elif c == 0x2F and i + 1 < n and raw[i + 1] == 0x2A:  # /*
+            elif c == 0x2F and i + 1 < n and raw[i + 1] == 0x2A:  
                 st = BLOCK
                 i += 2
             else:
@@ -257,7 +242,7 @@ def strip_comments(raw: bytes):
                 i += 1
         elif st in (STR, CHR):
             q = 0x22 if st == STR else 0x27
-            if c == 0x5C:  # backslash: keep escape pair verbatim
+            if c == 0x5C:  
                 out += raw[i:i + 2]
                 i += 2
             elif c == q:
@@ -274,7 +259,7 @@ def strip_comments(raw: bytes):
             else:
                 cmt.append(c)
             i += 1
-        else:  # BLOCK
+        else:  
             if c == 0x2A and i + 1 < n and raw[i + 1] == 0x2F:
                 st = NORMAL
                 i += 2
@@ -299,21 +284,18 @@ def glue_literals(code: bytes) -> bytes:
             i += 1
             while i < n:
                 d = code[i]
-                if d == 0x5C:  # escape
+                if d == 0x5C:  
                     out += code[i:i + 2]
                     i += 2
                     continue
                 out.append(d)
                 i += 1
-                if d == 0x22:  # closing quote
-                    # look ahead: whitespace then another quote?  Stay in
-                    # the inner loop so a whole chain of literals glues
-                    # without re-interpreting closing quotes as openers.
+                if d == 0x22:  
                     k = i
                     while k < n and code[k] in b" \t\r\n":
                         k += 1
                     if k < n and code[k] == 0x22:
-                        i = k + 1  # skip the separator and opening quote
+                        i = k + 1  
                         continue
                     break
         else:
@@ -356,9 +338,6 @@ def normalize_fmt(b: bytes) -> bytes:
     return FMT_RE.sub(b"\x01", b)
 
 
-# ---------------------------------------------------------------------------
-# Matching
-# ---------------------------------------------------------------------------
 
 def windows(b: bytes, lo=8, hi=16, step=4):
     L = len(b)
@@ -404,9 +383,6 @@ def find_wide(cps, wide_corpus):
     return None
 
 
-# ---------------------------------------------------------------------------
-# Categorisation for triage (content heuristics; refined by xrefs later)
-# ---------------------------------------------------------------------------
 
 BULLET_HINTS = [
     b"continuousphysics", b"Overflow in AABB", b"btAssert", b"Bullet",
@@ -439,7 +415,7 @@ def esc(b) -> str:
     out = []
     for ch in b:
         if ch == 0x5C:
-            out.append("\\\\")  # keep the backslash unambiguous
+            out.append("\\\\")  
         elif 0x20 <= ch <= 0x7E:
             out.append(chr(ch))
         else:
@@ -483,7 +459,6 @@ def main():
     glued_fmt = normalize_fmt(glued)
     comments_fmt = normalize_fmt(comments)
 
-    # dedupe by content keeping all VAs
     by_text = {}
     for va, raw, kind, text in strings:
         e = by_text.setdefault(raw, {"vas": [], "kind": kind, "text": text})

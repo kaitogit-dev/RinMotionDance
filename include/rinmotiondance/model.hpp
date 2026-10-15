@@ -1,11 +1,3 @@
-// Model-facing API and compatibility boundary.
-//
-// The reverse-engineered executable stores one model in a flat allocation.
-// The actual field map lives in model_layout.hpp; that runtime record is
-// the only place where ABI offsets and unknown padding belong.  Code below
-// exposes typed views for the portions whose ownership and element type are
-// established.  New call sites should use those views instead of inventing
-// another numeric offset.
 #pragma once
 
 #include <cstddef>
@@ -17,15 +9,7 @@
 
 namespace rinmotiondance::mdl {
 
-// The Win32 record is 0x4CCF4 bytes.  The x64 twin has wider pointer-backed
-// tables and architecture-specific bookkeeping, so in-memory allocation must
-// follow the compiled ABI rather than the Win32 byte count.
 constexpr std::size_t kSize = sizeof(ModelRecord);
-// The x64 E build doubled the bone-key pool: the model allocates
-// 0x2255100 bytes (600000 x 0x3C) at model+0x2790, sweeps end at byte
-// 0x2255100 / record 0x927C0, and the overflow box prints 600000
-// (x64 0x7FF7CB4D213D alloc, 0x7FF7CB47B16D box).  The x86 original
-// keeps 300000 (0x493E0).
 #if defined(_M_X64)
 constexpr std::size_t kBoneKeyCapacity = 600000;
 #else
@@ -34,11 +18,8 @@ constexpr std::size_t kBoneKeyCapacity = 300000;
 constexpr std::size_t kMorphKeyCapacity = 20000;
 constexpr std::size_t kDisplayKeyCapacity = 1000;
 
-// Select physics-enabled keys of bones that have rigid bodies.
 void SelectPhysicsOnBoneKeys(ModelRecord& model);
 
-// Five-int entries used by the post-load bone evaluation order.  This table
-// contains no pointers, so its 20-byte stride is identical on x86 and x64.
 struct BoneReference {
     std::int32_t modelIndex;
     std::int32_t boneIndex;
@@ -59,8 +40,6 @@ struct IkChain {
 struct FrameGroup {
     char name[20];
     char nameEn[20];
-    // Both facial and bone display rows use this common pair.  The target
-    // is a morph index for facial rows and a bone index for bone rows.
     std::uint16_t groupIndex;
     std::uint16_t targetIndex;
     std::uint8_t selected;
@@ -77,8 +56,6 @@ static_assert(offsetof(FrameGroup, targetIndex) == 42,
 static_assert(offsetof(FrameGroup, selected) == 44,
               "frame group selection ABI");
 
-// One entry in the display-group name table.  The final byte is tested by
-// several UI paths, but its zero/non-zero polarity has not yet been unified.
 struct DisplayGroup {
     char name[50];
     char nameEn[50];
@@ -92,10 +69,8 @@ static_assert(offsetof(DisplayGroup, nameEn) == 50,
 static_assert(offsetof(DisplayGroup, flags) == 100,
               "display group flags ABI");
 
-// PMX display-frame entries normalize the variable-width file index to a
-// signed 32-bit value.  They are temporary loader records only.
 struct PmxDisplayFrameEntry {
-    std::uint8_t type;  // 0 bone, 1 morph
+    std::uint8_t type;  
     unsigned char padding[3];
     std::int32_t index;
 };
@@ -122,10 +97,6 @@ static_assert(offsetof(IkChain, maxAngle) == 20,
 
 static_assert(sizeof(BoneReference) == 8, "bone reference ABI");
 
-// Timeline records are ordinary source-level records in the original, not
-// arbitrary byte buffers.  Bone and morph records contain no pointers and
-// therefore keep their x86 size on x64.  DisplayKey contains two owned
-// buffers, so it naturally grows from 28 to 40 bytes on x64.
 struct BoneKey {
     std::uint32_t frame;
     std::uint32_t previous;
@@ -244,9 +215,6 @@ inline void*& PoseTraceBuffer(unsigned char* m) {
     return reinterpret_cast<ModelRecord*>(m)->poseTraceBuffer;
 }
 
-// Typed view of the model object: routes table pointers through
-// ModelRecord so the field offset is correct on both architectures
-// The typed record owns architecture-correct field placement.
 inline ModelRecord* Mdl(unsigned char* m) {
     return reinterpret_cast<ModelRecord*>(m);
 }
@@ -316,8 +284,6 @@ inline std::uint16_t*& Indices(unsigned char* m) {
     return ResourceAs<std::uint16_t>(Mdl(m)->indices);
 }
 
-// PMX retains normalized 32-bit indices even when its GPU index buffer uses
-// 16-bit elements. PMD owns the same storage through Indices().
 inline std::int32_t*& PmxIndices(unsigned char* m) {
     return ResourceAs<std::int32_t>(Mdl(m)->indices);
 }
@@ -355,9 +321,6 @@ inline MaterialMorphPool*& MaterialMorphMul(unsigned char* m) {
     return MaterialMorphPools(m).multiplicative;
 }
 
-// Typed views of the per-model record tables.  Strides are the natural
-// sizeof() of each record - 604/624 bones, 136/192 morphs,
-// 172/192 rigids, 140/152 joints (x86/x64).
 inline BoneRecord*& Bones(unsigned char* m) {
     return Mdl(m)->boneTable;
 }
@@ -418,4 +381,4 @@ inline std::uint32_t& BoneOrderCount(unsigned char* m) {
     return Mdl(m)->boneOrderCount;
 }
 
-}  // namespace rinmotiondance::mdl
+}  

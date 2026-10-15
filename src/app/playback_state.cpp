@@ -1,7 +1,3 @@
-// ===========================================================================
-// VA 0x00433A40 - playback-start state initialization
-// VA 0x004341E0 - playback-stop UI/state restoration
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -22,9 +18,9 @@
 
 namespace rinmotiondance {
 
-void SyncModelEditControls(unsigned char* model);  // VA 0x004A02C0
-void ApplyAccessoryTrack(MMDApp* app, int index);  // VA 0x00413120
-void ApplyGravityTrack(MMDApp* app);  // VA 0x00412330
+void SyncModelEditControls(unsigned char* model);  
+void ApplyAccessoryTrack(MMDApp* app, int index);  
+void ApplyGravityTrack(MMDApp* app);  
 
 namespace {
 
@@ -56,13 +52,8 @@ void SetPhysicsMenuState(HWND hwnd, UINT state) {
     SetMenuItemInfoA(submenu, 2, TRUE, &item);
 }
 
-}  // namespace
+}  
 
-// Exported at rinmotiondance scope for the fullscreen record restore path
-// (0x4629D0 in src/app/avi_record_start.cpp); the bodies were
-// originally file-local here.
-// VA 0x00429790.  UINT 1 is MF_GRAYED, matching the immediate operands in
-// the original rather than treating it as a Boolean.
 void DisablePlaybackMenus(HWND hwnd) {
     HMENU menu = GetMenu(hwnd);
     SetMenuRange(menu, 202, 210, MF_GRAYED);
@@ -77,8 +68,6 @@ void DisablePlaybackMenus(HWND hwnd) {
     DrawMenuBar(hwnd);
 }
 
-// VA 0x004298E0.  This restores the broad menu set and then reapplies the
-// camera/model-mode restrictions that exist outside playback.
 void RestorePlaybackMenus(MMDApp* app) {
     HWND hwnd = static_cast<HWND>(app->Hwnd());
     HMENU menu = GetMenu(hwnd);
@@ -125,7 +114,7 @@ void ApplyProjection(MMDApp* app) {
         static_cast<double>(app->CameraFov()) * kPiOver180);
     api.perspectiveFovLH(&matrix, fov, wrapper->aspectRatio,
                          1.0f, 100000.0f);
-    IDirect3DDevice9* device = wrapper->device;  // +120032
+    IDirect3DDevice9* device = wrapper->device;  
     device->SetTransform(D3DTS_PROJECTION,
                          reinterpret_cast<const D3DMATRIX*>(&matrix));
 }
@@ -146,7 +135,7 @@ void CopyLightTerminal(MMDApp* app, const mdl::LightKey& key) {
     std::memcpy(app->LightColor(), key.color, sizeof(key.color));
     app->ApplyTimelineLightState();
     D3DRenderer* wrapper = app->Renderer();
-    IDirect3DDevice9* device = wrapper->device;  // +120032
+    IDirect3DDevice9* device = wrapper->device;  
     device->SetLight(0, &app->SceneLight());
 }
 
@@ -299,7 +288,7 @@ void SavePlaybackUndoSnapshot(MMDApp* app, unsigned char* model) {
     }
 }
 
-}  // namespace
+}  
 
 void UpdateBoneFrames(MMDApp* app) {
     const float cursor = app->PlaybackCursorSeconds();
@@ -356,8 +345,6 @@ void StopPlayback(MMDApp* app) {
     HWND overlay = app->FloatingWindow();
     EnableRange(overlay != nullptr ? overlay : hwnd, 536, 550, TRUE);
 
-    // snapshot bytes saved at playback start (command_frame_edit.cpp):
-    // [0]=497 [1]=498 [2]=421 [3]=422 [4]=431 [5]=400 [6]=401
     EnableWindow(GetDlgItem(hwnd, panel::kBonePasteButton),
                  app->state.playbackEnabledSnapshot[0]);
     EnableWindow(GetDlgItem(hwnd, panel::kBoneReversePasteButton),
@@ -458,4 +445,4 @@ void StopPlayback(MMDApp* app) {
     PostLanguageSweep2(app);
 }
 
-}  // namespace rinmotiondance
+}  

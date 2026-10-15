@@ -1,5 +1,3 @@
-# Compare two mdump.py bone dumps.  Matches models by (name, boneCount),
-# then per bone per field classifies: bit-exact / small (<=1e-3) / divergent.
 import json, math, sys
 
 VEC = {"pos": 3, "rotQuat": 4, "rotQuat2": 4, "phyOff": 3, "phyQuat": 4}

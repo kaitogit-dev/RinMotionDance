@@ -18,10 +18,8 @@ void ReleaseOwned(T*& value) {
         value = nullptr;
     }
 }
-}  // namespace
+}  
 
-// Reference: MMD x64 sub_7FF7CB422580. Preserve its reverse traversal and
-// destruction order, using Bullet interfaces rather than x86 field offsets.
 void DisposePhysicsWorld(PhysicsScene* scene) {
     btDiscreteDynamicsWorld* world = scene->world;
     if (world != nullptr) {
@@ -40,7 +38,7 @@ void DisposePhysicsWorld(PhysicsScene* scene) {
             delete object;
         }
     }
-    scene->groundBody = nullptr;  // non-owning alias into the world
+    scene->groundBody = nullptr;  
     DeleteOwned(scene->world);
     DeleteOwned(scene->solver);
     DeleteOwned(scene->broadphase);
@@ -59,4 +57,4 @@ void DisposePhysicsWorld(PhysicsScene* scene) {
     ReleaseOwned(scene->gizmoBoxSelIB);
 }
 
-}  // namespace rinmotiondance
+}  

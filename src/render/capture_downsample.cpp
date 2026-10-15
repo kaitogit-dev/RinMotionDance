@@ -1,10 +1,3 @@
-// ===========================================================================
-// VA 0x00425970 - DownsampleCaptureSurface (original: sub_425970)
-// ===========================================================================
-// Reads the full-size capture render target back to system memory, performs
-// the original two-pass rational BGRA box filter in place, then uploads the
-// requested rectangle to the secondary-window back buffer.
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -38,7 +31,7 @@ std::uint32_t PackAverage(std::int32_t b, std::int32_t g,
            (static_cast<std::uint32_t>(a / divisor) << 24);
 }
 
-}  // namespace
+}  
 
 ULONG DownsampleCaptureSurface(MMDApp* app) {
     D3DRenderer* sub = app->Renderer();
@@ -150,4 +143,4 @@ ULONG DownsampleCaptureSurface(MMDApp* app) {
     return systemSurface->Release();
 }
 
-}  // namespace rinmotiondance
+}  

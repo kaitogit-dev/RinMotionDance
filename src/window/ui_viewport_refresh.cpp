@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x0042C810 - main-window D3D viewport refresh
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -14,7 +11,7 @@
 #include "rinmotiondance/ported_funcs.hpp"
 
 namespace rinmotiondance {
-void PicBgOverlayRefresh(MMDApp* app);  // VA 0x00417130
+void PicBgOverlayRefresh(MMDApp* app);  
 namespace {
 
 struct ScreenVertex {
@@ -51,20 +48,17 @@ void WriteQuad(IDirect3DVertexBuffer9* buffer, float left, float top,
     buffer->Unlock();
 }
 
-}  // namespace
+}  
 
 void RefreshMainWindowViewport(MMDApp* app) {
     auto& s = *app;
-    RECT& view = s.ViewportRect();                     // 0xA0D40
+    RECT& view = s.ViewportRect();                     
     const HWND hwnd = app->MainWindow();
     if (hwnd == nullptr)
         return;
 
-    GetClientRect(hwnd, &view);                         // 0x42C82D/85F
+    GetClientRect(hwnd, &view);                         
 
-    // A0D38 selects the separate render window.  The original delegates the
-    // remainder to 0x4290F0; its main-window-independent RECT/sidebar stores
-    // still have to happen here before that call.
     if (s.FloatingWindow() != nullptr) {
         s.SidebarWidth() = view.right - 3;
         RefreshSeparateWindowViewport(app);
@@ -81,13 +75,13 @@ void RefreshMainWindowViewport(MMDApp* app) {
     const int availableWidth = view.right - sidebar - 9;
     const int fittedWidth = availableHeight * renderWidth / renderHeight;
 
-    if (availableWidth >= fittedWidth) {                // 0x42C8DD
+    if (availableWidth >= fittedWidth) {                
         view.top += 25;
         view.bottom -= 192;
         const int center = availableWidth / 2 + sidebar + 9;
         view.left = center - fittedWidth / 2;
         view.right = center + fittedWidth / 2;
-    } else {                                            // 0x42C89C
+    } else {                                            
         const int fittedHeight =
             availableWidth * renderHeight / renderWidth;
         view.left = sidebar + 9;
@@ -127,7 +121,7 @@ void RefreshMainWindowViewport(MMDApp* app) {
     }
     viewport.MinZ = 0.0f;
     viewport.MaxZ = 1.0f;
-    device->SetViewport(&viewport);                     // 0x42C9E5
+    device->SetViewport(&viewport);                     
 
     const float aspect = static_cast<float>(renderWidth) /
                          static_cast<float>(renderHeight);
@@ -159,7 +153,7 @@ void RefreshMainWindowViewport(MMDApp* app) {
               0.625f, 0.9375f);
 }
 
-void RefreshSeparateWindowViewport(MMDApp* app) {  // 0x4290F0..0x42976B
+void RefreshSeparateWindowViewport(MMDApp* app) {  
     auto& s = *app;
     RECT& view = s.ViewportRect();
     const int renderWidth = s.RenderWidth();
@@ -263,4 +257,4 @@ void RefreshSeparateWindowViewport(MMDApp* app) {  // 0x4290F0..0x42976B
               0.625f, 0.9375f);
 }
 
-}  // namespace rinmotiondance
+}  

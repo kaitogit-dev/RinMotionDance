@@ -167,12 +167,10 @@ def hex_key(token):
 
 def process(path):
     text = path.read_text(encoding='utf-8', errors='surrogateescape')
-    edits = []  # (start, end, replacement)
+    edits = []  
     stats = {}
     for m in CALL.finditer(text):
         open_pos = m.end() - 1
-        # skip calls whose intro is inside a comment (rare; checked by caller
-        # scanner consistency anyway)
         close = match_paren(text, open_pos)
         if close < 0:
             continue
@@ -182,7 +180,6 @@ def process(path):
         if len(arg_spans) <= mi:
             continue
         s, e = arg_spans[mi]
-        # message argument span: strip comments -> must be a bare hex token
         stripped = re.sub(r'/\*.*?\*/', ' ', text[s:e], flags=re.S)
         stripped = re.sub(r'//[^\n]*', ' ', stripped)
         stripped = stripped.strip()
@@ -192,14 +189,11 @@ def process(path):
         if key not in MAP:
             continue
         macro = MAP[key]
-        # locate the hex token inside the original span
         h = HEX_TOKEN.search(re.sub(r'/\*.*?\*/', lambda _: ' ' * (len(_.group(0))), text[s:e], flags=re.S))
         if not h:
             continue
         tok_s = s + h.start()
         tok_e = s + h.end()
-        # extend replacement to swallow an immediately-following /*...*/
-        # comment (allow intervening spaces)
         k = tok_e
         while k < e and text[k] in ' \t':
             k += 1
@@ -207,30 +201,21 @@ def process(path):
         if k < e and text.startswith('/*', k):
             j = text.find('*/', k)
             if j != -1 and text[j + 2:k].strip() == '':
-                # ensure only whitespace between comment end and arg end
                 rest = text[j + 2:e]
                 if rest.strip() == '':
                     end = j + 2
-        # replace exactly the token span (plus swallowed trailing comment);
-        # never touch preceding whitespace so alignment survives
         edits.append((tok_s, end, macro))
         stats[macro] = stats.get(macro, 0) + 1
-        # trailing full-comment redundancy cleanup: after edits applied,
-        # `);  // MACRO` lines get the redundant comment stripped below
     if not edits:
         return None, {}
-    # apply edits from the end
     for s, e, rep in sorted(edits, key=lambda t: -t[0]):
         text = text[:s] + rep + text[e:]
-    # strip now-redundant trailing "// MACRO" comments on lines where the
-    # macro name appears earlier in the same line
     out_lines = []
     for ln in text.split('\n'):
         mm = re.search(r'\s+//\s*([A-Z_0-9]+(?:\s*\|\s*[A-Z_0-9]+)*)\s*$',
                        ln.rstrip('\r'))
         if mm:
             name = re.sub(r'\s+', '', mm.group(1))
-            # exact single macro name repeated earlier on this line
             core = ln[:mm.start()]
             if re.search(r'\b' + re.escape(mm.group(1).strip()) + r'\b', core) and '|' not in name:
                 ln = core.rstrip() + '\n' if ln.endswith('\n') else core.rstrip()

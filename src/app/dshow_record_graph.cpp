@@ -1,63 +1,9 @@
-// ===========================================================================
-// DirectShow AVI recording cluster (originals 0x00408F20..0x00409A80).
-// ===========================================================================
-// All of these are methods of the 0x6C-byte recorder object allocated by
-// 0x466D20 and stored at app+0xA06C0 (kPtrSub06c).  Member map (dword index /
-// byte offset), reconstructed from 0x409A80/0x409730/0x409320:
-//
-//   [0]  /0x00  selected compressor IBaseFilter (bound from the video-
-//               compressor category by 0x409170/0x409730 via IMoniker)
-//   [1]  /0x04  IAMVfwCompressDialogs on the compressor
-//               (IID D8D715A3-6E5E-11D0-B3F0-00AA003761C5 @0x53CDC0)
-//   [2]  /0x08  compressor state blob (malloc'd by 0x4092A0)
-//   [3]  /0x0C  IGraphBuilder
-//   [4]  /0x10  MMDxShow source filter (CLSID 2F1713B8-... @0x529848)
-//   [5]  /0x14  SampleGrabber filter
-//   [6]  /0x18  AVI mux (from ICaptureGraphBuilder2::SetOutputFileName)
-//   [7]  /0x1C  file writer (same call)
-//   [8]  /0x20  source output pin      [9]  /0x24 grabber input pin
-//   [10] /0x28  grabber output pin     [11] /0x2C compressor input pin
-//   [12] /0x30  compressor output pin  [13] /0x34 mux video input pin
-//   [16] /0x40  mux audio input pin (2nd free pin)
-//   [17] /0x44  IMediaControl (IID 56A868B1 @0x53CE80)
-//   [18] /0x48  wave source filter     [19] /0x4C wave source output pin
-//   [20] /0x50  audio SampleGrabber    [21] /0x54 its input pin
-//   [22] /0x58  its output pin
-//   [23] /0x5C  IMediaEvent (IID 56A868B6 @0x53CE70)
-//   [24] /0x60  compressor state size (bytes)
-//   [25] /0x64  selected codec index (combo row minus the "AVI Raw" row)
-//   [26] /0x68  MMDxShow frame-push interface (IID ECFAB031-... @0x529980)
-//
-// Bodies in this file:
-//   0x004095D0 FindPinDShow      - enum-pins finder (dir match, skip count)
-//   0x004096D0 FindInputPin      - wrapper, PINDIR_INPUT
-//   0x00409700 FindOutputPin     - wrapper, PINDIR_OUTPUT
-//   0x00409170 BindSelectedCompressor - moniker walk + BindToObject +
-//                                      IAMVfwCompressDialogs QI
-//   0x00408F20 FillCodecCombo    - codec combo fill (FriendlyName, SJIS)
-//   0x00409730 RebindCodecOnComboChange - codec bind on combo change
-//   0x004092A0 ShowCodecConfigDialog - codec config dialog + state capture
-//   0x00409A80 BuildRecordingGraph - full recording graph build
-//
-// Vtable-slot notes pinned against the original disassembly:
-//   * IMoniker is IPersistStream-derived, so BindToObject lands at slot 8
-//     (+0x20) and BindToStorage at slot 9 (+0x24) - 0x409279 / 0x408F20.
-//   * IAMVfwCompressDialogs: slot 3 ShowDialog, slot 6 SendDriverMessage
-//     (+0x18).  The codec state travels as SendDriverMessage(0x5000=GET,
-//     buf, size) / (0x5001=SET, buf, size) - 0x4092A0 and the 0x409A80 tail
-//     at 0x40A4E8.
-//   * IAMStreamControl (36B73881 @0x53CDF0): StartAt slot 3, StopAt slot 4 -
-//     the audio branch bounds the recording with StopAt(seconds*1e7).
-//   * IMediaEvent (IDispatch-derived): GetEvent slot 8, FreeEventParams
-//     slot 12; IMediaControl: Run slot 7, Stop slot 9 (see 0x409320 in
-//     shutdown_cleanup.cpp).
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
 #include <objbase.h>
-#include <dshow.h>   // strmif/control/uuids: graph, capture builder, mux cfg
-#include <ocidl.h>   // IPropertyBag (moniker BindToStorage for FriendlyName)
+#include <dshow.h>   
+#include <ocidl.h>   
 
 #include <cstdint>
 #include <cstdlib>
@@ -68,31 +14,21 @@
 
 namespace rinmotiondance {
 
-// Defined in src/app/shutdown_cleanup.cpp (drain + release run).
 void TeardownDShowGraph(DShowRecorder* rec);
 
 namespace {
 
-// ---- GUIDs pinned from the original .rdata -------------------------------
-// 0x529848: MMDxShow push-source CLSID (Data_MMDxShow.dll)
 const GUID kMmdxShowClsid = {
     0x2f1713b8, 0xdd1f, 0x4186, {0x93, 0xbe, 0xfd, 0xa5, 0x0b, 0xf6, 0x87, 0xc7}};
-// 0x529980: MMDxShow frame-push interface (ECFAB031-...)
 const GUID kIidPushSource = {
     0xecfab031, 0x72ba, 0x4120, {0xb9, 0xf7, 0x8a, 0x3d, 0x5f, 0xd3, 0x8d, 0xec}};
-// 0x53CEE0: MEDIASUBTYPE_ARGB32 (byte-identical to the baseclasses
-// constant; x64 copy at 0x7FF7CB549E28).  Fed to ISampleGrabber::
-// SetMediaType unconditionally (x64 0x7FF7CB42ADC5).
 const GUID kSubtypeArgb32 = {
     0x773c9ac0, 0x3274, 0x11d0, {0xb7, 0x24, 0x00, 0xaa, 0x00, 0x6c, 0x1a, 0x01}};
-// 0x53CE50: SampleGrabber CLSID (qedit.h is not shipped with modern SDKs,
-// so the CLSID/IID are pinned here instead).
 const GUID kClsidSampleGrabber = {
     0xc1f400a0, 0x3f08, 0x11d3, {0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37}};
 const IID kIidISampleGrabber = {
     0x6b652fff, 0x11fe, 0x4fce, {0x92, 0xad, 0x02, 0x66, 0xb5, 0xd7, 0xc7, 0x8f}};
 
-// ---- helpers (same conventions as shutdown_cleanup.cpp) -------------------
 template <typename T>
 void ReleaseCom(T*& object) {
     if (object != nullptr) {
@@ -101,10 +37,6 @@ void ReleaseCom(T*& object) {
     }
 }
 
-// IAMVfwCompressDialogs raw slots (slot 3 / slot 6).
-// qedit.h is not shipped with modern SDKs (see the CLSID pin above), so the
-// SampleGrabber interface is declared here in the canonical qedit.h slot
-// order (SetMediaType = slot 4, exactly the slot the original hits).
 struct ISampleGrabberCB;
 MIDL_INTERFACE("6B652FFF-11FE-4FCE-92AD-0266B5D7C78F")
 ISampleGrabber : public IUnknown {
@@ -123,45 +55,34 @@ public:
         ISampleGrabberCB* pCallback, LONG WhichMethodToCallback) = 0;
 };
 
-// ---- JP message strings (byte-exact Shift-JIS from .rdata) ----------------
 #include "dshow_record_graph_jp.inc"
 
-}  // namespace
+}  
 
-// ===========================================================================
-// VA 0x004095D0 - FindPinDShow  (original: sub_4095D0, __stdcall)
-// ===========================================================================
-// HRESULT FindPin(IBaseFilter* filter, PIN_DIRECTION dir, int skip, IPin** out)
-// Enumerates the filter's pins; the pin whose QueryDirection matches `dir`
-// after skipping `skip` matches lands in *out (AddRef'ed by Next, NOT
-// released on success).  *out is pre-nulled; E_POINTER for a null filter,
-// E_FAIL when the enumeration runs dry (the original returns the failure
-// through EBX across the release tail - the port spells it out).
-// =========================================================================//
 HRESULT FindPinDShow(IBaseFilter* filter, int dir, int skip, IPin** outPin) {
     if (filter == nullptr)
-        return 0x80004003;                                       // E_POINTER
+        return 0x80004003;                                       
     *outPin = nullptr;
     IEnumPins* enumPins = nullptr;
     HRESULT hr = filter->EnumPins(&enumPins);
     if (hr < 0)
         return hr;
-    HRESULT result = 0x80004005;                                 // E_FAIL
+    HRESULT result = 0x80004005;                                 
     IPin* pin = nullptr;
     ULONG fetched = 0;
     if (enumPins->Next(1, &pin, &fetched) == 0) {
         for (;;) {
             PIN_DIRECTION d = static_cast<PIN_DIRECTION>(3);
-            pin->QueryDirection(&d);                            // 0x409640
+            pin->QueryDirection(&d);                            
             if (d == dir) {
                 if (skip == 0) {
-                    *outPin = pin;                               // 0x409698
+                    *outPin = pin;                               
                     result = 0;
                     break;
                 }
                 --skip;
             }
-            pin->Release();                                      // 0x409666
+            pin->Release();                                      
             if (enumPins->Next(1, &pin, &fetched) != 0)
                 break;
         }
@@ -170,34 +91,18 @@ HRESULT FindPinDShow(IBaseFilter* filter, int dir, int skip, IPin** outPin) {
     return result;
 }
 
-// ===========================================================================
-// VA 0x004096D0 - FindInputPin / VA 0x00409700 - FindOutputPin
-// (originals: sub_4096D0 / sub_409700, __thiscall - `this` unused)
-// ===========================================================================
-// Wrappers returning the pin directly (the original's EAX carries the out
-// slot, not the HRESULT; callers store it unconditionally).
-// =========================================================================//
-IPin* FindInputPin(DShowRecorder* /*rec*/, IBaseFilter* filter, int skip) {
+IPin* FindInputPin(DShowRecorder*  , IBaseFilter* filter, int skip) {
     IPin* pin = nullptr;
-    FindPinDShow(filter, 0 /*PINDIR_INPUT*/, skip, &pin);
+    FindPinDShow(filter, 0  , skip, &pin);
     return pin;
 }
 
-IPin* FindOutputPin(DShowRecorder* /*rec*/, IBaseFilter* filter, int skip) {
+IPin* FindOutputPin(DShowRecorder*  , IBaseFilter* filter, int skip) {
     IPin* pin = nullptr;
-    FindPinDShow(filter, 1 /*PINDIR_OUTPUT*/, skip, &pin);
+    FindPinDShow(filter, 1  , skip, &pin);
     return pin;
 }
 
-// ===========================================================================
-// VA 0x00409170 - BindSelectedCompressor  (original: sub_409170, __thiscall)
-// ===========================================================================
-// Releases this[0]/this[1], walks the video-compressor moniker enumeration
-// skipping this[25] entries, BindToObject's the moniker into this[0]
-// (IID_IBaseFilter) and QIs IAMVfwCompressDialogs into this[1].  On success
-// the moniker/enumerator/devEnum are left unreleased exactly like the
-// original; every failure path releases them and leaves this[0] null.
-// =========================================================================//
 void BindSelectedCompressor(DShowRecorder* rec) {
     ReleaseCom(rec->compressor);
     ReleaseCom(rec->compressorDialogs);
@@ -216,13 +121,13 @@ void BindSelectedCompressor(DShowRecorder* rec) {
         devEnum->Release();
         return;
     }
-    enumMon->Reset();                                            // 0x4091E0
+    enumMon->Reset();                                            
     IMoniker* mon = nullptr;
     ULONG fetched = 0;
     enumMon->Next(1, &mon, &fetched);
-    while (mon != nullptr) {                                     // 0x40920C
+    while (mon != nullptr) {                                     
         if (idx == 0)
-            break;                                               // 0x409210
+            break;                                               
         --idx;
         mon->Release();
         mon = nullptr;
@@ -235,29 +140,14 @@ void BindSelectedCompressor(DShowRecorder* rec) {
             rec->compressor->QueryInterface(
                 IID_IAMVfwCompressDialogs,
                 reinterpret_cast<void**>(&rec->compressorDialogs));
-        return;  // original leaks moniker + enumerators here
+        return;  
     }
     enumMon->Release();
     devEnum->Release();
 }
 
-// ===========================================================================
-// VA 0x00408F20 - FillCodecCombo: codec combo fill
-// (; original: sub_408F20, method of the recorder object)
-// =========================================================================//
-// Uncompressed-codec row label 「無圧縮」(UTF-16LE 2A 67 27 57 2E 7E at
-// x64 0x7FF7CB54A620 / x86 0x529880; IDA's narrow-string view renders the
-// bytes as the mojibake "*g'W.~" - do not copy that back in).
 static const wchar_t kJpNoCompression[] = {0x672A, 0x5727, 0x7E2E, 0x0000};
-// =========================================================================//
-// Clears the combo (CB_RESETCONTENT), walks the video-compressor category,
-// BindToStorage -> IPropertyBag -> Read(L"FriendlyName"), converts the BSTR
-// to Shift-JIS (WideCharToMultiByte CP 3) and CB_ADDSTRINGs it, then appends
-// the uncompressed row ("AVI Raw" EN / 「無圧縮」 JP via SendMessageW -
-// byte-exact from 0x529880) and CB_SETCURSELs it.  Returns the "AVI Raw"
-// row index (saved by the dialog to app+0xA0CD8).
-// =========================================================================//
-int FillCodecCombo(DShowRecorder* /*rec*/, HWND hCombo, char english) {
+int FillCodecCombo(DShowRecorder*  , HWND hCombo, char english) {
     SendMessageA(hCombo, CB_RESETCONTENT, 0, 0);
     ICreateDevEnum* devEnum = nullptr;
     if (CoCreateInstance(CLSID_SystemDeviceEnum, nullptr,
@@ -275,7 +165,7 @@ int FillCodecCombo(DShowRecorder* /*rec*/, HWND hCombo, char english) {
         devEnum->Release();
         return 0;
     }
-    enumMon->Reset();                                            // 0x4091E4 tail
+    enumMon->Reset();                                            
     IMoniker* mon = nullptr;
     ULONG fetched = 0;
     enumMon->Next(1, &mon, &fetched);
@@ -285,10 +175,10 @@ int FillCodecCombo(DShowRecorder* /*rec*/, HWND hCombo, char english) {
                                reinterpret_cast<void**>(&bag)) >= 0) {
             VARIANT var;
             var.vt = VT_BSTR;
-            var.bstrVal = nullptr;                               // v22[0]=8
+            var.bstrVal = nullptr;                               
             if (bag->Read(L"FriendlyName", &var, nullptr) == 0) {
                 const int len = WideCharToMultiByte(
-                    3 /*CP_SHIFT_JIS*/, 0, var.bstrVal, -1, nullptr, 0,
+                    3  , 0, var.bstrVal, -1, nullptr, 0,
                     nullptr, nullptr);
                 char* name = static_cast<char*>(std::malloc(len));
                 WideCharToMultiByte(
@@ -319,18 +209,6 @@ int FillCodecCombo(DShowRecorder* /*rec*/, HWND hCombo, char english) {
     return static_cast<int>(index);
 }
 
-// ===========================================================================
-// VA 0x00409730 - RebindCodecOnComboChange: codec bind on combo change
-// (; original: sub_409730, __thiscall)
-// ===========================================================================
-// sel = new combo row.  Tears down [0]/[11]/[1]/[8]/[4]/[3], rebuilds a bare
-// graph + MMDxShow source, seeds the source with a 10x10 ARGB config, then
-// re-walks the compressor monikers to `sel`.  BindToObject must succeed and
-// ShowDialog(4, hButton) (the codec's own test dialog) must return 0; on
-// success the "test" button is enabled, the compressor joins the graph as
-// "Compressor" and a trial source->compressor connection runs.  Failure
-// disables the button (bind failure also shows the EN/JP message).
-// =========================================================================//
 void RebindCodecOnComboChange(DShowRecorder* rec, int sel, HWND hButton,
                               char english) {
     rec->selectedCodec = sel;
@@ -355,23 +233,20 @@ void RebindCodecOnComboChange(DShowRecorder* rec, int sel, HWND hButton,
     IPushSource* push = nullptr;
     if (source != nullptr)
         source->QueryInterface(kIidPushSource,
-                               reinterpret_cast<void**>(&push));   // 0x409FE3
+                               reinterpret_cast<void**>(&push));   
     if (push != nullptr) {
-        // 0x409730's 10x10 ARGB probe config (40 bytes: 0x28/10/10/
-        // 0x00200001/0/400) at a nominal 30 fps.
         BITMAPINFOHEADER cfg = {};
-        cfg.biSize = sizeof(cfg);        // 40 (0x28)
+        cfg.biSize = sizeof(cfg);        
         cfg.biWidth = 10;
         cfg.biHeight = 10;
-        cfg.biPlanes = 1;                // packed: 0x00200001
-        cfg.biBitCount = 32;             // (BI_RGB ARGB)
-        cfg.biCompression = BI_RGB;      // 0
-        cfg.biSizeImage = 400;           // 10*10*4
-        push->SetBitmapInfo(&cfg, sizeof(cfg), 30.0f);             // SetBitmapInfo
+        cfg.biPlanes = 1;                
+        cfg.biBitCount = 32;             
+        cfg.biCompression = BI_RGB;      
+        cfg.biSizeImage = 400;           
+        push->SetBitmapInfo(&cfg, sizeof(cfg), 30.0f);             
         push->Release();
     }
 
-    // ---- compressor moniker walk to `sel` (shared shape with 0x409170) ----
     ICreateDevEnum* devEnum = nullptr;
     CoCreateInstance(CLSID_SystemDeviceEnum, nullptr, CLSCTX_INPROC_SERVER,
                      IID_ICreateDevEnum, reinterpret_cast<void**>(&devEnum));
@@ -425,23 +300,13 @@ void RebindCodecOnComboChange(DShowRecorder* rec, int sel, HWND hButton,
             MessageBoxA(hButton, JP_CANNOT_DS, "DirectShow", 0);
         }
     }
-    EnableWindow(hButton, FALSE);                                // 0x4092D0
+    EnableWindow(hButton, FALSE);                                
     if (enumMon != nullptr)
         enumMon->Release();
     if (devEnum != nullptr)
         devEnum->Release();
 }
 
-// ===========================================================================
-// VA 0x004092A0 - ShowCodecConfigDialog: codec config dialog + state capture
-// (; original: sub_4092A0, __thiscall)
-// ===========================================================================
-// Frees the previous state blob, shows the codec's own config dialog
-// (ShowDialog(1, hDlg)), then queries the driver for its settings blob via
-// SendDriverMessage(0x5000, ...) - size first (kept in this[24]), then the
-// zero-initialized buffer (kept in this[2]).  0x409A80 re-applies it with
-// SendDriverMessage(0x5001, ...) before recording.
-// =========================================================================//
 void ShowCodecConfigDialog(DShowRecorder* rec, HWND hDlg) {
     if (rec->compressorState != nullptr) {
         std::free(rec->compressorState);
@@ -449,8 +314,8 @@ void ShowCodecConfigDialog(DShowRecorder* rec, HWND hDlg) {
     }
     IAMVfwCompressDialogs* vfw = rec->compressorDialogs;
     if (vfw == nullptr)
-        return;  // port-side guard (original would fault)
-    vfw->ShowDialog(1, hDlg);                                    // 0x4092A9
+        return;  
+    vfw->ShowDialog(1, hDlg);                                    
     long size = vfw->SendDriverMessage(0x5000, 0, 0);
     rec->compressorStateSize = static_cast<std::int32_t>(size);
     if (size > 0) {
@@ -464,30 +329,6 @@ void ShowCodecConfigDialog(DShowRecorder* rec, HWND hDlg) {
     }
 }
 
-// ===========================================================================
-// VA 0x00409A80 - BuildRecordingGraph: the recording graph builder
-// (; original: sub_409A80, __thiscall)
-// ===========================================================================
-// Full build order (each failure shows its EN/JP "DirectShow" MessageBox,
-// tears the graph down through 0x409320 and returns false):
-//   1. release [11]/[8]/[4]/[3]; rebind the compressor (0x409170) if [0]
-//   2. FilterGraph -> [3]; MMDxShow source -> [4]; AddFilter "File Source"
-//   3. IPushSource QI -> [26]; GetRate must be >= 1.02 or "dll is too old";
-//      SetBitmapInfo(recStruct, 40, fps)
-//   4. SampleGrabber -> [5]; ISampleGrabber::SetMediaType(video,
-//      ARGB32 unconditionally); AddFilter "Sample Grabber"
-//   5. CaptureGraphBuilder2: SetFiltergraph + SetOutputFileName(Avi,
-//      outPath, -> [6] mux, [7] writer)
-//   6. compressor AddFilter "Compressor"; pin web through 0x4096D0/0x409700;
-//      Connect source->grabber(+->compressor)->mux; re-apply the codec state
-//      blob (SendDriverMessage 0x5001) when this[24] > 0
-//   7. wave branch: AddSourceFilter "Source" -> [18], audio grabber -> [20],
-//      mux 2nd input [16]; IAMStreamControl StartAt/StopAt(seconds*1e7);
-//      IConfigAviMux::SetMasterStream(1)
-//   8. IMediaFilter::SetSyncSource(NULL); IConfigInterleaving put_Mode(2) +
-//      put_InterleaveTimes(1s/0.75s)
-//   9. IMediaEvent -> [23], IMediaControl -> [17], Run
-// =========================================================================//
 bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
                          void* outPath,
                void* config, float fps,
@@ -497,9 +338,8 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
     ReleaseCom(rec->videoSource);
     ReleaseCom(rec->graph);
     if (rec->compressor != nullptr)
-        BindSelectedCompressor(rec);                             // 0x409B3E
+        BindSelectedCompressor(rec);                             
 
-    // 1: filter graph + MMDxShow source
     CoCreateInstance(CLSID_FilterGraph, nullptr, CLSCTX_INPROC_SERVER,
                      IID_IGraphBuilder, reinterpret_cast<void**>(&rec->graph));
     IGraphBuilder* graph = rec->graph;
@@ -529,7 +369,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         return false;
     }
 
-    // 2: frame-push handshake
     IPushSource* push = nullptr;
     if (source->QueryInterface(kIidPushSource,
                                reinterpret_cast<void**>(&push)) < 0) {
@@ -542,7 +381,7 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
     }
     rec->framePush = push;
     float ver = 0.0f;
-    HRESULT hr = push->GetRate(&ver);                            // GetRate
+    HRESULT hr = push->GetRate(&ver);                            
     if (ver < 1.02f || hr < 0) {
         MessageBoxA(hwnd, english
                     ? "MMDxShow->dll is too old.\n\nPlease get newest "
@@ -552,9 +391,8 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         TeardownDShowGraph(rec);
         return false;
     }
-    push->SetBitmapInfo(config, 40, fps);                        // SetBitmapInfo
+    push->SetBitmapInfo(config, 40, fps);                        
 
-    // 3: SampleGrabber with the video media type
     if (CoCreateInstance(kClsidSampleGrabber, nullptr, CLSCTX_INPROC_SERVER,
                          IID_IBaseFilter, reinterpret_cast<void**>(&rec->videoGrabber)) < 0) {
         MessageBoxA(hwnd, english ? "Failed create a SampleGrabber filter"
@@ -572,17 +410,12 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         return false;
     }
     {
-        // CMediaType() default ctor (0x522DB0): zeroed, bFixedSizeSamples
-        // TRUE, lSampleSize 1; SetType(MEDIATYPE_Video) / SetSubtype(...)
         AM_MEDIA_TYPE mt = {};
         mt.bFixedSizeSamples = TRUE;
         mt.lSampleSize = 1;
-        mt.majortype = MEDIATYPE_Video;                          // "vids"
-        // x64 0x7FF7CB42ADC5: SetSubtype is fed a single GUID
-        // (0x7FF7CB549E28 = ARGB32) on every path - no RGB24 variant
-        // exists in the x64 image.
-        mt.subtype = kSubtypeArgb32;                             // 0x53CEE0
-        if (sg->SetMediaType(&mt) < 0) {                         // SetMediaType
+        mt.majortype = MEDIATYPE_Video;                          
+        mt.subtype = kSubtypeArgb32;                             
+        if (sg->SetMediaType(&mt) < 0) {                         
             MessageBoxA(hwnd, english ? "Failed insert a SampleGrabber"
                                       : JP_SG_INSERT, "DirectShow", 0);
             TeardownDShowGraph(rec);
@@ -602,7 +435,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
     if (sg != nullptr)
         sg->Release();
 
-    // 4: capture builder - mux + file writer
     ICaptureGraphBuilder2* builder = nullptr;
     if (CoCreateInstance(CLSID_CaptureGraphBuilder2, nullptr,
                          CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2,
@@ -633,7 +465,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
     IBaseFilter* mux = rec->aviMux;
     IBaseFilter* comp = rec->compressor;
 
-    // 5: compressor + pin web
     if (comp != nullptr && graph->AddFilter(comp, L"Compressor") < 0) {
         MessageBoxA(hwnd, english
                     ? "Could not add selected compressor to the graph."
@@ -681,7 +512,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         IAMVfwCompressDialogs* vfw = rec->compressorDialogs;
         if (rec->compressorStateSize > 0 &&
             vfw != nullptr) {
-            // 0x40A4E8: re-apply the codec state blob captured by 0x4092A0
             vfw->SendDriverMessage(
                 0x5001,
                 static_cast<long>(
@@ -696,11 +526,9 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         return false;
     }
 
-    // 6: optional wave branch (wavPath == 0 skips silently; a failed
-    // AddSourceFilter is what shows the "read WAVE" message)
     if (wavPath != nullptr) {
         IBaseFilter* waveSrc = nullptr;
-        graph->AddSourceFilter(wavPath, L"Source", &waveSrc);     // -> [18]
+        graph->AddSourceFilter(wavPath, L"Source", &waveSrc);     
         rec->waveSource = waveSrc;
         if (waveSrc == nullptr) {
             MessageBoxA(hwnd, english
@@ -722,8 +550,8 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
                 AM_MEDIA_TYPE mt = {};
                 mt.bFixedSizeSamples = TRUE;
                 mt.lSampleSize = 1;
-                mt.majortype = MEDIATYPE_Audio;                   // "auds"
-                sg2->SetMediaType(&mt);                          // SetMediaType
+                mt.majortype = MEDIATYPE_Audio;                   
+                sg2->SetMediaType(&mt);                          
                 sg2->Release();
             }
             if (grabber2 != nullptr)
@@ -734,7 +562,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
                 rec->waveOutput, rec->audioGrabberInput);
             if (graph->Connect(
                     rec->audioGrabberOutput, rec->muxAudioInput) >= 0) {
-                // bound the audio stream: StartAt(now), StopAt(seconds)
                 IAMStreamControl* stream = nullptr;
                 IPin* muxAudioIn = rec->muxAudioInput;
                 if (muxAudioIn != nullptr)
@@ -742,13 +569,10 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
                         IID_IAMStreamControl,
                         reinterpret_cast<void**>(&stream));
                 if (stream != nullptr) {
-                    stream->StartAt(nullptr, 0);                  // 0x40A43B
-                    // x64 0x7FF7CB42B664..74: movss arg_38, mulss by the
-                    // 1e7f slot at 0x7FF7CB552BF8, then cvttss2si r64 -
-                    // float math and truncation, not double.
+                    stream->StartAt(nullptr, 0);                  
                     REFERENCE_TIME stop =
                         static_cast<REFERENCE_TIME>(seconds * 1e7f);
-                    stream->StopAt(&stop, 0, 0);                  // 0x40A46B
+                    stream->StopAt(&stop, 0, 0);                  
                     stream->Release();
                 }
                 IConfigAviMux* aviMux = nullptr;
@@ -756,7 +580,7 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
                     mux->QueryInterface(IID_IConfigAviMux,
                                         reinterpret_cast<void**>(&aviMux));
                 if (aviMux != nullptr) {
-                    aviMux->SetMasterStream(1);                   // 0x40A4A6
+                    aviMux->SetMasterStream(1);                   
                     aviMux->Release();
                 }
             } else {
@@ -768,7 +592,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         }
     }
 
-    // 7: no clock, capture-grade interleave
     IMediaFilter* mediaFilter = nullptr;
     graph->QueryInterface(IID_IMediaFilter,
                           reinterpret_cast<void**>(&mediaFilter));
@@ -790,7 +613,6 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
             MessageBoxA(hwnd, english ? "Could not set interleaving mode"
                                       : JP_ILV_MODE, "DirectShow", 0);
         } else {
-            // 0x40A620: 1s interleave / 0.75s preroll on the mux
             REFERENCE_TIME full = 10000000, cap = 7500000;
             if (interleave->put_Interleaving(&full, &cap) < 0) {
                 MessageBoxA(hwnd, english
@@ -803,19 +625,18 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
         interleave->Release();
     }
     if (!interleaveOk) {
-        TeardownDShowGraph(rec);                                  // 0x409320
+        TeardownDShowGraph(rec);                                  
         return false;
     }
 
-    // 8: event sink, control interface, run
     graph->QueryInterface(IID_IMediaEvent,
                           reinterpret_cast<void**>(&rec->mediaEvent));
     graph->QueryInterface(IID_IMediaControl,
                           reinterpret_cast<void**>(&rec->mediaControl));
     IMediaControl* control = rec->mediaControl;
     if (control != nullptr)
-        control->Run();                                           // 0x40A646
+        control->Run();                                           
     return true;
 }
 
-}  // namespace rinmotiondance
+}  

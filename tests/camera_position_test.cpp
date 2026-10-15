@@ -13,8 +13,6 @@ int main() {
         if (!condition) { ++failures; std::printf("FAIL: %s\n", label); }
     };
     const float keyEye[3] = {1.25f, -2.5f, 37.75f};
-    // Playback and timeline evaluation copy a complete camera key eye vector;
-    // the render/UI readers must observe the very same three components.
     app->CameraPositionZ() = -99.0f;
     app->state.cameraReferenceMode = 1;
     app->state.playbackLoopEnabled = 1;
@@ -28,7 +26,6 @@ int main() {
           app->state.playbackLoopEnabled == 1 &&
           app->state.playbackReturnsToStartFrame == 1 &&
           app->state.viewportToolHovered == 17, "key replay preserves neighboring flags");
-    // UI edits and PMM component reads must reach frame registration's bulk copy.
     app->CameraPositionX() = -11.0f;
     app->CameraPositionY() = 23.0f;
     app->CameraPositionZ() = -47.0f;

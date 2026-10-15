@@ -1,4 +1,3 @@
-// Bone-edit undo snapshot (original VA 0x0042D6E0; ).
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -13,7 +12,7 @@
 
 namespace rinmotiondance {
 
-void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
+void PushBoneEditUndo(MMDApp* app) {  
     if (app == nullptr)
         return;
     const unsigned modelSlot = app->state.slotIdx;
@@ -41,10 +40,6 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     EnableWindow(GetDlgItem(window, panel::kUndoButton), TRUE);
     EnableWindow(GetDlgItem(window, panel::kRedoButton), FALSE);
 
-    // x64 0x7FF7CB447074/0x7FF7CB44708A：undo/redo 脏标志 = model+0x3558/
-    // +0x3559，紧跟 undoState 环游标（+0x3550，环深 30）。x86 旧偏移
-    // 12732/12733 在 x64 落进 gap15 死垫片会让 Ctrl+Z/Y 门失效，必须走
-    // typed 字段（双架构偏移由 model_layout.hpp 钉死）。
     rinmotiondance::mdl::Mdl(model)->undoDirty = 1;
     rinmotiondance::mdl::Mdl(model)->redoDirty = 0;
     auto& ringIndex = rinmotiondance::mdl::Mdl(model)->undoState[0];
@@ -79,4 +74,4 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     }
 }
 
-}  // namespace rinmotiondance
+}  

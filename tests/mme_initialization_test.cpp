@@ -34,7 +34,6 @@ int main() {
     check(events == "IEIE" && realBeginSceneCalls == 0,
           "Each failure must report and bypass the real device");
 
-    // A different nonzero error has the same pending/retry semantics.
     initializeResult = -1;
     check(!frame(), "Negative initialization errors are also failures");
     check(events == "IEIEIE", "Every failed retry must report again");
@@ -52,7 +51,6 @@ int main() {
     check(!frame(), "Replacement device must attempt initialization again");
     check(events == "IEIEIEIBBIE", "Device lifetime reset must restore retry behavior");
 
-    // First-attempt success must not itself disable effects.
     initialization.Reset();
     effectsDisabled = false;
     initializeResult = 0;

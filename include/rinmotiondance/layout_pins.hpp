@@ -1,28 +1,8 @@
-// ===========================================================================
-// RinMotionDance - layout pin wall (MMDAppState)
-// ===========================================================================
-// Regression guard for MMDAppState, split from app_layout.hpp so the
-// struct definition reads like the original author's code:
-//   * x86: every member pinned to the original binary's byte offset
-//     (the ground truth this port mirrors; recovered from IDA + probes).
-//     The wall below is ordered by offset, i.e. by struct order; one
-//     RINMOTIONDANCE_APP_OFF line per pinned field (array elements get
-//     their own line, e.g. dialogFlags[17]).
-//   * x64: anchor members only - instruction-level ground truth
-//     (vote-grade twin reads); the tail from lastRegisteredFrame (0x9F038)
-//     to statusText (0xA54D9) is anchored field-by-field, and the struct
-//     size is pinned to the original 0xA55E0.
-// Included at the bottom of app_layout.hpp, inside namespace
-// rinmotiondance - requires MMDAppState in scope.  Hand-maintained
-// alongside the struct.  Architecture switches use the canonical
-// #if defined(_M_X64) / #if !defined(_M_X64) forms.
-// ===========================================================================
 #pragma once
 
 #include <cstddef>
 
 #if !defined(_M_X64)
-// ---- x86 wall: every field pinned to the original x86 binary ----------
 #define RINMOTIONDANCE_APP_OFF(f, off)                                        \
     static_assert(offsetof(MMDAppState, f) == (off),                          \
                   #f " x86 offset must match the original binary")
@@ -440,13 +420,10 @@ RINMOTIONDANCE_APP_OFF(statusText, 672813);
 
 #undef RINMOTIONDANCE_APP_OFF
 
-// The inline path-resolution workspace (was fontSubOrPtr + 3535 pad bytes)
-// must fill the blob region up to the next live field.
 static_assert(offsetof(MMDAppState, leftViewportVertices) -
                   offsetof(MMDAppState, pathWorkspace) == 3536,
               "pathWorkspace x86 span must end at the next app field");
 #else
-// ---- x64 anchors --------------------------------------------------------
 #define RINMOTIONDANCE_APP_OFF64(f, off)                                      \
     static_assert(offsetof(MMDAppState, f) == (off),                          \
                   #f " x64 anchor must match the original binary")
@@ -454,8 +431,6 @@ static_assert(offsetof(MMDAppState, leftViewportVertices) -
 RINMOTIONDANCE_APP_OFF64(audioContext, 208);
 RINMOTIONDANCE_APP_OFF64(hdcMainPanel, 736);
 RINMOTIONDANCE_APP_OFF64(bmpRes101, 792);
-// Frame pump 7FF7CB447612..7FF7CB44762C; InitDefaults
-// 7FF7CB42C5CC..7FF7CB42C5FF and 7FF7CB42C6B7.
 RINMOTIONDANCE_APP_OFF64(fpsOverlayFrameCount, 0x35C);
 RINMOTIONDANCE_APP_OFF64(framesPerSecond, 0x360);
 RINMOTIONDANCE_APP_OFF64(v32c, 0x364);
@@ -489,12 +464,6 @@ RINMOTIONDANCE_APP_OFF64(rowHitAcc, 488404);
 RINMOTIONDANCE_APP_OFF64(jointLineMap, 648480);
 RINMOTIONDANCE_APP_OFF64(objectSlots, 649280);
 RINMOTIONDANCE_APP_OFF64(lastRegisteredFrame, 651320);
-// ---- x64 tail wall (0x9F038..0xA55E0), recovered field-by-field from the
-// original binary's init (sub_7FF7CB42C550), the frame pump
-// (sub_7FF7CB4474F0), the AVI open/close pair (sub_7FF7CB487A20/A0), the
-// physics editor (sub_7FF7CB4AD800) and the cleanup walk
-// (sub_7FF7CB42BD40).  This is the block that puts fpsLimit on the
-// original 0xA1904 and closes the old 856/1112-byte tail drift.
 RINMOTIONDANCE_APP_OFF64(lightColor, 651376);
 RINMOTIONDANCE_APP_OFF64(sceneLightRange, 651416);
 RINMOTIONDANCE_APP_OFF64(cameraFov, 651444);

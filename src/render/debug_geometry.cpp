@@ -1,11 +1,3 @@
-// ===========================================================================
-// Debug geometry and operation-axis renderer
-//   0x00401400..0x00401D93  primitive helpers
-//   0x00406950              physics collision debug shapes
-//   0x00420F30              accessory/attachment debug shapes
-//   0x0042DB10              selected-bone operation axis
-//   0x004C4760/0x004C5150   embedded axis.x owner and loader
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -31,7 +23,7 @@ namespace {
 using Matrix = d3dx::D3DXMATRIXF;
 
 IDirect3DDevice9* DeviceFromScene(PhysicsScene* scene) {
-    D3DRenderer* sub = scene->owner;   // slot 0
+    D3DRenderer* sub = scene->owner;   
     return sub->device;
 }
 
@@ -46,12 +38,11 @@ void Identity(Matrix* m) {
 void SetDebugColor(PhysicsScene* scene, std::uint8_t r, std::uint8_t g,
                    std::uint8_t b) {
     const DWORD color = D3DCOLOR_ARGB(255, r, g, b);
-    // gizmo vertex buffers (scene slots 4/12/20/28)
     IDirect3DVertexBuffer9* const vbs[] = {
-        scene->gizmoSphereVB,   // 4
-        scene->gizmoCubeVB,     // 12
-        scene->gizmoSphere33VB, // 20
-        scene->gizmoArrowVB};   // 28
+        scene->gizmoSphereVB,   
+        scene->gizmoCubeVB,     
+        scene->gizmoSphere33VB, 
+        scene->gizmoArrowVB};   
     const UINT lengths[] = {928, 128, 528, 256};
     for (int n = 0; n < 4; ++n) {
         auto* vb = vbs[n];
@@ -70,10 +61,6 @@ void DrawIndexedLines(PhysicsScene* scene, IDirect3DVertexBuffer9* vb,
     device->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
     device->SetStreamSource(0, vb, 0, 16);
     device->SetIndices(ib);
-    // [0x7FF7CB426FD8 球 / 0x7FF7CB4272F4+0x7FF7CB4273E2+0x7FF7CB4274B2 胶囊]
-    // 经 MME 桥：ownerless DIP（无 ActiveRenderObject）→ drawType=0 背景
-    // 语义，效果激活时 MME 在此先跑后期链再转发，调试线画在后期合成结果
-    // 之上——与原版经包装设备虚表被 MMHack 拦截的行为一致。
     mme::DrawIndexedPrimitive(device, D3DPT_LINELIST, 0, 0, vertices, 0,
                               primitives);
 }
@@ -91,8 +78,8 @@ void DrawSphere(PhysicsScene* scene, float scale, const Matrix& transform) {
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
     device->SetTexture(0, nullptr);
-    DrawIndexedLines(scene, scene->gizmoSphereVB,   // 4
-                     scene->gizmoSphereIB, 58, 120); // 8
+    DrawIndexedLines(scene, scene->gizmoSphereVB,   
+                     scene->gizmoSphereIB, 58, 120); 
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&oldWorld));
 }
@@ -111,9 +98,8 @@ void DrawBox(PhysicsScene* scene, float x, float y, float z,
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
     device->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
-    device->SetStreamSource(0, scene->gizmoCubeVB, 0, 16);  // 12
-    device->SetIndices(scene->gizmoCubeIB);                 // 16
-    // [0x7FF7CB427150] 经 MME 桥转发，ownerless DIP 语义同 DrawIndexedLines。
+    device->SetStreamSource(0, scene->gizmoCubeVB, 0, 16);  
+    device->SetIndices(scene->gizmoCubeIB);                 
     mme::DrawIndexedPrimitive(device, D3DPT_LINELIST, 0, 0, 8, 0, 12);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&oldWorld));
@@ -138,8 +124,8 @@ void DrawCapsule(PhysicsScene* scene, float radius, float halfHeight,
     api.multiply(&world, &world, &base);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
-    DrawIndexedLines(scene, scene->gizmoSphere33VB,    // 20
-                     scene->gizmoSphere33IB, 33, 64);   // 24
+    DrawIndexedLines(scene, scene->gizmoSphere33VB,    
+                     scene->gizmoSphere33IB, 33, 64);   
 
     api.scaling(&scale, radius, radius, radius);
     api.translation(&translation, 0.0f, halfHeight, 0.0f);
@@ -147,15 +133,15 @@ void DrawCapsule(PhysicsScene* scene, float radius, float halfHeight,
     api.multiply(&world, &world, &base);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
-    DrawIndexedLines(scene, scene->gizmoSphere33VB,    // 20
-                     scene->gizmoSphere33IB, 33, 64);   // 24
+    DrawIndexedLines(scene, scene->gizmoSphere33VB,    
+                     scene->gizmoSphere33IB, 33, 64);   
 
     api.scaling(&world, radius, halfHeight * 2.0f, radius);
     api.multiply(&world, &world, &base);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
-    DrawIndexedLines(scene, scene->gizmoArrowVB,       // 28
-                     scene->gizmoIdentityIB, 16, 8);    // 32
+    DrawIndexedLines(scene, scene->gizmoArrowVB,       
+                     scene->gizmoIdentityIB, 16, 8);    
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&oldWorld));
 }
@@ -163,10 +149,8 @@ void DrawCapsule(PhysicsScene* scene, float radius, float halfHeight,
 void DrawSelectionBox(PhysicsScene* scene) {
     auto* device = DeviceFromScene(scene);
     device->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
-    device->SetStreamSource(0, scene->gizmoBoxSelVB, 0, 16);  // 36
-    device->SetIndices(scene->gizmoBoxSelIB);                 // 40
-    // [0x7FF7CB42771B] 选中盒（实心三角面）同样经 MME 桥转发，ownerless
-    // DIP 语义同 DrawIndexedLines。
+    device->SetStreamSource(0, scene->gizmoBoxSelVB, 0, 16);  
+    device->SetIndices(scene->gizmoBoxSelIB);                 
     mme::DrawIndexedPrimitive(device, D3DPT_TRIANGLELIST, 0, 0, 72, 0, 24);
 }
 
@@ -186,7 +170,7 @@ using MeshDrawSubset = HRESULT(WINAPI*)(void*, DWORD);
 
 void ReleaseCom(void* object) {
     if (object != nullptr)
-        reinterpret_cast<IUnknown*>(object)->Release();  // vtable slot 2
+        reinterpret_cast<IUnknown*>(object)->Release();  
 }
 
 void DrawAxisMesh(void* axis, MMDApp* app) {
@@ -222,7 +206,7 @@ void AttachToBone(MMDApp* app, Matrix* world, int boneIndex) {
     api.multiply(world, world, BoneMatrix(bone));
 }
 
-}  // namespace
+}  
 
 void InitAccessoryRecord(void* object) {
     mdl::AccessoryRecord& accessory = *mdl::Accessory(object);
@@ -284,7 +268,7 @@ bool InitAxisMesh(MMDApp* app) {
 }
 
 void DrawPhysicsCollisionDebug(PhysicsScene* scene) {
-    auto* world = scene->world;   // slot 64 / 0x40
+    auto* world = scene->world;   
     SetDebugColor(scene, 255, 0, 0);
     for (int pass = 0; pass < 2; ++pass) {
         if (pass == 1)
@@ -316,8 +300,6 @@ void DrawPhysicsCollisionDebug(PhysicsScene* scene) {
     }
 }
 
-// Physics-editor scratch-array capacity (must track the dialog's own
-// kMaxEditRecords: x86 original 10,000 slots, x64 recompile 100,000).
 #if defined(_M_X64)
 constexpr int kDebugRecordCapacity = 100000;
 #else
@@ -326,11 +308,7 @@ constexpr int kDebugRecordCapacity = 10000;
 
 void DrawAccessoryDebug(MMDApp* app) {
     auto& api = d3dx::Get();
-    PhysicsScene* scene = app->Physics();   // +650672 (kPtrSub048)
-    // The physics-model editor's scratch arrays double as the draw source:
-    // rigidScratchArray = rigid bodies (mdl::RigidRecord), jointScratchArray =
-    // joints (mdl::JointRecord).  While the dialog is open the records'
-    // keyData / constraint slots hold the combo index (-1 = deleted slot).
+    PhysicsScene* scene = app->Physics();   
     auto* bodies =
         static_cast<rinmotiondance::mdl::RigidRecord*>(
             app->state.rigidScratchArray);
@@ -509,8 +487,6 @@ void SetupFrameWorldTransform(MMDApp* app) {
     Matrix attachment;
     Identity(&attachment);
 
-    // Display mode translates the world by the negative camera target.
-    // A selected follow bone replaces that target with its world position.
     float focusX = 0.0f;
     float focusY = 0.0f;
     float focusZ = 0.0f;
@@ -587,9 +563,6 @@ void SetupFrameWorldTransform(MMDApp* app) {
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&world));
 
-    // 0x46BC20..0x46BC9F: the alternate projection used by the orthographic
-    // view mode.  The normal perspective projection remains the one written
-    // by RefreshMainWindowViewport.
     if (app->state.cameraPerspective != 0) {
         Matrix projection{};
         projection.m[0][0] = -2.0f / app->CameraDistance();
@@ -602,9 +575,6 @@ void SetupFrameWorldTransform(MMDApp* app) {
             reinterpret_cast<const D3DMATRIX*>(&projection));
     }
 
-    // 0x46BCAA..0x46BD72: MMD keeps camera translation in the world matrix
-    // and still installs this fixed +Z look-at view.  Omitting it leaves the
-    // D3D identity view active, moving the horizon and clipping the Y axis.
     const float eye[3] = {
         app->ViewOffsetX(), app->ViewOffsetY(), app->CameraDistance()};
     const float at[3] = {eye[0], eye[1], eye[2] + 80.0f};
@@ -615,4 +585,4 @@ void SetupFrameWorldTransform(MMDApp* app) {
                          reinterpret_cast<const D3DMATRIX*>(&view));
 }
 
-}  // namespace rinmotiondance
+}  

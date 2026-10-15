@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x00430510 with helpers 0x00415E90 / 0x00416090
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -14,9 +11,6 @@
 
 namespace rinmotiondance {
 
-// x64 0x7FF7CB482BB0 - the selection re-evaluation body, ported in
-// misc_dialogs.cpp as CurvePanelRepaint (same original as the x86
-// 0x00430510 entry this file used to carry inline).
 void CurvePanelRepaint(MMDApp* app);
 
 namespace {
@@ -28,7 +22,7 @@ struct Curve {
     int y2;
 };
 
-void DrawCurve(MMDApp* app, const Curve& curve) {  // 0x415E90
+void DrawCurve(MMDApp* app, const Curve& curve) {  
     HDC dc = app->CurveDC();
     HPEN pen = CreatePen(PS_SOLID, 1, 0xFF0000u);
     HGDIOBJ oldPen = SelectObject(dc, pen);
@@ -61,7 +55,7 @@ void DrawCurve(MMDApp* app, const Curve& curve) {  // 0x415E90
     DeleteObject(pen);
 }
 
-void DrawControlPoints(MMDApp* app, const Curve& curve) {  // 0x416090
+void DrawControlPoints(MMDApp* app, const Curve& curve) {  
     HDC dc = app->CurveDC();
     HPEN pen = CreatePen(PS_SOLID, 2, 0x000000FFu);
     HGDIOBJ oldPen = SelectObject(dc, pen);
@@ -94,53 +88,31 @@ void DrawControlPoints(MMDApp* app, const Curve& curve) {  // 0x416090
     DeleteObject(guide);
 }
 
-}  // namespace
+}  
 
-// ---------------------------------------------------------------------------
-// VA 0x00416280 - DragInterpolationControlPoint(app):
-//   interpolation-curve panel drag handler
-// (mouse move while dragging a control point).  Repaints the 128x128 curve
-// cache white, clamps the pointer to the panel (x = mouse X-8, y =
-// client.bottom - mouse Y - 8, both clamped 0..127), then rewrites the
-// dragged control point on every selected record and redraws the curve
-// from the last record touched:
-//   byte 0x2F8 != 0  -> camera/global records app+0x374 (84B, 10000,
-//                       gate +72): mode byte 0x9D939 == 1 edits the x1/y1
-//                       groups (+40/+46, all 6 channels when the channel
-//                       combo 433 selection >= 6, else only the selected
-//                       channel), == 2 edits x2/y2 (+52/+58); curve drawn
-//                       with the opposite group's bytes.
-//   else             -> selected model's BoneKey records (kBoneKeyCapacity entries):
-//                       mode 1 edits interpolation x1/y1, mode 2 edits
-//                       x2/y2 (four channels).
-// The original passes uninitialized stack values to the draw calls when no
-// record matched; the port passes a zeroed curve (deterministic stand-in).
-// Ends with DrawCurve + DrawControlPoints (0x415E90/0x416090) and the
-// 8/bottom-135/137/bottom-6 invalidate rect.
-// ---------------------------------------------------------------------------
-void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
+void DragInterpolationControlPoint(MMDApp* app) {  
     const HWND window = static_cast<HWND>(app->Hwnd());
     HDC dc = app->CurveDC();
-    HPEN pen = CreatePen(PS_SOLID, 1, 0x00FFFFFFu);              // 0x41629D
-    HBRUSH brush = CreateSolidBrush(0x00FFFFFFu);                // 0x4162AB
+    HPEN pen = CreatePen(PS_SOLID, 1, 0x00FFFFFFu);              
+    HBRUSH brush = CreateSolidBrush(0x00FFFFFFu);                
     SelectObject(dc, pen);
     SelectObject(dc, brush);
-    Rectangle(dc, 0, 0, 128, 128);                               // 0x4162D6
+    Rectangle(dc, 0, 0, 128, 128);                               
     DeleteObject(pen);
     DeleteObject(brush);
 
     RECT client{};
-    GetClientRect(window, &client);                              // 0x4162F4
-    int x = app->MouseX() - 8;                                   // 0x4162FD
+    GetClientRect(window, &client);                              
+    int x = app->MouseX() - 8;                                   
     if (x < 0) x = 0; else if (x > 127) x = 127;
-    int y = client.bottom - app->MouseY() - 8;                   // 0x416317
+    int y = client.bottom - app->MouseY() - 8;                   
     if (y < 0) y = 0; else if (y > 127) y = 127;
 
-    Curve drawn{};  // (x1, y1, x2, y2) fed to both draw helpers
+    Curve drawn{};  
     const int selected = static_cast<int>(SendMessageA(
         GetDlgItem(window, panel::kInterpCurveCombo), CB_GETCURSEL, 0, 0));
 
-    if (app->state.optflag[0] != 0) {   // 0x416337
+    if (app->state.optflag[0] != 0) {   
         unsigned char* records =
             reinterpret_cast<unsigned char*>(app->CameraKeys());
         if (records != nullptr) {
@@ -151,7 +123,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                     app->state.pendingTimelineSelectionRow;
                 if (mode == 1) {
                     unsigned char* base;
-                    if (selected >= 6) {                         // 0x416397
+                    if (selected >= 6) {                         
                         for (int c = 0; c < 6; ++c) {
                             records[off + 40 + c] =
                                 static_cast<std::uint8_t>(x);
@@ -159,7 +131,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                                 static_cast<std::uint8_t>(y);
                         }
                         base = records + off;
-                    } else {                                     // 0x4163A2
+                    } else {                                     
                         records[off + selected + 40] =
                             static_cast<std::uint8_t>(x);
                         records[off + selected + 46] =
@@ -171,7 +143,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                              static_cast<std::int8_t>(base[58])};
                 } else if (mode == 2) {
                     unsigned char* base;
-                    if (selected >= 6) {                         // 0x41648F
+                    if (selected >= 6) {                         
                         for (int c = 0; c < 6; ++c) {
                             records[off + 52 + c] =
                                 static_cast<std::uint8_t>(x);
@@ -179,7 +151,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                                 static_cast<std::uint8_t>(y);
                         }
                         base = records + off;
-                    } else {                                     // 0x41649A
+                    } else {                                     
                         records[off + selected + 52] =
                             static_cast<std::uint8_t>(x);
                         records[off + selected + 58] =
@@ -191,7 +163,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                 }
             }
         }
-    } else {                                                     // 0x41656B
+    } else {                                                     
         unsigned char* model = app->SelectedModel();
         mdl::BoneKey* records = model != nullptr
             ? mdl::BoneKeys(model) : nullptr;
@@ -204,7 +176,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                     app->state.pendingTimelineSelectionRow;
                 if (mode == 1) {
                     int channel;
-                    if (selected >= 4) {                         // 0x4165C7
+                    if (selected >= 4) {                         
                         for (int c = 0; c < 4; ++c) {
                             record.interpolation[c] =
                                 static_cast<std::uint8_t>(x);
@@ -212,7 +184,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                                 static_cast<std::uint8_t>(y);
                         }
                         channel = 0;
-                    } else {                                     // 0x4165CB
+                    } else {                                     
                         record.interpolation[selected] =
                             static_cast<std::uint8_t>(x);
                         record.interpolation[4 + selected] =
@@ -226,7 +198,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                                  record.interpolation[12 + channel])};
                 } else if (mode == 2) {
                     int channel;
-                    if (selected >= 4) {                         // 0x416725
+                    if (selected >= 4) {                         
                         for (int c = 0; c < 4; ++c) {
                             record.interpolation[8 + c] =
                                 static_cast<std::uint8_t>(x);
@@ -234,7 +206,7 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
                                 static_cast<std::uint8_t>(y);
                         }
                         channel = 0;
-                    } else {                                     // 0x416729
+                    } else {                                     
                         record.interpolation[8 + selected] =
                             static_cast<std::uint8_t>(x);
                         record.interpolation[12 + selected] =
@@ -251,21 +223,15 @@ void DragInterpolationControlPoint(MMDApp* app) {  // VA 0x00416280
         }
     }
 
-    DrawCurve(app, drawn);                                       // 0x41684F
-    DrawControlPoints(app, drawn);                               // 0x41686C
-    GetClientRect(window, &client);                              // 0x41687D
+    DrawCurve(app, drawn);                                       
+    DrawControlPoints(app, drawn);                               
+    GetClientRect(window, &client);                              
     RECT dirty{8, client.bottom - 135, 137, client.bottom - 6};
-    InvalidateRect(window, &dirty, FALSE);                       // 0x4168BC
+    InvalidateRect(window, &dirty, FALSE);                       
 }
 
-// The x86 original (0x430510) compared every channel curve against a
-// single baseline, so button 430 went grey whenever the X/Y interpolation
-// curves differed from each other.  The x64 E build (0x7FF7CB482BB0,
-// CurvePanelRepaint) seeds per-channel baselines and keeps 430 enabled
-// while each channel stays self-consistent - that is the behavioral
-// baseline, so every caller funnels through the x64 body.
-void SelectionReeval(MMDApp* app) {  // 0x430510 / x64 0x7FF7CB482BB0
+void SelectionReeval(MMDApp* app) {  
     CurvePanelRepaint(app);
 }
 
-}  // namespace rinmotiondance
+}  

@@ -1,30 +1,3 @@
-// ===========================================================================
-// VA 0x00412330 - ApplyGravityTrack  (0x7F1 bytes)  gravity-track apply + physics
-//                                    dialog (hwnd @ app+0xA0CCC) refresh
-// VA 0x00413120 - ApplyAccessoryTrack  (0x3B5 bytes)  accessory key-track apply
-// ===========================================================================
-// ApplyGravityTrack (called after VMD load, frame seek, physics-dialog edits and
-// PMM load): walks the physical-gravity track at app+0x380 (36B records
-// {+0 frame, +4 prev, +8 next, +0xC gravity magnitude, +0x10/+0x14/+0x18
-// gravity dir xyz, +0x1C iterations, +0x20 mode dword}) to the frame at
-// app+0x980 and writes app+0xA0CD4/9EDC8/9EDC4/9EDB8/9EDBC/9EDC0.  Exact
-// hit / dead end copy the record; between keys the five values lerp with
-// the unsigned 2^32 wrap correction (0x52B9F0 = 4294967296.0f) and the
-// iteration count rounds (int)(t * delta) + prev.  When the physics dialog
-// is open the controls refresh: "%3.2f" texts 709..712 (0x2C5..0x2C8),
-// "%d" text 713 (0x2C9), trackbars 637..639 (0x27D..0x27F) at
-// (int)(g * 100.0), check 731 (0x2DB) mirrors app+0xA0CD4, and control
-// 713 is enabled iff app+0xA0CD4 != 0.
-//
-// ApplyAccessoryTrack (per accessory slot idx): walks the 60B records of the track
-// at app+0x384[idx] to app+0x980 and copies into the accessory object at
-// app+0x9DD70[idx]: visible byte +0x210 (rec+0xC), +0x49C (rec+0xD),
-// floats +0x230/+0x234 (rec+0x10/+0x14), vec +0x220 (rec+0x28),
-// +0x22C (rec+0x34), vec +0x214 (rec+0x1C), +0x4A0 (rec+0x38).  Only
-// +0x34/+0x38 lerp between keys (the transparency-quirk pair); the rest
-// copy from the previous record.  Port adds null guards the original gets
-// from the 0x466D20 allocations.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -40,9 +13,8 @@
 namespace rinmotiondance {
 namespace {
 
-constexpr float kWrap2p32 = 4294967296.0f;   // 0x52B9F0
+constexpr float kWrap2p32 = 4294967296.0f;   
 
-// applies the record fields of the gravity track into the live cluster
 void ApplyGravityRecord(MMDApp* app, const mdl::GravityKey& key) {
     std::uint32_t noiseModeWord;
     std::memcpy(&noiseModeWord, &key.noiseEnabled, sizeof noiseModeWord);
@@ -55,13 +27,12 @@ void ApplyGravityRecord(MMDApp* app, const mdl::GravityKey& key) {
     app->state.gravityZ = key.direction[2];
 }
 
-// physics-dialog mirror of the live cluster (0x4123F2..0x412820)
 void RefreshPhysicsDialog(MMDApp* app) {
     HWND dlg = app->GravitySettingDialog();
     if (dlg == nullptr) return;
     char text[0x32];
     sprintf_s(text, 0x32, "%3.2f",
-              app->state.gravityMagnitude);       // 0x52BA08
+              app->state.gravityMagnitude);       
     SetWindowTextA(GetDlgItem(dlg, panel::kGravityAccelEdit), text);
     sprintf_s(text, 0x32, "%3.2f",
               app->state.gravityX);
@@ -72,7 +43,7 @@ void RefreshPhysicsDialog(MMDApp* app) {
     sprintf_s(text, 0x32, "%3.2f",
               app->state.gravityZ);
     SetWindowTextA(GetDlgItem(dlg, panel::kGravityDirZEdit), text);
-    SendMessageA(GetDlgItem(dlg, panel::kGravityDirXSlider), TBM_SETPOS, 1,       // 0x4124E0..
+    SendMessageA(GetDlgItem(dlg, panel::kGravityDirXSlider), TBM_SETPOS, 1,       
         static_cast<LPARAM>(
             static_cast<int>(app->state.gravityX * 100.0)));
     SendMessageA(GetDlgItem(dlg, panel::kGravityDirYSlider), TBM_SETPOS, 1,
@@ -84,31 +55,30 @@ void RefreshPhysicsDialog(MMDApp* app) {
     sprintf_s(text, 0x32, "%d",
               static_cast<int>(
                   app->state.gravityNoise));
-    SetWindowTextA(GetDlgItem(dlg, panel::kGravityNoiseEdit), text);             // 0x52B9F4
+    SetWindowTextA(GetDlgItem(dlg, panel::kGravityNoiseEdit), text);             
     const BOOL mode = app->state.gravityNoiseEnabled != 0;
     SendMessageA(GetDlgItem(dlg, panel::kGravityNoiseCheckbox), BM_SETCHECK, mode, 0);
-    EnableWindow(GetDlgItem(dlg, panel::kGravityNoiseEdit), mode);               // 0x412B03
+    EnableWindow(GetDlgItem(dlg, panel::kGravityNoiseEdit), mode);               
 }
 
-}  // namespace
+}  
 
-// ---- VA 0x00412330 --------------------------------------------------------
-void ApplyGravityTrack(MMDApp* app) {  // VA 0x00412330
+void ApplyGravityTrack(MMDApp* app) {  
     const std::uint32_t frame = app->state.currentFrame;
     mdl::GravityKey* const track = app->GravityKeys();
-    if (track == nullptr) return;   // guard: 0x466D20 allocates the track
+    if (track == nullptr) return;   
 
     const auto recFrame = [&track](unsigned int idx) -> std::uint32_t& {
         return track[idx].frame;
     };
 
     unsigned int idx = 0;
-    if (recFrame(0) < frame) {                                  // 0x412390..
+    if (recFrame(0) < frame) {                                  
         for (;;) {
             const unsigned int next =
                 track[idx].next;
             if (next == 0) {
-                ApplyGravityRecord(app, track[idx]);             // dead end
+                ApplyGravityRecord(app, track[idx]);             
                 RefreshPhysicsDialog(app);
                 return;
             }
@@ -118,13 +88,12 @@ void ApplyGravityTrack(MMDApp* app) {  // VA 0x00412330
     }
 
     const mdl::GravityKey& rec = track[idx];
-    if (recFrame(idx) == frame) {                               // exact hit
+    if (recFrame(idx) == frame) {                               
         ApplyGravityRecord(app, rec);
         RefreshPhysicsDialog(app);
         return;
     }
 
-    // between keys: lerp against the previous record (0x412860..0x4128E0)
     const mdl::GravityKey& prev = track[rec.previous];
     float num = static_cast<float>(
         static_cast<std::int32_t>(frame - recFrame(rec.previous)));
@@ -153,8 +122,5 @@ void ApplyGravityTrack(MMDApp* app) {  // VA 0x00412330
     RefreshPhysicsDialog(app);
 }
 
-// ---- VA 0x00413120 --------------------------------------------------------
-// Ported in src/window/accessory_paste.cpp (parallel-port winner: verbatim
-// prev-record copy in the between-keys branch, per 0x4131AC..0x413224).
 
-}  // namespace rinmotiondance
+}  

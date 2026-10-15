@@ -19,9 +19,6 @@ struct Window {
 };
 }
 
-// Exercise the production resource loader with the actual six-material axis.
-// Compare every material byte to D3DX's buffer, including the second and last
-// records that an x86 stride misreads on x64.
 int main() {
     using namespace rinmotiondance;
     Window window;

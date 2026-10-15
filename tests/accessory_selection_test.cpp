@@ -25,7 +25,6 @@ int main() {
     auto expect = [&](bool condition, const char* name) {
         if (!condition) { std::fprintf(stderr, "%s\n", name); ok = false; }
     };
-    // Opposite shadow/selection values expose accidental use of the render flag.
     first.shadowEnabled = 1;
     last.rowSelected = 1;
     mds::RefreshRequest(0);

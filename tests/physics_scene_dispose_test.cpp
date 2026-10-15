@@ -43,7 +43,7 @@ int main() {
     delete plane;
 
     PhysicsScene scene{};
-    DisposePhysicsWorld(&scene);  // partially initialized startup cleanup
+    DisposePhysicsWorld(&scene);  
     scene.collisionConfig = new btDefaultCollisionConfiguration;
     scene.dispatcher = new btCollisionDispatcher(scene.collisionConfig);
     scene.broadphase = new bt32BitAxisSweep3(btVector3(-100, -100, -100), btVector3(100, 100, 100));

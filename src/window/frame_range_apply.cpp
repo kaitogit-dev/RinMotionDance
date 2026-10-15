@@ -1,14 +1,3 @@
-// ===========================================================================
-// VA 0x0043E970 - model frame-range scale/apply
-// ===========================================================================
-// The dialog supplies an inclusive range [start,end] and a positive scale.
-// Every selected family is rebuilt through the original registrar:
-//   688 bone keys, 689 morph keys, 690 model display/IK keys.
-// Keys inside the range are scaled around start; keys after end are shifted by
-// the range's length delta.  Bone edits use MMD's paired type-4/type-2 undo
-// transaction, while morph/display follow the original no-extra-ring path.
-// Reference: IDA v9.32 disassembly/decompile 0x43E970..0x4403AE.
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -28,9 +17,6 @@
 namespace rinmotiondance {
 namespace {
 
-// Porting-era trace under RINMOTIONDANCE_STATE_DUMP_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
-// valid and inlines away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void TraceRange(const char* stage, int value = -1) {
     char directory[MAX_PATH]{};
@@ -58,13 +44,6 @@ T& At(unsigned char* base, std::size_t offset) {
     return *reinterpret_cast<T*>(base + offset);
 }
 
-// x64 sub_7FF7CB4BD470 computes both frame maps in SSE single precision:
-//   (int)(float)((float)(int)(frame - start) * (float)scale)
-// i.e. cvtsi2ss -> mulss (round-to-nearest float product) -> cvttss2si.
-// A double product (the x87 shape of the x86 build) diverges by one frame
-// at common values (e.g. scale 1.05, diff 20: float rounds 20.9999990 up
-// to 21.0f and truncates to 21, double truncates to 20), so the multiply
-// and the truncation must both stay in float.
 std::uint32_t ScaledRelativeFrame(std::uint32_t frame,
                                   std::uint32_t start,
                                   std::uint32_t end,
@@ -158,9 +137,6 @@ void ScaleBoneKeys(MMDApp* app, unsigned char* model, HWND hDlg,
                     sizeof(key.interpolation));
     }
 
-    // Deleting the marked originals creates the first type-2 snapshot.
-    // The inline block turns it into type 4 and opens the paired insertion
-    // snapshot before the registrar starts touching the new records.
     DeleteMarkedKeyframes(app);
     TraceRange("bone.deleted");
     BeginRangeScaleBoneUndo(model, app->CurrentFrame(), count);
@@ -307,10 +283,8 @@ void ScaleDisplayKeys(MMDApp* app, unsigned char* model, HWND hDlg,
     TraceRange("display.inserted");
 }
 
-}  // namespace
+}  
 
-// VA 0x0043E970 - read the dialog's start/end/scale fields
-// and re-register the selected key families through the scaled range.
 void ApplyFrameRangeScale(HWND hDlg) {
     TraceRange("entered");
     MMDApp* const app = g_Block;
@@ -330,7 +304,6 @@ void ApplyFrameRangeScale(HWND hDlg) {
     if (endSigned - startSigned <= 0)
         return;
 
-    // (between modelOffsetZ and morphFrameShift), no state member yet.
     app->FrameRangeStartFrame() = startSigned;
     GetWindowTextA(GetDlgItem(hDlg, panel::kScaleRateEdit), text, 8);
     const double scale = std::atof(text);
@@ -357,4 +330,4 @@ void ApplyFrameRangeScale(HWND hDlg) {
     TraceRange("done");
 }
 
-}  // namespace rinmotiondance
+}  

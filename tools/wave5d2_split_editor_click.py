@@ -1,7 +1,3 @@
-# Wave5-D2: split HandleLButtonDown (src/window/ui_editor_click.cpp) into
-# region sub-functions + merge the isomorphic band/stage toggle blocks.
-# Verbatim code is moved by line slices; only genuinely new glue text is
-# authored here.  Run once; the line numbers below pin the current file.
 import re
 import sys
 
@@ -10,7 +6,7 @@ PATH = r"src\window\ui_editor_click.cpp"
 raw = open(PATH, "rb").read().decode("utf-8")
 eol = "\r\n" if "\r\n" in raw else "\n"
 lines = raw.split(eol)
-assert len(lines) == 1235, len(lines)  # 1234 lines + trailing split
+assert len(lines) == 1235, len(lines)  
 
 
 def sl(a, b):
@@ -48,7 +44,6 @@ def untail(chunk):
 out = []
 out += sl(1, 21)
 
-# ---- file-header tail: add the sub-function layout map ----------------------
 out += [
     "//",
     "// Every path funnels into the shared tail (dirty flag 0xA0189, click anchor",
@@ -72,10 +67,8 @@ out += [
     "// =========================================================================//",
 ]
 
-# ---- unchanged middle: includes .. g_timelineSelectionRecords ---------------
 out += sl(32, 477)
 
-# ---- new region helpers -----------------------------------------------------
 out += [
     "",
     "// ---- HandleLButtonDown region helpers ------------------------------------",
@@ -178,7 +171,6 @@ out += [
     "}",
 ]
 
-# ---- S2: HandleLButtonDown_MarginColumnToggle --------------------------------
 s2, n2 = untail(sl(517, 529))
 assert n2 == 2, n2
 out += [
@@ -194,10 +186,9 @@ out += [
 out += dedent4(s2)
 out += ["}"]
 
-# ---- S3+S4: HandleLButtonDown_NameColumnHit ----------------------------------
 s3a = dedent4(sl(538, 554))
 s3c, n3 = untail(sl(584, 770))
-assert n3 == 6, n3  # 607, 614, 736, 746, 750, 769
+assert n3 == 6, n3  
 s3c = dedent4(s3c)
 out += [
     "",
@@ -238,9 +229,8 @@ out += [
 out += s3c
 out += ["}"]
 
-# ---- S5-S6: HandleLButtonDown_TimelineAreaHit --------------------------------
-s5a_open = dedent4(sl(780, 786))       # S5a comment block + rowD
-s5a_shift = dedent4(sl(792, 792))      # shiftActive
+s5a_open = dedent4(sl(780, 786))       
+s5a_shift = dedent4(sl(792, 792))      
 s5a_joint2d, nj = untail(sl(861, 884))
 assert nj == 0, nj
 s5a_joint2d = dedent4(s5a_joint2d)
@@ -367,9 +357,8 @@ out += [
     "}",
 ]
 
-# ---- S7: HandleLButtonDown_FrameStripHit -------------------------------------
 s7, n7 = untail(sl(1053, 1186))
-assert n7 == 2, n7  # 1054, 1186
+assert n7 == 2, n7  
 s7 = dedent4(s7)
 out += [
     "",
@@ -385,9 +374,8 @@ out += [
 out += s7
 out += ["}"]
 
-# ---- S7b: HandleLButtonDown_NameRowRectHit -----------------------------------
 s7b, n7b = untail(sl(1194, 1226))
-assert n7b == 4, n7b  # 1202, 1209, 1219, 1225
+assert n7b == 4, n7b  
 s7b = dedent4(s7b)
 s7b = [ln.replace("rc.bottom", "bottom") for ln in s7b]
 out += [
@@ -404,7 +392,6 @@ out += [
 out += s7b
 out += ["}"]
 
-# ---- new dispatcher ----------------------------------------------------------
 out += [
     "",
     "void HandleLButtonDown(MMDApp* app) {",
@@ -470,7 +457,6 @@ out += [
 
 text = eol.join(out)
 
-# ---- sanity checks (before touching the file) ----------------------------------
 tail_stmts = [ln for ln in text.split(eol) if ln.lstrip().startswith("goto L_tail;")]
 assert not tail_stmts, tail_stmts[:3]
 rowtype_stmts = [ln for ln in text.split(eol)

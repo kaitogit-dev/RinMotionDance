@@ -28,9 +28,6 @@ int main() {
     auto app = std::make_unique<rinmotiondance::MMDApp>();
     std::memset(&app->state, 0, sizeof(app->state));
     app->MainWindow() = window;
-    // Original x64 uses (focus == main || viewportActive), then the panel
-    // and model gates. It does not add an IsIconic/GetForegroundWindow guard.
-    // Inject snapshots without moving focus or synthesizing physical keys.
     for (int minimized = 0; minimized != 2; ++minimized) {
         if (minimized) ShowWindow(window, SW_SHOWMINNOACTIVE);
         if (GetForegroundWindow() == window || (minimized && !IsIconic(window)))

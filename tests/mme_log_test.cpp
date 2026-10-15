@@ -1,5 +1,3 @@
-// Production logging with only its modal Win32 boundary replaced. All file
-// assertions use a fresh temporary directory, never a user's MMEffect.txt.
 #include <windows.h>
 #include <cstdio>
 #include <fstream>
@@ -32,7 +30,6 @@ int main(int argc, char**) {
     const std::string contents = "Existing documentation must survive.\r\n";
     if (sentinel) { std::ofstream file(path, std::ios::binary); file << contents; }
 
-    // Logging needs no directory or file initialization.
     mme::MmeSetLogMirror([](const char* text) { mirrored.emplace_back(text); });
     mme::MmeLogWrite("first\r\nsecond\nthird\r\nfourth", 0);
     const std::string normalized = "first\r\nsecond\r\nthird\r\nfourth\r\n";
@@ -60,7 +57,6 @@ int main(int argc, char**) {
     Check(mirrored.size()==6, "detached mirror remains detached");
     Check(mme::MmeGetLogDialogText()==expected+"last\r\n", "detached dialog can backfill full history");
 
-    // Observe real filesystem state after all logging and phase changes.
     if (sentinel) {
         std::ifstream file(path, std::ios::binary);
         const std::string actual((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());

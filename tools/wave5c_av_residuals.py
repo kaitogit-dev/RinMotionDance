@@ -61,7 +61,6 @@ for dirpath, _, files in os.walk(ROOT):
         code = strip_comments_strings(text)
         if len(code) != len(text):
             print(f'!! LENGTH MISMATCH {fn}: {len(text)} -> {len(code)}', file=sys.stderr)
-        # line numbers preserved (we keep newlines)
         for m in ID.finditer(code):
             ln = code.count('\n', 0, m.start()) + 1
             src_line = text.splitlines()[ln-1].strip()

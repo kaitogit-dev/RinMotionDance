@@ -1,14 +1,3 @@
-// ===========================================================================
-// Gizmo geometry for the physics scene constructor (VA 0x004032B0).
-// ===========================================================================
-// Byte-exact extraction of the stack arrays filled by the original's x87
-// constant-juggling code (0x403345..0x405CE5) via .zcode/extract_scene_data.py
-// (x87 stack simulator + PE .rdata constant resolution).  Vertex stride is 16
-// bytes: xyz + D3DFVF_DIFFUSE slot; every diffuse slot is explicitly written
-// by the original (0xFFFF0000 / 0xFF000000).  The single defaulted word is
-// kGizmoCubeIdx[0]: MSVC reused the S_OK return of IDirect3DIndexBuffer9::
-// Lock as the constant 0.  Index buffers are D3DFMT_INDEX16.
-// =========================================================================//
 
 static const unsigned kGizmoSphere58[232] = {
     0x00000000u, 0x3F800000u, 0x00000000u, 0xFFFF0000u,

@@ -40,7 +40,7 @@ import os
 import struct
 import sys
 
-import dialog_rc  # sibling script: rc.exe location + .rc compile + .res parse
+import dialog_rc  
 import argparse
 import os
 import struct
@@ -55,13 +55,10 @@ LANG_JP, LANG_EN = 0x411, 0x409
 
 APP_ICON = "assets/app.ico"
 
-# (type, name, lang, path relative to res/) - order defines the .res record
-# order and MUST match the original .rsrc tree.  Dialog/menu template paths
-# are expanded by glob in record_specs() below.
 PNG_MAP = [
-    (102, "hud_sprites.png"),        # viewport HUD sprite sheet (OverlayTexture)
-    (103, "toon00.png"),             # default toon ramp, slot 0
-    (104, "toon01.png"),             # data/toonNN.bmp fallbacks, slots 1..10
+    (102, "hud_sprites.png"),        
+    (103, "toon00.png"),             
+    (104, "toon01.png"),             
     (105, "toon02.png"),
     (106, "toon03.png"),
     (107, "toon04.png"),
@@ -71,7 +68,7 @@ PNG_MAP = [
     (111, "toon08.png"),
     (112, "toon09.png"),
     (113, "toon10.png"),
-    (114, "accessory_helper.png"),   # accessory placement helper texture
+    (114, "accessory_helper.png"),   
 ]
 
 
@@ -112,7 +109,7 @@ def record_specs(manifest):
     yield ("XFILE", 115, LANG_JP, "assets/axis.x")
     yield (RT_BITMAP, 101, LANG_JP, "assets/sidebar_icon_sheet.bmp")
     yield (RT_BITMAP, 119, LANG_JP, "assets/playing_indicator.bmp")
-    for i in range(1, 7):                     # RT_ICON leaves from app.ico
+    for i in range(1, 7):                     
         yield (RT_ICON, i, LANG_JP, APP_ICON)
     for nm in ("SAMPLE02", "SAMPLE02E"):
         yield (RT_MENU, nm, LANG_JP, None)
@@ -124,9 +121,6 @@ def record_specs(manifest):
     yield (RT_MANIFEST, 1, LANG_EN, manifest)
 
 
-# --------------------------------------------------------------------------
-# native-format loaders
-# --------------------------------------------------------------------------
 
 def load_bitmap(path):
     """RT_BITMAP = bare DIB; the .bmp on disk adds a BITMAPFILEHEADER."""
@@ -150,19 +144,16 @@ def load_ico_images(path):
     if reserved != 0 or ico_type != 1:
         raise ValueError(f"{path}: not an ICO")
     entries = []
-    group = bytearray(data[:6])              # ICONDIR == GRPICONDIR prefix
+    group = bytearray(data[:6])              
     for i in range(count):
         e = data[6 + i * 16:6 + i * 16 + 16]
         size, offset = struct.unpack_from("<II", e, 8)
-        rid = i + 1                          # file order == RT_ICON id order
+        rid = i + 1                          
         entries.append((rid, data[offset:offset + size]))
         group += e[:12] + struct.pack("<H", rid)
     return entries, bytes(group)
 
 
-# --------------------------------------------------------------------------
-# COFF .res writer (record layout as emitted by rc.exe / the original dump)
-# --------------------------------------------------------------------------
 
 def res_field(val):
     """One type/name field of a .res record: ordinal or padded UTF-16 string."""
@@ -174,7 +165,6 @@ def res_field(val):
 
 def render_res(records):
     out = bytearray()
-    # 32-byte zero sentinel record rc.exe leads the file with
     out += struct.pack("<II", 0, 32)
     out += struct.pack("<HH", 0xFFFF, 0) * 2
     out += struct.pack("<IHHII", 0, 0, 0, 0, 0)
@@ -196,7 +186,7 @@ def build_records(manifest):
     tmpl = templates()
     records = []
     for t, n, lang, rel in record_specs(manifest):
-        if rel is None:                       # template from the .rc sources
+        if rel is None:                       
             blob = tmpl[(t, n)]
         else:
             path = os.path.join(RES, rel)
@@ -212,9 +202,6 @@ def build_records(manifest):
     return records
 
 
-# --------------------------------------------------------------------------
-# init: one-shot conversion res/rsrc/ -> res/assets/ (+ x64 manifest)
-# --------------------------------------------------------------------------
 
 def bmp_file_header(dib):
     bi_size, _, _, _, bpp = struct.unpack_from("<IiiHH", dib, 0)
@@ -252,7 +239,6 @@ def cmd_init():
         open(os.path.join(assets, fname), "wb").write(
             bmp_file_header(dib) + dib)
 
-    # app.ico: reassemble from RT_GROUP_ICON 100 + RT_ICON 1..6
     group = open(os.path.join(rsrc, "GROUP_ICON",
                               f"100_{LANG_JP:04X}.bin"), "rb").read()
     count = struct.unpack_from("<H", group, 4)[0]
@@ -264,13 +250,12 @@ def cmd_init():
         blob = open(os.path.join(rsrc, "ICON",
                                  f"{rid}_{LANG_JP:04X}.bin"), "rb").read()
         images.append(blob)
-        ico += entry[:12] + struct.pack("<I", off)   # ICONDIRENTRY = 16 bytes
+        ico += entry[:12] + struct.pack("<I", off)   
         off += len(blob)
     for blob in images:
         ico += blob
     open(os.path.join(assets, "app.ico"), "wb").write(bytes(ico))
 
-    # x64 manifest: extract the <assembly> blob from the committed x64 .res
     res64 = open(os.path.join(RES, "gen_resources_x64.res"), "rb").read()
     i = res64.find(b"<assembly")
     j = res64.find(b"</assembly>", i)

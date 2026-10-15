@@ -6,8 +6,6 @@
 
 namespace rinmotiondance {
 
-// Horizontal-collapse state shared by the bottom-panel background and its
-// GDI labels. The original advances the offset only for collapsed panels.
 struct BottomPanelLayout {
     int leading;
     int afterLightOrFace;
@@ -61,4 +59,4 @@ inline BottomPanelLayout ComputeBottomPanelLayout(const MMDApp* app) {
     return result;
 }
 
-}  // namespace rinmotiondance
+}  

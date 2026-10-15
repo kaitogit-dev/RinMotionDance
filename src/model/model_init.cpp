@@ -1,12 +1,3 @@
-// ===========================================================================
-// VA 0x004A8DC0 - ModelInitDefaults  (original: sub_4A8DC0, 1117 bytes)
-// VA 0x004A89B0 - ModelInitMorphSlots (original: sub_4A89B0, 522 bytes)
-// ===========================================================================
-// Default-state initializer of the freshly allocated 0x4CCF4 model block
-// (called from 0x460430 add-model, 0x450000 and 0x458F80 scene load).
-// Initial values recovered from the x64 constructor and tracking reset.
-// Runtime members keep tracking state separate from model-owned resources.
-// =========================================================================//
 #include <cstdint>
 #include <cstring>
 
@@ -14,9 +5,9 @@
 
 namespace rinmotiondance {
 
-void ModelInitMorphSlots(unsigned char* m);                  // 0x4A89B0
+void ModelInitMorphSlots(unsigned char* m);                  
 
-void ModelInitDefaults(unsigned char* m) {                   // 0x4A8DC0
+void ModelInitDefaults(unsigned char* m) {                   
     mdl::ModelRecord& model = *mdl::Mdl(m);
     model.physicsMode = 0;
     for (auto& text : model.pmxTextBuffers)
@@ -109,7 +100,7 @@ void ModelInitDefaults(unsigned char* m) {                   // 0x4A8DC0
         quaternion[3] = 1.0f;
     }
 
-    ModelInitMorphSlots(m);                                // 0x4A89B0
+    ModelInitMorphSlots(m);                                
 
     mdl::PoseTraceFlag(m) = 0;
     model.lightDir[0] = -1.0f;
@@ -120,9 +111,7 @@ void ModelInitDefaults(unsigned char* m) {                   // 0x4A8DC0
     model.matMisc = 0;
 }
 
-void ModelInitMorphSlots(unsigned char* m) {               // 0x4A89B0
-    // Thirty samples for each of the twenty-three sensor joints.
-    // Missing samples use the original y = -999 sentinel.
+void ModelInitMorphSlots(unsigned char* m) {               
     for (auto& joint : mdl::Mdl(m)->skeletonHistory.positions) {
         for (std::size_t sample = 0; sample < mdl::kSkeletonHistoryLength; ++sample) {
             joint[sample * 3] = 0.0f;
@@ -137,4 +126,4 @@ void ModelInitMorphSlots(unsigned char* m) {               // 0x4A89B0
     mdl::Mdl(m)->legIkXOffset = 1.0f;
 }
 
-}  // namespace rinmotiondance
+}  

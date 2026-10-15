@@ -1,11 +1,3 @@
-// ===========================================================================
-// VA 0x0046DC00..0x0046E787 - FrameDriver D3D scene envelope
-// ===========================================================================
-// This is the non-model shell of sub_46B090's render stage: exact clear
-// selection, scene lifetime, and the three dynamic overlay batches.  The
-// model/shadow/background helpers remain separate nodes in the recovered
-// call graph and are intentionally not approximated here.
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -62,18 +54,13 @@ void DrawTextOverlay(MMDApp* app, IDirect3DDevice9* device) {
 void DrawLineOverlay(MMDApp* app, D3DRenderer* sub,
                      IDirect3DDevice9* device) {
     const UINT count = app->LineOverlayPrimitiveCount();
-    // The renderer owns the selection and guide-line vertex buffer.
     auto* vb = sub->lineVertexBuffer;
     if (count == 0 || vb == nullptr)
         return;
 
-    // 原版线批前显式解绑 stage 0（x64 0x7FF7CB44AF44 的 SetTexture(0,NULL)，
-    // 位于文本批之后、线批之前），否则线批会继承文本批的字体图集纹理。
     device->SetTexture(0, nullptr);
     device->SetStreamSource(0, vb, 0, sizeof(ColoredScreenVertex));
     device->SetFVF(kColoredScreenVertexFvf);
-    // MME: 原版线框批次（x64 @0x44AFB4）与文本/精灵 overlay 一样经设备虚表
-    // DrawPrimitive 槽发出（被 MMHack 包装可见），故同样过桥。
     mme::DrawPrimitive(device, D3DPT_LINELIST, 0, count);
 }
 
@@ -98,10 +85,6 @@ void DrawFullscreenQuad(IDirect3DDevice9* device,
     mme::DrawPrimitive(device, D3DPT_TRIANGLELIST, 0, 2);
 }
 
-// Porting-era screen-texture readback under
-// RINMOTIONDANCE_SCREEN_TEXTURE_DUMP_DIR (CMake option RINMOTIONDANCE_DIAG,
-// default OFF); the OFF stub below keeps the call sites valid and inlines
-// away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 #pragma pack(push, 1)
 struct DumpBitmapFileHeader {
@@ -113,9 +96,6 @@ struct DumpBitmapFileHeader {
 };
 #pragma pack(pop)
 
-// Test-only readback of the texture exposed to screen.bmp.  GetRenderTargetData
-// is deliberately issued after EndScene; doing it inside 0x46E025 changes the
-// D3D command boundary and can fail on real D3D9 drivers.
 void DumpAccessoryScreenTexture(MMDApp* app, IDirect3DDevice9* device) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
@@ -257,7 +237,7 @@ inline void DumpAccessoryScreenTexture(MMDApp*, IDirect3DDevice9*) {}
 #endif
 
 void ComposeSelfShadow(MMDApp* app, D3DRenderer* sub,
-                       IDirect3DDevice9* device) { // 0x46DE61
+                       IDirect3DDevice9* device) { 
     if (app->SelfShadowCompositionEnabled() == 0 ||
         app->SelfShadowMode() <= 0)
         return;
@@ -269,7 +249,7 @@ void ComposeSelfShadow(MMDApp* app, D3DRenderer* sub,
 }
 
 void ComposeCallbackTexture(MMDApp* app,
-                            IDirect3DDevice9* device) { // 0x46DF2A
+                            IDirect3DDevice9* device) { 
     if (app->DepthTextureCompositionEnabled() == 0 ||
         app->DepthDeviceEnabled() == 0 ||
         app->FrameStepPlayback() != 0)
@@ -284,7 +264,7 @@ void ComposeCallbackTexture(MMDApp* app,
 }
 
 void CaptureAccessoryScreenTexture(MMDApp* app, D3DRenderer* sub,
-                                   IDirect3DDevice9* device) { // 0x46E025
+                                   IDirect3DDevice9* device) { 
     const int mode = static_cast<int>(app->CaptureMode());
     if (mode != 1 && mode != 2)
         return;
@@ -352,7 +332,7 @@ void CaptureAccessoryScreenTexture(MMDApp* app, D3DRenderer* sub,
         textureSurface->Release();
 }
 
-}  // namespace
+}  
 
 void RenderFrameScene(MMDApp* app) {
     D3DRenderer* sub = app->Renderer();
@@ -365,13 +345,10 @@ void RenderFrameScene(MMDApp* app) {
 
     SetupFrameWorldTransform(app);
     UpdateFrameStereo(app);
-    PrepareFrameSpriteOverlay(app); // 0x46BD79, after transform setup
+    PrepareFrameSpriteOverlay(app); 
     D3DMATRIX frameWorld{};
     device->GetTransform(D3DTS_WORLD, &frameWorld);
 
-    // 0x46DB41: the whole block - per-model VB update (inner gate
-    // app+0xA0665 == 0) AND the Clear - runs only when app+0xA0D6C
-    // (messageSeen) != 0; frames without a message leave both untouched.
     if (app->state.messageSeen == 0)
         return;
     if (app->state.accessoryEditDialogOpen == 0) {
@@ -400,8 +377,6 @@ void RenderFrameScene(MMDApp* app) {
     if (effectRenderer)
         RenderShadowMap(app, reinterpret_cast<const float*>(&frameWorld));
 
-    // 0x46DDF6..0x46DE5F is deliberately a loop: render callbacks may add
-    // another pass by incrementing A0270 while a pass is in progress.
     while (app->state.renderPassCount > 0) {
         --app->state.renderPassCount;
         if (effectRenderer)
@@ -414,8 +389,6 @@ void RenderFrameScene(MMDApp* app) {
     ComposeSelfShadow(app, sub, device);
     ComposeCallbackTexture(app, device);
 
-    // 0x46DFDE: mirror the full-size capture RT into the secondary-window
-    // back buffer.  The original reacquires the back buffer after a reset.
     if (sub->multisampleAvailable == 0 &&
         app->RecordingWindow() != nullptr) {
         auto** backBufferSlot = &sub->backbufferSurface;
@@ -427,15 +400,12 @@ void RenderFrameScene(MMDApp* app) {
 
     CaptureAccessoryScreenTexture(app, sub, device);
 
-    // 0x46E208: the recording/sub-window path ends the scene here; it never
-    // draws debug geometry or the dynamic overlay batches.
     if (app->RecordingWindow() != nullptr) {
         mme::EndScene(app, device);
         DumpAccessoryScreenTexture(app, device);
         return;
     }
 
-    // 0x46E214..0x46E554: accessory-dialog or Bullet collision debug pass.
     if (app->state.rigidBodyDisplayEnabled == 1 ||
         app->state.frameCopyDialog != 0) {
         device->SetRenderState(D3DRS_LIGHTING, FALSE);
@@ -449,7 +419,6 @@ void RenderFrameScene(MMDApp* app) {
         device->SetRenderState(D3DRS_LIGHTING, TRUE);
     }
 
-    // 0x46E556..0x46E592: selected-bone local/global operation axis.
     if (app->state.optflag[0] == 0 &&
         app->PlaybackActive() == 0 &&
         app->state.frameCopyDialog == 0) {
@@ -468,4 +437,4 @@ void RenderFrameScene(MMDApp* app) {
     DumpAccessoryScreenTexture(app, device);
 }
 
-}  // namespace rinmotiondance
+}  

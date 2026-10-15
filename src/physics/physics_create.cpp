@@ -1,34 +1,3 @@
-// ===========================================================================
-// RinMotionDance: Bullet physics object creation (phase 8)
-// ===========================================================================
-// VA 0x004064F0  CreateRigidBody  - shape + motion state + rigid body
-// VA 0x00406010  CreatePhysJoint  - 6DOF spring constraint
-// VA 0x004A9220  SetPhysicsMode   - bone pose source selector + propagation
-//
-// Binary analysis notes (verified against IDA session mmd932):
-//   * All three are __thiscall on the physics scene wrapper stored at
-//     model+60: scene+64 = btDiscreteDynamicsWorld*, scene+56 = constraint
-//     id counter (0x406010 increments it and returns the old value).
-//   * 0x4064F0 tail: out[0] = *(body+548) = btRigidBody::m_debugBodyId
-//     (stock 2.75 assigns it from the static uniqueId counter inside
-//     setupRigidBody at 0x4F0CD0: this[137]=dword_5459AC++).  out[1] is
-//     the body pointer.  ModelDispose's ReleasePhysRigid (0x4068D0)
-//     matches candidates by the same +548 field - the layout probe
-//     (btRigidBody 560 bytes, m_debugBodyId@+548) confirms our
-//     bullet275 package reproduces this exactly when WIN32 is defined.
-//   * 0x4064F0 writes body+232/-236 (friction/restitution) and the
-//     kinematic flag (+212 |= 2) raw; ported as API calls with identical
-//     field effects.  The linear limits in 0x406010 were raw writes into
-//     m_linearLimits at +816; our package build places that struct at
-//     +800 (btTypedConstraint member order differs, uid@+24 vs +96), so
-//     the port uses setLinearLowerLimit/setLinearUpperLimit and
-//     setUserConstraintId instead of raw offsets (docs/ARCHITECTURE.md §8).
-//   * Original allocates shapes and the body via btAlignedAlloc(560,16)
-//     + placement construction; the port uses C++ new/delete (over-aligned
-//     new under C++17), which disposes through the same deleting dtors.
-//   * D3DXQuaternionRotationMatrix / D3DXQuaternionMultiply are imports in
-//     the original and remain normal PE imports in this build.
-// =========================================================================//
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -63,11 +32,8 @@ void QuatMultiply(float out[4], const float a[4], const float b[4]) {
 #if defined(_M_IX86)
 static const double kSetRotationTwo = 2.0;
 
-// Original 0x401000, btMatrix3x3::setRotation.  The VC9 build deliberately
-// keeps selected intermediates in x87 extended precision and spills others
-// to float.  That exact pattern affects Bullet's initial world transforms.
 __declspec(naked) void __fastcall SetRotationOriginal(
-    float* /*basis*/, const float* /*quaternion*/) {
+    float*  , const float*  ) {
     __asm {
         sub esp, 24h
         mov eax, edx
@@ -196,9 +162,6 @@ void SetRotationOriginal(float* basis, const float* quaternion) {
 }
 #endif
 
-// Porting-era dumps under RINMOTIONDANCE_STATE_DUMP_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stubs below keep the call
-// sites valid and inline away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void DumpRigidCreateState(int shape, int mode, const float* inputMatrix,
                           const float* quaternion, const btRigidBody* body) {
@@ -230,9 +193,6 @@ void DumpRigidCreateState(int shape, int mode, const float* inputMatrix,
     writeWords(quaternion, 4);
     std::fputs("],\"world_bits\":[", stream);
     writeWords(&body->getWorldTransform(), 16);
-    // Numeric solver state from m_invInertiaTensorWorld through the sleeping
-    // thresholds.  The following optional motion-state/constraint-array fields
-    // contain process pointers and are intentionally excluded.
     std::fputs("],\"solver_bits\":[", stream);
     writeWords(reinterpret_cast<const unsigned char*>(body) + 0x110,
                (0x208 - 0x110) / 4);
@@ -309,15 +269,11 @@ inline void DumpRigidCreateState(int, int, const float*, const float*,
 inline void DumpConstraintCreateState(int, btGeneric6DofSpringConstraint*) {}
 #endif
 
-}  // namespace
+}  
 
 #if defined(_M_IX86)
-// VC9 keeps each point/matrix dot product in x87 extended precision and
-// rounds only at fstp (original PMX path 0x4C1775..0x4C183B).  Modern MSVC's
-// mulss/addss chain rounds after every operation and perturbs the initial
-// Bullet constraint frame by several ULP.
 __declspec(naked) void __fastcall TransformJointPointOriginalFast(
-    float* /*out*/, const float* /*point*/, const float* /*matrix*/) {
+    float*  , const float*  , const float*  ) {
     __asm {
         mov eax, [esp+4]
 
@@ -372,14 +328,6 @@ void TransformJointPointOriginal(float out[3], const float point[3],
 #endif
 }
 
-// 关节过拉伸限位半径上界：distA/distB 为关节锚点经两刚体逆变换后的
-// 局部距离，限位项按轴取 |lim[axis]| 与 |lim[3+axis]| 的较大者再求
-// 欧氏范数。x64 原版在两个加载器里是同一段内联数学——
-//   PMD sub_7FF7CB4D2670 @0x7FF7CB4D51B0..0x4D526D（lim 表 +0x48..0x5C，
-//   三对比较 0x48/0x54、0x4C/0x58、0x50/0x5C，平方和过 sqrtf 后累加
-//   进关节记录 +0x94）；
-//   PMX sub_7FF7CB4C9AC0 @0x7FF7CB4D1B8A..0x4D1C4A（指令形态逐条一致）。
-// 物理编辑对话框（physics_model_dialog.cpp）的逐轴 maxAbs 写法与此同源。
 float JointRadiusBound(const float limits[6], float distA, float distB) {
     float maxAbs[3];
     for (int axis = 0; axis < 3; ++axis) {
@@ -394,12 +342,6 @@ float JointRadiusBound(const float limits[6], float distA, float distB) {
                                      maxAbs[2] * maxAbs[2]);
 }
 
-// VA 0x004064F0 - build one Bullet rigid body from PMD data.
-// shape 0 = sphere(sx), 1 = box(sx,sy,sz), 2 = capsule(sx radius, sy height).
-// mode != 0 -> dynamic (mass used); mode == 0 -> kinematic bone follower.
-// out[0] receives the body id (m_debugBodyId), out[1] the btRigidBody*.
-// The scene world is built by SceneConstruct (0x4032B0) during UI creation
-// (0x466D20), so it is always live here like in the original.
 void CreateRigidBody(PhysicsScene* scene, void** out, int shape, float sx, float sy,
                      float sz, const float* mat16, int mode, float mass,
                      float dampLin, float dampAng, float restitution,
@@ -407,21 +349,18 @@ void CreateRigidBody(PhysicsScene* scene, void** out, int shape, float sx, float
     btDiscreteDynamicsWorld* world = scene->world;
     btCollisionShape* colShape = nullptr;
     if (shape == 0) {
-        colShape = new btSphereShape(sx);                      // 0x406531
+        colShape = new btSphereShape(sx);                      
     } else if (shape == 1) {
-        colShape = new btBoxShape(btVector3(sx, sy, sz));      // 0x40657F
+        colShape = new btBoxShape(btVector3(sx, sy, sz));      
     } else if (shape == 2) {
-        colShape = new btCapsuleShape(sx, sy);                 // 0x4065CF
+        colShape = new btCapsuleShape(sx, sy);                 
     } else {
-        out[0] = reinterpret_cast<void*>(                       // 0x4068A4
+        out[0] = reinterpret_cast<void*>(                       
             static_cast<std::intptr_t>(-1));
         out[1] = nullptr;
         return;
     }
 
-    // 0x406607..0x40676D: start transform = matrix translation + basis
-    // rebuilt through the D3DX quaternion round-trip (sub_401000 =
-    // btMatrix3x3::setRotation).
     btTransform startTrans;
     startTrans.setIdentity();
     startTrans.setOrigin(btVector3(mat16[12], mat16[13], mat16[14]));
@@ -429,31 +368,29 @@ void CreateRigidBody(PhysicsScene* scene, void** out, int shape, float sx, float
     QuatFromMatrix(q, mat16);
     SetRotationOriginal(reinterpret_cast<float*>(&startTrans.getBasis()), q);
 
-    // 0x406777: mass zero for kinematic bodies; inertia from the shape
-    // (virtual calculateLocalInertia, vtable slot 7).
     const float useMass = mode ? mass : 0.0f;
     btVector3 inertia(0.0f, 0.0f, 0.0f);
     colShape->calculateLocalInertia(useMass, inertia);
 
     btDefaultMotionState* motionState =
-        new btDefaultMotionState(startTrans);                  // 0x4067B5
-    btRigidBody::btRigidBodyConstructionInfo ci(               // 0x4067EF
+        new btDefaultMotionState(startTrans);                  
+    btRigidBody::btRigidBodyConstructionInfo ci(               
         useMass, motionState, colShape, inertia);
-    btRigidBody* body = new btRigidBody(ci);                   // 0x406803
+    btRigidBody* body = new btRigidBody(ci);                   
 
-    world->addRigidBody(body, 1 << grp, mask);                 // 0x406857
-    body->setDamping(dampLin, dampAng);                        // 0x40686B
-    body->setRestitution(restitution);                         // 0x406875
-    body->setFriction(friction);                               // 0x40687E
+    world->addRigidBody(body, 1 << grp, mask);                 
+    body->setDamping(dampLin, dampAng);                        
+    body->setRestitution(restitution);                         
+    body->setFriction(friction);                               
     if (mode == 0)
-        body->setCollisionFlags(                               // 0x406886
+        body->setCollisionFlags(                               
             body->getCollisionFlags() |
             btCollisionObject::CF_KINEMATIC_OBJECT);
-    body->setActivationState(DISABLE_DEACTIVATION);           // 0x406891
+    body->setActivationState(DISABLE_DEACTIVATION);           
 
     DumpRigidCreateState(shape, mode, mat16, q, body);
 
-    out[0] = reinterpret_cast<void*>(                           // 0x406899
+    out[0] = reinterpret_cast<void*>(                           
         static_cast<std::intptr_t>(body->m_debugBodyId));
     out[1] = body;
 }
@@ -476,9 +413,6 @@ static std::string WordsHex(const float* values, int count) {
 }
 #endif
 
-// VA 0x00406010 - build one 6DOF spring joint between two rigid bodies.
-// Returns the constraint id assigned from the scene counter (scene+56);
-// the btGeneric6DofSpringConstraint pointer is retained by the world.
 int CreatePhysJoint(PhysicsScene* scene, void* rbA, void* rbB,
                     float ax, float ay, float az, float aq0, float aq1,
                     float aq2, float aq3, float bx, float by, float bz,
@@ -491,9 +425,6 @@ int CreatePhysJoint(PhysicsScene* scene, void* rbA, void* rbB,
                     float spring3, float spring4, float spring5) {
     btDiscreteDynamicsWorld* world = scene->world;
 #ifdef RINMOTIONDANCE_DIAG
-    // Env-gated (RINMOTIONDANCE_DUMP_JOINTARGS=<path>) creation-argument trace -
-    // the original receives the very same 32 floats on the stack at
-    // 0x406010, so a probe there yields a directly comparable record.
     static FILE* jointArgLog = []() -> FILE* {
         const char* path = std::getenv("RINMOTIONDANCE_DUMP_JOINTARGS");
         return path ? std::fopen(path, "w") : nullptr;
@@ -530,28 +461,25 @@ int CreatePhysJoint(PhysicsScene* scene, void* rbA, void* rbB,
     }
 #endif
 
-    auto* con = new btGeneric6DofSpringConstraint(             // 0x406048
+    auto* con = new btGeneric6DofSpringConstraint(             
         *static_cast<btRigidBody*>(rbA),
         *static_cast<btRigidBody*>(rbB), frameA, frameB, true);
 
-    con->setLinearLowerLimit(                                  // 0x4062xx
+    con->setLinearLowerLimit(                                  
         btVector3(linLower0, linLower1, linLower2));
     con->setLinearUpperLimit(
         btVector3(linUpper0, linUpper1, linUpper2));
-    // VC9's __CIfmod path in sub_401260/sub_4012E0 canonicalizes a signed
-    // zero result to +0.  The modern fmodf inline preserves -0, which is
-    // visible in the rotational motor limit bits.
     const auto canonicalZero = [](float value) {
         return value == 0.0f ? 0.0f : value;
     };
-    con->setAngularLowerLimit(                                 // sub_401260
+    con->setAngularLowerLimit(                                 
         btVector3(canonicalZero(angLower0), canonicalZero(angLower1),
                   canonicalZero(angLower2)));
-    con->setAngularUpperLimit(                                 // sub_4012E0
+    con->setAngularUpperLimit(                                 
         btVector3(canonicalZero(angUpper0), canonicalZero(angUpper1),
                   canonicalZero(angUpper2)));
 
-    world->addConstraint(con, false);                          // 0x4064xx
+    world->addConstraint(con, false);                          
 
     if (spring0 > 0.0f || spring1 > 0.0f || spring2 > 0.0f ||
         spring3 > 0.0f || spring4 > 0.0f || spring5 > 0.0f) {
@@ -559,30 +487,19 @@ int CreatePhysJoint(PhysicsScene* scene, void* rbA, void* rbB,
                                   spring3, spring4, spring5};
         for (int axis = 0; axis < 6; ++axis) {
             if (springs[axis] > 0.0f) {
-                con->enableSpring(axis, true);                 // sub_5008D0
-                con->setStiffness(axis, springs[axis]);        // sub_500910
+                con->enableSpring(axis, true);                 
+                con->setStiffness(axis, springs[axis]);        
             }
         }
-        con->setEquilibriumPoint();                            // sub_500930
+        con->setEquilibriumPoint();                            
     }
 
-    int& counter = scene->constraintId;                         // 0x4064xx
-    // The original stores this monotonically increasing value at
-    // constraint+0x60: distinct solver UID.  m_userConstraintId at +0x18
-    // remains -1 in the original; merging the two fields changes the VC9
-    // class size and the constraint ordering used by the impulse solver.
+    int& counter = scene->constraintId;                         
     con->setUid(counter);
     DumpConstraintCreateState(counter, con);
     return counter++;
 }
 
-// VA 0x004A9220 - select each bone's pose source and propagate transforms.
-// For every bone (604-byte stride): bones flagged at +492 take the physics
-// result pose (+0x188 pos / +0x194 quat) when physicsMode says so, else the
-// kinematic pose (+0x140/+0x14C); the chosen pose lands at +0x16C/+0x178.
-// Physics mode 2 additionally applies the accumulated bone-morph offsets.
-// The transform updater then runs once for every bone layer through
-// ModelRecord::maxBoneLayer.
 void SetPhysicsMode(unsigned char* m, int afterPhysics,
                     unsigned char* const* modelSlots, int physicsMode) {
     mdl::ModelRecord& model = *mdl::Mdl(m);
@@ -592,8 +509,8 @@ void SetPhysicsMode(unsigned char* m, int afterPhysics,
         rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         const unsigned char flag = bone->hasRigidBody;
         if (((physicsMode == 1 || (physicsMode >= 2 && bone->physicsDisabled == 0)) && flag) != 0) {
-            std::memcpy(bone->physicsOffset, bone->ikBackup, 12);           // pos
-            std::memcpy(bone->physicsQuat, bone->ikBackup + 3, 16);           // quat
+            std::memcpy(bone->physicsOffset, bone->ikBackup, 12);           
+            std::memcpy(bone->physicsQuat, bone->ikBackup + 3, 16);           
         } else {
             std::memcpy(bone->physicsOffset, bone->trans, 12);
             std::memcpy(bone->physicsQuat, bone->rotQuat, 16);
@@ -619,7 +536,7 @@ void SetPhysicsMode(unsigned char* m, int afterPhysics,
 
     const int maxLayer = model.maxBoneLayer;
     for (int i = 0; i <= maxLayer; ++i)
-        BoneFrameTransform(m, afterPhysics, i, modelSlots, physicsMode);  // 0x493A60
+        BoneFrameTransform(m, afterPhysics, i, modelSlots, physicsMode);  
 }
 
-}  // namespace rinmotiondance
+}  

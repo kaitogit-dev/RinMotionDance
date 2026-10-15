@@ -21,8 +21,6 @@ int main() {
     return 77;
 #else
     struct Case { int shift, ctrl, dy; std::uint32_t accessoryPosition, cameraPosition, rotation; };
-    // Independent IEEE-754 binary32 instruction replay; do not calculate the
-    // oracle with the production expression or a tolerance.
     const Case cases[] = {
     {0, 0, 3, 0xBD4CCCCEu, 0x3E800000u, 0x3E23D70Au},
     {0, 0, -3, 0x3E800000u, 0xBD4CCCCEu, 0x3D23D70Bu},
@@ -47,7 +45,6 @@ int main() {
         app->CtrlModifierState()=c.ctrl;
         app->PreviousMouseY()=0;
         app->MouseY()=c.dy;
-        // Accessory, direct camera, parented camera, and view-relative camera.
         for (int branch=0; branch<4; ++branch) {
             app->state.coordinateSystem=branch==0 ? 2 : branch==1 ? 1 : 0;
             app->state.optflag[0]=1;
@@ -69,9 +66,6 @@ int main() {
             if(actual!=c.rotation) { ++failures; std::printf("rotation branch %d axis %d shift %d ctrl %d dy %d: %08X != %08X\n",branch,axis,c.shift,c.ctrl,c.dy,actual,c.rotation); }
         }
     }
-    // Angle target 2 selects the accessory independently of the camera radio
-    // flag. A missing accessory is a no-op, not a fall-through to the camera.
-    // Radio flag zero also refreshes the selected model's bone readout.
     auto model = std::make_unique<mdl::ModelRecord>();
     model->selectedBone = -1;
     app->SetSelectedModelSlot(0);
@@ -102,7 +96,6 @@ int main() {
                     if (!cameraOk) { ++failures; std::printf("angle camera gate axis %d target %d flag %d present %d\n", axis, target, flag, present); }
                     if (!accessoryOk) { ++failures; std::printf("angle accessory gate axis %d target %d flag %d present %d\n", axis, target, flag, present); }
                 }
-    // Position dragging deliberately retains its different radio-flag gate.
     app->AccessorySlot(0) = &accessory;
     app->state.coordinateSystem = 2;
     app->state.cameraParentModel = -1;
@@ -121,7 +114,6 @@ int main() {
             ++failures; std::printf("position accessory gate axis %d flag %d\n", axis, flag);
         }
     }
-    // Display conversion must round division and multiplication before printf.
     HWND window = CreateWindowExA(0, "STATIC", "", 0, 0, 0, 0, 0,
                                   nullptr, nullptr, GetModuleHandleA(nullptr), nullptr);
     HWND edit = CreateWindowExA(0, "EDIT", "", WS_CHILD, 0, 0, 0, 0,

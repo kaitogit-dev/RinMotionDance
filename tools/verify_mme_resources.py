@@ -1,5 +1,3 @@
-# 验证 MMEffect.dll 资源段里的字符串是否为正确 UTF-16（RC 转码后）。
-# 用法: python tools/verify_mme_resources.py <dll路径>
 import struct
 import sys
 

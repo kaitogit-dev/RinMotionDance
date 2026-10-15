@@ -1,23 +1,3 @@
-// ===========================================================================
-// VA 0x0042AE80 - InitSceneFontTexture  (original: sub_42AE80, 0x12C0 bytes)
-// ===========================================================================
-// Builds the in-scene HUD font atlas: a 512x512 A8R8G8B8 texture whose DC is
-// filled with the overlay character set (verified draw list):
-//   row 0   : axes glyphs + "Model:" "Bone:"
-//   row 32  : "camera/light/accessory"
-//   row 64  : "center" "X:" "angle" "X:" "distance" "Y:" "Z:"
-//   row 96  : digits, "X:", ".", "X:"
-//   row 128 : "global" "local" "Recording(Esc:Stop)" "Playing"
-//   row 192 : digits "fps" "." "-"
-//   row 224 : "1fps or less" "1fps "
-//   row 256 : digits "frame ("
-// then re-locks the destination texture and converts pixels to white with
-// alpha = source blue channel.
-//
-// Original quirk (not replicated): the pixel loop writes past the declared
-// stack frame via the return-address slot - a Ghidra artifact of a 1MB stack
-// buffer.  The port uses an explicit heap buffer.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -33,12 +13,9 @@ namespace {
 
 struct Glyph { const char* s; short x, y; };
 
-// exact draw list from the decompilation (size 30, color 255,255,255, normal);
-// SJIS bytes decoded from the original .rdata (row 0 spells
-// カメラ照明アクセサリ glyph-by-glyph for per-char positioning)
 constexpr Glyph kAtlas[] = {
     {"\xb6", 0, 0}, {"\xd2", 16, 0}, {"\xd7", 32, 0}, {"\xa5", 48, 0},
-    {"\x8f\xc6\x96\xbe", 64, 0},   // 照明
+    {"\x8f\xc6\x96\xbe", 64, 0},   
     {"\xa5", 128, 0}, {"\xb1", 144, 0}, {"\xb8", 160, 0},
     {"\xbe", 176, 0}, {"\xbb", 192, 0}, {"\xd8", 208, 0},
     {"M", 256, 0}, {"o", 272, 0}, {"d", 288, 0}, {"e", 304, 0},
@@ -59,21 +36,21 @@ constexpr Glyph kAtlas[] = {
     {":", 432, 64}, {"Z", 448, 64}, {":", 464, 64},
     {"0", 0, 96}, {"1", 16, 96}, {"2", 32, 96}, {"3", 48, 96},
     {"4", 64, 96}, {"5", 80, 96}, {"6", 96, 96}, {"7", 112, 96},
-    {"8", 128, 96}, {"9", 144, 96}, {"\x92\x86\x90\x53", 160, 96},  // 中心
-    {"X", 240, 96}, {":", 256, 96}, {"\x8ap\x93x", 288, 96},  // 視点度
-    {"X", 368, 96}, {":", 384, 96}, {"\x8b\x97\x97\xa3", 416, 96},  // 距離
+    {"8", 128, 96}, {"9", 144, 96}, {"\x92\x86\x90\x53", 160, 96},  
+    {"X", 240, 96}, {":", 256, 96}, {"\x8ap\x93x", 288, 96},  
+    {"X", 368, 96}, {":", 384, 96}, {"\x8b\x97\x97\xa3", 416, 96},  
     {"global", 0, 128}, {"local", 96, 128},
     {"Recording(Esc:Stop)", 176, 128},
-    {"\x98^\x89\xe6\x92\x86(Esc:\x92\x86\x92" "\xf)", 0, 160},  // 録画中(Esc:中断)
+    {"\x98^\x89\xe6\x92\x86(Esc:\x92\x86\x92" "\xf)", 0, 160},  
     {"P", 256, 160}, {"l", 272, 160}, {"a", 288, 160}, {"y", 304, 160},
     {"i", 320, 160}, {"n", 336, 160}, {"g", 352, 160},
-    {"\x8d\xc4\x90\xb6\x92\x86", 384, 160},  // 再生中
+    {"\x8d\xc4\x90\xb6\x92\x86", 384, 160},  
     {"0", 0, 192}, {"1", 16, 192}, {"2", 32, 192}, {"3", 48, 192},
     {"4", 64, 192}, {"5", 80, 192}, {"6", 96, 192}, {"7", 112, 192},
     {"8", 128, 192}, {"9", 144, 192}, {"fps", 160, 192},
     {".", 208, 192}, {"-", 224, 192},
     {"1fps or less", 0, 224},
-    {"1fps \x96\xA2\x96\xBA", 208, 224},  // JP 未満 (x64 0x7FF7CB54B430)
+    {"1fps \x96\xA2\x96\xBA", 208, 224},  
 
     {"0", 0, 256}, {"1", 16, 256}, {"2", 32, 256}, {"3", 48, 256},
     {"4", 64, 256}, {"5", 80, 256}, {"6", 96, 256}, {"7", 112, 256},
@@ -88,20 +65,17 @@ IDirect3DDevice9* DeviceOf(MMDApp* app) {
     return sub->device;
 }
 
-}  // namespace
+}  
 
 bool InitSceneFontTexture(MMDApp* app) {
     auto& s = *app;
     IDirect3DDevice9* device = DeviceOf(app);
     if (device == nullptr)
-        return false;    // original returns 0 when surface creation fails
+        return false;    
 
-    // The original creates a SYSTEMMEM X8R8G8B8 texture, obtains level 0,
-    // and lets GDI draw into that surface.  Keeping the texture alive is
-    // essential: its pixels are the source of the conversion pass below.
     IDirect3DTexture9* sourceTex = nullptr;
     if (FAILED(device->CreateTexture(
-            512, 512, 1, 0, D3DFMT_X8R8G8B8 /*22*/, D3DPOOL_SYSTEMMEM /*2*/,
+            512, 512, 1, 0, D3DFMT_X8R8G8B8  , D3DPOOL_SYSTEMMEM  ,
             &sourceTex, nullptr)))
         return false;
 
@@ -118,7 +92,7 @@ bool InitSceneFontTexture(MMDApp* app) {
         return false;
     }
 
-    HPEN pen = CreatePen(PS_SOLID /*0*/, 1, 0);
+    HPEN pen = CreatePen(PS_SOLID  , 1, 0);
     HBRUSH brush = CreateSolidBrush(0);
     HGDIOBJ prevPen = SelectObject(hdc, pen);
     HGDIOBJ prevBrush = SelectObject(hdc, brush);
@@ -135,22 +109,19 @@ bool InitSceneFontTexture(MMDApp* app) {
     DeleteDC(hdc);
     surface->Release();
 
-    // destination texture slot (this+650784), recreated as SYSTEMMEM
     if (s.state.sceneFontTexture != nullptr) {
         reinterpret_cast<IDirect3DTexture9*>(
             s.state.sceneFontTexture)->Release();
         s.state.sceneFontTexture = nullptr;
     }
     IDirect3DTexture9* fontTex = nullptr;
-    if (FAILED(device->CreateTexture(512, 512, 1, 0, D3DFMT_A8R8G8B8 /*21*/,
-                                     D3DPOOL_MANAGED /*1*/, &fontTex, nullptr))) {
+    if (FAILED(device->CreateTexture(512, 512, 1, 0, D3DFMT_A8R8G8B8  ,
+                                     D3DPOOL_MANAGED  , &fontTex, nullptr))) {
         sourceTex->Release();
         return false;
     }
     s.state.sceneFontTexture = fontTex;
 
-    // 0x42C0B0..0x42C124: destination RGB is white and alpha comes from the
-    // pure-blue GDI glyph coverage in byte 0 of X8R8G8B8 pixels.
     D3DLOCKED_RECT srcRect{};
     D3DLOCKED_RECT dstRect{};
     const HRESULT srcHr = sourceTex->LockRect(0, &srcRect, nullptr,
@@ -178,4 +149,4 @@ bool InitSceneFontTexture(MMDApp* app) {
     return true;
 }
 
-}  // namespace rinmotiondance
+}  

@@ -1,59 +1,3 @@
-// ===========================================================================
-// VA 0x00444CC0 - HandleMouseMove  (original: sub_444CC0)
-// ===========================================================================
-// WM_MOUSEMOVE handler for the editor panel (~0x1DA6 bytes, 441 basic
-// blocks; called from WndProc 0x4C3A10, case 512).  Original signature:
-//   HCURSOR __thiscall sub_444CC0(int this, unsigned __int16 X, unsigned
-//   __int16 Y)
-// The caller pushes lParam (mouse X in the low word) then lParam >> 16
-// (mouse Y), i.e. X = lParam & 0xFFFF and Y = mouseY here.  The HCURSOR
-// return value is discarded by the wndproc, so the port is void, but the
-// early returns are preserved because they gate the hide-rect flag clears.
-//
-// Flow (original instruction ranges):
-//   1. 0x444CC6  three hide-rect gates (bytes this+0xA06B4/0xA06B5/0xA06B6):
-//      when the mouse sits inside the stored rect this+0xA0D40..0xA0D4C the
-//      gate flag is cleared so later moves can re-enter; otherwise the
-//      handler returns with the flag still set.
-//   2. 0x444D5B  on a real move: store X/Y into this+4/this+8 (with the
-//      0xEA60 -> X-0x10000 wrap), maintain the >50px jump flag
-//      (byte this+0xA05D3, prev this+0xC/0x10, gate byte this+0x9F12C),
-//      GetClientRect, then cursor switching:
-//        IDC_SIZEWE (0x7F84): while the pointer hugs the sidebar edge
-//          (sidebar <= X <= sidebar+6 && Y <= bottom-158 && 0xA0D38 == 0)
-//        IDC_HAND   (0x7F89): while interaction mode (dword this+0x344) == 1
-//   3. 0x444E54  sidebar drag (byte this+0xC8): sidebar this+0xA06C8 =
-//      clamp(X, 250, clientRight-5), ratio float this+0xA4428, then
-//      RelayoutSidebarControls + PanelPaint and three local InvalidateRect passes
-//      (right strip / timeline strip / top strip).
-//   4. 0x444F46  if byte this+0xA03EB != 0: hover row = (X - 0xA018C - 6)
-//      / 13, byte this+0xA0B0D = 1, then the drag-frame remap over the
-//      hovered row's list(s): display mode (optflag[0] @0x2F8 != 0) walks
-//      the four fixed band lists (84/40/24/36-byte records via this+0x374/
-//      0x378/0x37C/0x380) and the accessory lists (this+0x384, 60-byte
-//      records) driven by the 16-byte offset records at this+0xA03EC..
-//      0xA0410, then PanelPaint, ReloadModels, RefreshLightPanel, RefreshSelfShadowPanel,
-//      ApplyGravityTrack, ApplyAccessoryTrack x255 and SyncAccessoryEditPanel; bone-edit mode walks the
-//      model bone/morph/IK lists (28/20/60-byte records, offset records at
-//      this+0xA0414..0xA0428) then PanelPaint + SeekModelFrame.
-//   5. 0x44606F  else, if byte this+0xA0189 != 0: hover-highlight pass over
-//      the five fixed-band regions (window-y bands 160..174 / 174..188 /
-//      188..202 / 202..216, i.e. the four fixed bands + the accessory
-//      grid; row pitch 13 starting at x = 94, column pitch 14 starting at
-//      y = 209).  The visibility flags of the band records are first
-//      cleared for all 200 rows (0x4461CE display / 0x44653B bone-edit,
-//      gated on mode word this+0x24 != 3) and then re-set for the hovered
-//      rows to (this+0xC0 != 3); the hover rect lands in
-//      this+0xA05C0..0xA05CC.  Ends with PanelPaint and the rect zeroed.
-//   6. 0x446A4C  if byte this+0x9DA09 != 0: 0x416280.
-//
-// The magic-number divisions (/13 = 0x4EC4EC4F<<2, /14 = 0x92492493<<3 with
-// add) were verified numerically against the original instruction stream -
-// both are plain C truncating division, so ordinary `/` is used.
-//
-// Reference: ../translated/MikuMikuDance/fcn_00444cc0.cpp (machine
-//            translation, incomplete; IDA IDB is authoritative)
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -71,54 +15,34 @@
 
 namespace rinmotiondance {
 
-// VA 0x00414610 - ported (ui_panel_paint.cpp).
 void PanelPaint(MMDApp* app);
 
-// Not-yet-ported refresh helpers (src/app/late_ports.cpp).
-void SyncAccessoryEditPanel(MMDApp* a);              // 0x4134E0
-void RefreshLightPanel(MMDApp* a);              // 0x411070
-void ApplyGravityTrack(MMDApp* a);              // 0x412330
-void RefreshSelfShadowPanel(MMDApp* a);              // 0x411B90
-void DragInterpolationControlPoint(MMDApp* a);  // 0x416280
-void ReloadModels(MMDApp* a);              // 0x42E640
-void RelayoutSidebarControls(MMDApp* a);              // 0x442EB0
-int SeekModelFrame(unsigned char* model, int frame, int physicsMode);  // 0x4B4260
-void ApplyAccessoryTrack(MMDApp* a, int idx);     // 0x413120
+void SyncAccessoryEditPanel(MMDApp* a);              
+void RefreshLightPanel(MMDApp* a);              
+void ApplyGravityTrack(MMDApp* a);              
+void RefreshSelfShadowPanel(MMDApp* a);              
+void DragInterpolationControlPoint(MMDApp* a);  
+void ReloadModels(MMDApp* a);              
+void RelayoutSidebarControls(MMDApp* a);              
+int SeekModelFrame(unsigned char* model, int frame, int physicsMode);  
+void ApplyAccessoryTrack(MMDApp* a, int idx);     
 
 namespace {
 
-// --- deferred: the accessory hit grid stays offset-addressed -------
-// (x64 xlate only carries its first 800 element entries)
 
-// --- layout constants -------------------------------------------------------
-constexpr int kRowPitch = 13;     // 0x0D  hover row pitch
-constexpr int kColPitch = 14;     // 0x0E  hover column pitch (bands)
-constexpr int kGridX0 = 94;       // 0x5E  first hover row x
-constexpr int kColY0 = 209;       // 0xD1  first hover column y (display)
-constexpr int kColY0Bone = 153;   // 0x99  first hover column y (bone-edit)
-constexpr int kSidebarMin = 250;  // 0xFA  sidebar drag minimum
+constexpr int kRowPitch = 13;     
+constexpr int kColPitch = 14;     
+constexpr int kGridX0 = 94;       
+constexpr int kColY0 = 209;       
+constexpr int kColY0Bone = 153;   
+constexpr int kSidebarMin = 250;  
 
 
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
 
 unsigned char* CurrentModel(MMDApp* app) {
     return app->SelectedModel();
 }
 
-// Frame-remap walk over 16-byte offset records {idx, parent, slot, frame}
-// referenced by the band lists (display mode 0x444F8C..0x445833), or by the
-// model bone/morph/IK lists (bone-edit mode 0x445889..0x446040).  Every
-// record that references list entry `idx` rewrites the entry's frame so the
-// dragged frames land on the hovered row:
-//   row == 0: frame = rec.frame                       (direct copy)
-//   row <  0: parent chain via record field +4        (order-preserving)
-//   row >  0: reverse walk, parent chain via field +8 (clamped, and the
-//             entry frame feeds the this+0x9E16C / model+0x31B0 maxima)
-// `limit` >= 0 selects the `idx >= limit` validity test (morph/IK), -1 the
-// `idx > 0` test (bands/bone).  `maxModel` is model+0x31B0 for the model
-// lists, nullptr for the band lists.
 template <typename Key>
 void RemapList(MMDApp* app, const int* recs, int count, Key* keys,
                int row, int limit, std::uint32_t* maxModel) {
@@ -178,9 +102,6 @@ void RemapList(MMDApp* app, const int* recs, int count, Key* keys,
     }
 }
 
-// Accessory-list variant of RemapList (0x445621..0x445833): the offset
-// records carry the index at +4 and the accessory slot at +8; the list base
-// is this+0x384[slot] and the records are 60 bytes.
 void RemapAccList(MMDApp* app, const int* recs, int count, int row) {
     auto listOf = [app](int slot) {
         return app->AccessoryKeys(slot);
@@ -235,7 +156,6 @@ void RemapAccList(MMDApp* app, const int* recs, int count, int row) {
     }
 }
 
-// Write the hover flag value (Ctrl not active) into a band record flag byte.
 inline unsigned char HoverFlag(MMDApp* app) {
     return static_cast<unsigned char>(!app->CtrlModifierActive());
 }
@@ -246,21 +166,17 @@ void SetAccessorySelected(MMDApp* app, int slot, int keyIndex,
     keys[keyIndex].selected = selected;
 }
 
-}  // namespace
+}  
 
-// ===========================================================================
-// WM_MOUSEMOVE handler (see header comment for the flow map).
-// ===========================================================================
 void HandleMouseMove(std::uint32_t lParam, int mouseY) {
     MMDApp* app = g_Block;
-    const int X = static_cast<int>(lParam & 0xFFFFu);  // a2 (low word)
-    const int Y = mouseY;                              // a3 (high word)
+    const int X = static_cast<int>(lParam & 0xFFFFu);  
+    const int Y = mouseY;                              
 
-    // --- 1. hide-rect gates (0x444CC6) -------------------------------------
     if (app->state.a06B5 != 0) {
         D3DRenderer* sub = app->Renderer();
         const int ratio = static_cast<int>(
-            sub->viewScale * 200.0);  // viewScale = sub+0x1D4F0 float ratio
+            sub->viewScale * 200.0);  
         if (X > static_cast<int>(app->state.hideLeft) - ratio)
             return;
         app->state.a06B5 = 0;
@@ -274,11 +190,9 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
         if (X > app->state.hideLeft ||
             X < app->state.hideRight)
             return;
-        // Original stores (X < 0xA0D40), which is false on this path (0x444D55).
         app->state.a06B6 = 0;
     }
 
-    // --- 2. position store + cursor switching (0x444D5B) -------------------
     if (app->MouseY() != Y || app->MouseX() != X) {
         app->MouseX() = X;
         app->MouseY() = Y;
@@ -305,10 +219,9 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
             (app->FloatingWindow() == nullptr)) {
             SetCursor(LoadCursorA(nullptr,
                                   reinterpret_cast<LPCSTR>(
-                                      static_cast<INT_PTR>(0x7F84))));  // IDC_SIZEWE
+                                      static_cast<INT_PTR>(0x7F84))));  
         }
 
-        // --- 3. sidebar drag (0x444E54) ------------------------------------
         if (app->SidebarResizeDragging() != 0) {
             const int x = app->MouseX();
             app->SidebarWidth() = x;
@@ -339,29 +252,24 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
         if (app->ViewportToolHovered() == 1) {
             SetCursor(LoadCursorA(nullptr,
                                   reinterpret_cast<LPCSTR>(
-                                      static_cast<INT_PTR>(0x7F89))));  // IDC_HAND
+                                      static_cast<INT_PTR>(0x7F89))));  
         }
 
-        // --- 4. drag-frame remap (0x444F46) --------------------------------
         if (app->TimelineSelectionChanged() != 0) {
             const int row =
                 (app->MouseX() -
                  app->SelectionBoxAnchorX() - 6) /
-                kRowPitch;  // v15 == v257 (magic /13 = truncating)
+                kRowPitch;  
             app->SceneModified() = 1;
             if (app->state.optflag[0] == 0) {
-                // ---- bone-edit mode (0x445887..0x446065) ------------------
                 unsigned char* model = CurrentModel(app);
                 mdl::ModelRecord& record = *mdl::Mdl(model);
-                // bone list: 28-byte records, idx > 0 (0x44588F..0x445B30)
                 RemapList(app,
                           reinterpret_cast<const int*>(app->TimelineSelectionRecords(
                               TimelineSelectionBand::ModelBone)),
                           app->TimelineSelectionCount(TimelineSelectionBand::ModelBone),
                           mdl::DisplayKeys(model), row, -1,
                           &record.maxFrame);
-                // morph list: 20-byte records, idx >= model count
-                // (0x445B38..0x445D90)
                 RemapList(app,
                           reinterpret_cast<const int*>(app->TimelineSelectionRecords(
                               TimelineSelectionBand::ModelMorph)),
@@ -370,8 +278,6 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                           mdl::MorphKeys(model), row,
                           static_cast<std::int32_t>(record.morphCount),
                           &record.maxFrame);
-                // IK list: 60-byte records, idx >= model count
-                // (0x445D9E..0x446040)
                 RemapList(app,
                           reinterpret_cast<const int*>(app->TimelineSelectionRecords(
                               TimelineSelectionBand::ModelIk)),
@@ -379,15 +285,11 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                           mdl::BoneKeys(model), row,
                           static_cast<std::int32_t>(record.boneCount),
                           &record.maxFrame);
-                PanelPaint(app);  // 0x446044
-                // 0x446065: original __thiscall(this=model, dword0x980,
-                // dword0xA0CC4).
+                PanelPaint(app);  
                 SeekModelFrame(model,
                           app->state.currentFrame,
                           app->state.playbackPhysicsMode);
             } else {
-                // ---- display mode (0x444F8A..0x44587D) --------------------
-                // four fixed band lists (84/40/24/36-byte records)
                 RemapList(app,
                           reinterpret_cast<const int*>(app->TimelineSelectionRecords(
                               TimelineSelectionBand::Camera)),
@@ -417,21 +319,18 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                                  TimelineSelectionBand::Accessory)),
                              app->TimelineSelectionCount(
                                  TimelineSelectionBand::Accessory), row);
-                PanelPaint(app);   // 0x445837
-                ReloadModels(app);    // 0x44583E
-                RefreshLightPanel(app);    // 0x445845
-                RefreshSelfShadowPanel(app);    // 0x44584C
-                ApplyGravityTrack(app);    // 0x445853
-                // per-slot refresh for every set flag (0x445858..0x445879)
+                PanelPaint(app);   
+                ReloadModels(app);    
+                RefreshLightPanel(app);    
+                RefreshSelfShadowPanel(app);    
+                ApplyGravityTrack(app);    
                 for (int i = 0; i < 255; ++i) {
                     if (app->ObjectSlot(i) != nullptr)
                         ApplyAccessoryTrack(app, i);
                 }
-                SyncAccessoryEditPanel(app);    // 0x44587D
+                SyncAccessoryEditPanel(app);    
             }
         } else if (app->SelectionBoxDragging() != 0) {
-            // ---- 5. hover highlight (0x44606F..0x446A2C) ------------------
-            // hover row/column range from the anchor (this+0xA018C/0xA0190)
             int xEnd = app->MouseX();
             int xStart;
             if (xEnd <= app->SelectionBoxAnchorX() + 6) {
@@ -449,31 +348,28 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                 yTop = app->SelectionBoxAnchorY() + 145;
                 yBottom = app->MouseY();
             }
-            int rowStart = (xStart - kGridX0) / kRowPitch;  // 0x4460BC
+            int rowStart = (xStart - kGridX0) / kRowPitch;  
             if (xStart - kRowPitch * rowStart - kGridX0 <= 6)
                 rowStart -= 1;
             if (rowStart < 0)
                 rowStart = 0;
-            int rowEnd = (xEnd - kGridX0) / kRowPitch;      // 0x4460F8
+            int rowEnd = (xEnd - kGridX0) / kRowPitch;      
             if (xEnd - kRowPitch * rowEnd - kGridX0 > 6)
                 rowEnd += 1;
             if (rowEnd > app->SidebarWidth() - 22)
                 rowEnd = app->SidebarWidth() - 22;
-            int colStart = (yTop - kColY0) / kColPitch;     // 0x446135
+            int colStart = (yTop - kColY0) / kColPitch;     
             if (yTop - kColPitch * colStart - kColY0 <= 7)
                 colStart -= 1;
             if (colStart < 0)
                 colStart = 0;
-            int colEnd = (yBottom - kColY0) / kColPitch;    // 0x44617B
+            int colEnd = (yBottom - kColY0) / kColPitch;    
             if (yBottom - kColPitch * colEnd - kColY0 > 7)
                 colEnd += 1;
 
             const unsigned char flag = HoverFlag(app);
             if (app->state.optflag[0] != 0) {
-                // ---- display-mode hover (0x4461B3) ------------------------
                 if (!app->ShiftModifierActive()) {
-                    // clear band visibility flags for all 200 rows
-                    // (0x4461CE..0x446312)
                     auto* cameraKeys = app->CameraKeys();
                     auto* lightKeys = app->LightKeys();
                     auto* shadowKeys = app->ShadowKeys();
@@ -482,21 +378,18 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                     int* accWalk =
                         app->state.rowHitAcc + 1;
                     for (int row_i = 0; row_i < 200; ++row_i) {
-                        const int b0 = bandMaps[-200];  // band0 map
+                        const int b0 = bandMaps[-200];  
                         if (b0 >= 0)
                             cameraKeys[b0].selected = 0;
-                        const int b1 = bandMaps[0];     // band1 map
+                        const int b1 = bandMaps[0];     
                         if (b1 >= 0)
                             lightKeys[b1].selected = 0;
-                        const int b2 = bandMaps[200];   // band2 map
+                        const int b2 = bandMaps[200];   
                         if (b2 >= 0)
                             shadowKeys[b2].selected = 0;
-                        const int b3 = bandMaps[400];   // band3 map
+                        const int b3 = bandMaps[400];   
                         if (b3 >= 0)
                             gravityKeys[b3].selected = 0;
-                        // accessory map + slot array, 40 groups of 5
-                        // (0x446242..0x4462FC); accWalk keeps walking the
-                        // whole map across rows, slotWalk restarts per row.
                         int* slotWalk = app->state.jointLineMap + 4;
                         for (int g = 0; g < 40; ++g, slotWalk += 5, accWalk += 5) {
                             const int a0 = accWalk[-1];
@@ -530,8 +423,6 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                         ++bandMaps;
                     }
                 }
-                // hovered-row highlight for the four fixed bands
-                // (0x446342..0x44649F)
                 if (yBottom >= 160 && yTop <= 174 && rowStart < rowEnd) {
                     auto* keys = app->CameraKeys();
                     int* m = app->state.rowHitBand0 + rowStart;
@@ -572,9 +463,6 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                         ++m;
                     } while (--n);
                 }
-                // accessory grid rows x columns (0x4464A1..0x446534)
-                // x64 0x7FF7CB459875 resets the column cursor for each row;
-                // only the row base advances by 0x320 at 0x7FF7CB4598BC.
                 VisitTimelineSelectionCells(rowStart, rowEnd, colStart, colEnd,
                     [&](std::size_t cell, int column) {
                         const int key = app->state.rowHitAcc[cell];
@@ -583,14 +471,11 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                             SetAccessorySelected(app, slot, key, flag);
                     });
             } else {
-                // ---- bone-edit mode hover (0x44653B) ----------------------
                 unsigned char* model = CurrentModel(app);
                 mdl::DisplayKey* displayKeys = mdl::DisplayKeys(model);
                 mdl::MorphKey* morphKeys = mdl::MorphKeys(model);
                 mdl::BoneKey* boneKeys = mdl::BoneKeys(model);
                 if (!app->ShiftModifierActive()) {
-                    // clear bone/morph/IK visibility flags for all 200 rows
-                    // (0x44653F..0x4467F0)
                     displayKeys[0].allocated = 0;
                     boneKeys[0].allocated = 0;
                     for (std::size_t cell = 0; cell < 200 * 200; ++cell) {
@@ -605,8 +490,6 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                             boneKeys[bone].allocated = 0;
                     }
                 }
-                // hovered-row highlight over the morph map grid
-                // (0x446815..0x446A0F)
                 int colStartB = (yTop - kColY0Bone) / kColPitch;
                 if (yTop - kColPitch * colStartB - kColY0Bone <= 7)
                     colStartB -= 1;
@@ -615,8 +498,6 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                 int colEndB = (yBottom - kColY0Bone) / kColPitch;
                 if (yBottom - kColPitch * colEndB - kColY0Bone > 7)
                     colEndB += 1;
-                // x64 0x7FF7CB459A6C reloads the row cursor; 0x459BB9
-                // advances the row base independently of the inner loop.
                 VisitTimelineSelectionCells(rowStart, rowEnd, colStartB, colEndB,
                     [&](std::size_t cell, int) {
                         const int display = app->state.rowHitIk[cell];
@@ -635,14 +516,12 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
                         else if (bone == -10)
                             boneKeys[0].allocated = flag;
                     });
-                // hover rect (0x446A13..0x446A25)
                 app->TimelineRangeFirstOffset() = rowStart;
                 app->TimelineRangeLastOffset() = rowEnd;
                 app->TimelineRangeFirstBase() = colStartB;
                 app->TimelineRangeLastBase() = colEndB;
             }
-            PanelPaint(app);  // 0x446A2D
-            // rect reset (0x446A32..0x446A46)
+            PanelPaint(app);  
             app->TimelineRangeFirstOffset() = 0;
             app->TimelineRangeLastOffset() = 0;
             app->TimelineRangeFirstBase() = 0;
@@ -650,9 +529,8 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
         }
     }
 
-    // --- 6. physics-enabled hover helper (0x446A4C) -------------------------
     if (app->PendingTimelineSelectionRow() != TimelineSelectionRow::None)
         DragInterpolationControlPoint(app);
 }
 
-}  // namespace rinmotiondance
+}  

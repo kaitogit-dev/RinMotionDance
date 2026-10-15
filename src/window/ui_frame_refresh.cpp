@@ -1,15 +1,3 @@
-// ===========================================================================
-// Timeline-driven Light / Self Shadow panel refresh.
-//   0x00411070  RefreshLightPanel: evaluate the light key
-//               list and synchronize controls 455..466
-//   0x00411B90  RefreshSelfShadowPanel: evaluate the shadow
-//               key list and synchronize controls 560..564
-//   0x004134E0  SyncAccessoryEditPanel: reload the accessory
-//               edit controls 474..486 from the selected accessory
-//   0x00411DF0  RegisterSelfShadowState: insert/overwrite the
-//               self-shadow key at a frame with the current mode + interval
-//               (the SelfShadow sibling of RegisterCameraState/RegisterLightState)
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -30,10 +18,6 @@
 namespace rinmotiondance {
 namespace {
 
-// Porting-era trace under RINMOTIONDANCE_LIGHT_TRACE_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
-// (including the cross-TU TraceSceneLightState) valid and inlines away to
-// nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void WriteLightTrace(MMDApp* app, const char* stage) {
     const char* directory = std::getenv("RINMOTIONDANCE_LIGHT_TRACE_DIR");
@@ -90,14 +74,13 @@ std::uint32_t FindKeyAtOrAfter(const std::uint32_t* keys,
     return index;
 }
 
-}  // namespace
+}  
 
 void TraceSceneLightState(MMDApp* app, const char* stage) {
     if (app != nullptr)
         WriteLightTrace(app, stage);
 }
 
-// VA 0x00411070
 void RefreshLightPanel(MMDApp* app) {
     if (app == nullptr)
         return;
@@ -112,10 +95,6 @@ void RefreshLightPanel(MMDApp* app) {
 
     float direction[3];
     float color[3];
-    // When the walk reaches the end of the chain, the original copies the
-    // terminal key verbatim.  Interpolating it against its own prev index
-    // produces a zero denominator (and poisoned the light register payload
-    // with NaNs in the previous approximation).
     if (rightRecord[0] <= frame) {
         direction[0] = right[3];
         direction[1] = right[4];
@@ -142,8 +121,6 @@ void RefreshLightPanel(MMDApp* app) {
     std::memcpy(app->LightColor(), color, sizeof(color));
     app->ApplyTimelineLightState();
 
-    // Original 0x411201..0x41121F: IDirect3DDevice9::SetLight(0,
-    // reinterpret_cast<D3DLIGHT9*>(app+0x9E180)).
     D3DRenderer* wrapper = app->Renderer();
     if (wrapper != nullptr) {
         IDirect3DDevice9* device = wrapper->device;
@@ -168,7 +145,6 @@ void RefreshLightPanel(MMDApp* app) {
     }
 }
 
-// VA 0x00411B90
 void RefreshSelfShadowPanel(MMDApp* app) {
     if (app == nullptr)
         return;
@@ -208,9 +184,6 @@ void RefreshSelfShadowPanel(MMDApp* app) {
                  mode != 0 && mode != 1 ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
-// VA 0x004134E0 - reload the accessory edit panel
-// (combos 474/475 + checkboxes 476/477/486 + pos/rot/scale/opacity edits)
-// from the selected accessory slot.
 void SyncAccessoryEditPanel(MMDApp* app) {
     if (app == nullptr)
         return;
@@ -304,9 +277,6 @@ void SyncAccessoryEditPanel(MMDApp* app) {
     ReplaceEditText(main, 485, text);
 }
 
-// VA 0x00411DF0 - self-shadow track's "register" backend:
-// exact-hit overwrite or free-slot splice of the 24-byte shadow key carrying
-// the current shadow mode (this+0xA0B10) and interval (this+0xA0B0C).
 void RegisterSelfShadowState(MMDApp* app, int frameValue) {
     if (app == nullptr || frameValue < 0)
         return;
@@ -359,4 +329,4 @@ void RegisterSelfShadowState(MMDApp* app, int frameValue) {
         app->state.lastRegisteredFrame = frame;
 }
 
-}  // namespace rinmotiondance
+}  

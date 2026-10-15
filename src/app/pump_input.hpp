@@ -6,8 +6,6 @@
 namespace rinmotiondance {
 class MMDApp;
 
-// Focus is sampled before the panel traversal. SetFocus and synchronous
-// commands may change live focus; later keys still consume this snapshot.
 struct KeyboardInputContext {
     HWND focus{};
     bool focusNotInPanelEdit{};
@@ -34,4 +32,4 @@ void RegisterCameraState(MMDApp* app, int frame);
 void RegisterLightState(MMDApp* app, int frame);
 void RegisterSelfShadowState(MMDApp* app, int frame);
 void RegisterGravityKeyCurrent(MMDApp* app, std::int32_t frame);
-}  // namespace rinmotiondance
+}  

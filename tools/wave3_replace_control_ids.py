@@ -17,7 +17,6 @@ import pathlib
 
 DRY = '--dry' in sys.argv
 
-# value -> default constant name (see panel_controls.hpp)
 MAP = {
     400: 'kUndoButton', 401: 'kRedoButton', 408: 'kPlayButton',
     409: 'kPlayStartFrameEdit', 410: 'kPlayStopFrameEdit',
@@ -80,7 +79,6 @@ MAP = {
     806: 'kAvi3dVisionCheckbox', 807: 'kAviLeftHalfCheckbox',
 }
 
-# (file, value, line-range) -> name override for dialog-local ID reuse
 OVERRIDES = [
     ('src/model/track_apply.cpp', 637, (0, 10 ** 9), 'kGravityDirXSlider'),
     ('src/model/track_apply.cpp', 638, (0, 10 ** 9), 'kGravityDirYSlider'),
@@ -239,7 +237,6 @@ def process(path):
             if f == rel and v == val and lo <= line <= hi:
                 name = nm
                 break
-        # literal token span inside the original arg
         hm = LIT.search(text[s:e])
         tok_s, tok_e = s + hm.start(), s + hm.end()
         edits.append((tok_s, tok_e, name))

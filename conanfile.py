@@ -26,7 +26,6 @@ class RinMotionDanceConan(ConanFile):
         "bullet275/2.75",
     )
 
-    # Sources stay in the source folder; nothing is packaged from here yet.
     exports_sources = (
         "CMakeLists.txt",
         "src/*",
@@ -41,8 +40,6 @@ class RinMotionDanceConan(ConanFile):
         cmake_layout(self)
 
     def validate(self):
-        # x64 is the behavioral reference. The x86 profile remains available
-        # for legacy reconstruction work; it is not the parity baseline.
         if self.info.settings.arch == "x86":
             self.output.warning(
                 "The behavioral reference is MikuMikuDanceE_v932x64; "
@@ -50,7 +47,4 @@ class RinMotionDanceConan(ConanFile):
             )
 
     def build(self):
-        # Build is driven by CMake directly (conan install + cmake --preset).
-        # Keeping conanfile build() empty lets CMake presets own the build
-        # graph while Conan owns dependency provisioning.
         pass

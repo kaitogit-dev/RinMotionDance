@@ -1,6 +1,3 @@
-# Wave4-A: verify every constant that moved into pmm_io_common.hpp is
-# byte-identical to BOTH copies that were deleted from the loader bodies
-# (git HEAD), and that the title format matches all three removed literals.
 import re, subprocess, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,7 +72,6 @@ for name in sorted(hdr):
         else:
             print(f'note   {name} not in HEAD-{tag} (fine)')
 
-# title: header constant vs the three removed literals
 title = 'RinMotionDance [%s]'.encode('utf-16-le')
 for tag, src, pat in (('v1-load', git_show('src/io/pmm_load_v1.cpp'),
                        'L"RinMotionDance [%s]"'),
@@ -100,7 +96,6 @@ for tag, src, pat in (('v1-load', git_show('src/io/pmm_load_v1.cpp'),
 print('RESULT:', 'ALL MOVED CONSTANTS BYTE-IDENTICAL' if fails == 0
       else f'{fails} FAILURES')
 
-# ---- kept per-file (byte-divergent) constants must be unchanged vs HEAD ----
 print()
 for path in ('src/io/pmm_load_v1.cpp', 'src/io/pmm_load_v2.cpp'):
     cur = extract(open(os.path.join(ROOT, path), encoding='utf-8').read())

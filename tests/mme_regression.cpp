@@ -22,27 +22,24 @@ using rinmotiondance::mme::DrawMeshSubsetPlan;
 void TestControlObjectSelection() {
     struct Model { int identity; } first{1}, second{2}, collision{3}, other{4};
     mme::ModelNameRegistry<Model> names;
-    // Loaded first/second, but reordered second/owner/first for rendering.
     names.Add("same.pmx", 30, &first);
     names.Add("same.pmx", 10, &second);
     names.Add("same.pmx", 10, &collision);
     names.Add("different.pmx", 15, &other);
     CHECK(names.Find("same.pmx", 20) == &second);
-    CHECK(names.Find("same.pmx", 10) == &second); // first insertion wins
-    CHECK(names.Find("same.pmx", 9) == &first);  // wrap, not not-found
+    CHECK(names.Find("same.pmx", 10) == &second); 
+    CHECK(names.Find("same.pmx", 9) == &first);  
     CHECK(names.Find("same.pmx", 40) == &first);
     CHECK(names.First("same.pmx") == &second);
-    CHECK(names.Find("Same.pmx", 40) == nullptr); // case-sensitive registry
+    CHECK(names.Find("Same.pmx", 40) == nullptr); 
     CHECK(names.Find("missing.pmx", 40) == nullptr);
     names.Remove(&second);
     CHECK(names.First("same.pmx") == &first);
-    // No stale registry entries after a new frame / order change.
     names.Clear();
     names.Add("same.pmx", 5, &first);
     names.Add("same.pmx", 25, &second);
     CHECK(names.Find("same.pmx", 20) == &first);
     CHECK(names.Find("different.pmx", 20) == nullptr);
-    // Unsigned tree ordering but signed comparison, including abs(INT_MIN).
     names.Add("same.pmx", INT_MIN, &other);
     CHECK(names.Find("same.pmx", 40) == &other);
     CHECK(names.Find("same.pmx", 0) == &other);
@@ -59,8 +56,6 @@ void TestPlanMatrix() {
     state.flag = 1;
     state = mme::ObjectPlanState{};
     CHECK(state.renderOrder == 0 && state.passKey == -1 && state.flag == 0);
-    // Identity must preserve a general homogeneous position, not collapse it
-    // as the old four colorN[0] stores did.
     const float point[4] = {2, 3, 7, 1};
     for (int c = 0; c != 4; ++c) {
         float value = 0;
@@ -69,8 +64,6 @@ void TestPlanMatrix() {
     }
 }
 
-// Deliberately uses only the mesh's public query surface; no real COM vtable
-// is fabricated, patched, or intercepted by these failure-injection tests.
 struct MeshQueries {
     std::vector<D3DXATTRIBUTERANGE> table;
     std::vector<DWORD> attributes;
@@ -106,8 +99,6 @@ void TestSubsetPlanning() {
     CHECK(plan.ranges[0].VertexStart == 384 && plan.ranges[0].VertexCount == 3);
     CHECK(mesh.locks == 0);
     CHECK(PlanMeshSubset(mesh, 500, plan) == S_OK && plan.ranges.empty());
-    // D3DX's table-index fast path takes precedence even over an earlier
-    // duplicate id; otherwise only the first matching entry is selected.
     mesh.table = {{2, 10, 1, 0, 3}, {9, 20, 1, 0, 3}, {2, 30, 1, 0, 3}};
     CHECK(PlanMeshSubset(mesh, 2, plan) == S_OK && plan.ranges[0].FaceStart == 30);
     mesh.table[2].AttribId = 7;
@@ -138,7 +129,7 @@ void TestSubsetPlanning() {
     }) == S_OK && draws == 3);
     CHECK(PlanMeshSubset(mesh, 9, plan) == S_OK && plan.ranges.size() == 2);
     CHECK(DrawMeshSubsetPlan(plan, 7, false, [](const D3DXATTRIBUTERANGE&) {
-        return E_FAIL; // no matching final face: original ushort returns S_OK
+        return E_FAIL; 
     }) == S_OK);
     mesh.lockResult = E_FAIL;
     CHECK(PlanMeshSubset(mesh, 2, plan) == E_FAIL && plan.ranges.empty());
@@ -148,8 +139,6 @@ void TestSubsetPlanning() {
 }
 
 void TestRuntimeMeshAbi() {
-    // Verify the typed mirror against the installed Microsoft runtime, not
-    // against another hand-built fake interface. NULLREF needs no visible UI.
 #ifdef _WIN64
     HMODULE runtime = LoadLibraryW(L"d3dx9_43.dll");
 #else

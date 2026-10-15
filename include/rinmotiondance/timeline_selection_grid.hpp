@@ -6,8 +6,6 @@ namespace rinmotiondance {
 
 inline constexpr std::size_t kTimelineHitGridStride = 200;
 
-// A frame row owns an independent column cursor. Advancing the cursor in
-// one row must not shift the selected columns in the following frame.
 template<class Visit>
 void VisitTimelineSelectionCells(int firstRow, int lastRow,
                                  int firstColumn, int lastColumn,
@@ -18,4 +16,4 @@ void VisitTimelineSelectionCells(int firstRow, int lastRow,
                       static_cast<std::size_t>(column), column);
 }
 
-}  // namespace rinmotiondance
+}  

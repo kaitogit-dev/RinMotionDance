@@ -8,7 +8,6 @@ int applied = 0;
 int refreshed = 0;
 }
 namespace rinmotiondance {
-// Isolate navigation from window/render initialization and downstream playback.
 MMDApp::MMDApp() : state{} {}
 void RefreshAfterFrameApply(MMDApp*) { ++applied; }
 void PostViewRefresh(MMDApp*) { ++refreshed; }
@@ -23,8 +22,6 @@ int main() {
     auto model = std::make_unique<mdl::ModelRecord>();
     mdl::FrameGroup rows[2]{};
     mdl::MorphKey keys[6]{};
-    // Display order differs from morph order. Only the second display row is
-    // selected, so using the row index or half the record stride cannot pass.
     rows[0].targetIndex = 1;
     rows[1].targetIndex = 0;
     rows[1].selected = 1;

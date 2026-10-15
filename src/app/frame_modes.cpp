@@ -1,21 +1,3 @@
-// ===========================================================================
-// Frame-driver interaction modes (0x0046B090 region @ 0x470Cxx..0x4712xx)
-// ===========================================================================
-// Verified raw offsets (Ghidra ground truth):
-//   this+4/+8       previous mouse X/Y      this+0xC/+0x10 current mouse X/Y
-//   this+0x24 (36)  precision selector A    this+0xC0 (192) selector B
-//   this+0x88 (136) transform selector A    this+0x8C (140) selector B
-//   this+0x2F8 (760) model-mode flag        this+0x330 (816) anim gate
-//   this+0x308/30C/310 camera translate X/Y/Z
-//   this+0x314/318  camera rotation angles
-//   this+0x9EDD1 (650705) drag-active flag
-//   this+0x9ED98 (650648) select-state gate
-//   this+0x910 (2320) frame index  this+0xA0430 (656432) frame cursor
-//   this+0xA05D1 (656849) view-dirty  this+0xA442C (672812) view-lock
-//
-// Camera drag scales are recovered from the original image; the exact values
-// and precision of each declaration are preserved below.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -35,21 +17,12 @@
 
 namespace rinmotiondance {
 
-// Exact doubles from the original image.  These stay double until the final
-// store, matching the x87 instruction stream at 0x470E4B..0x470EDF.
-double g_MouseScaleA = 0.5;                       // VA 0x0052B8F0
-double g_MouseScaleB = 0.004999999888241291;      // VA 0x0052E9C0
-double g_MouseScaleC = 0.05000000074505806;       // VA 0x0052D738
-float g_MouseScaleD = 0.0020000000949949f;        // VA 0x0052E8C0 (true
-                                                  // .rdata double; the old
-                                                  // PI/360 guess was wrong)
+double g_MouseScaleA = 0.5;                       
+double g_MouseScaleB = 0.004999999888241291;      
+double g_MouseScaleC = 0.05000000074505806;       
+float g_MouseScaleD = 0.0020000000949949f;        
 
 static void ViewRefreshGate(MMDApp* s) {
-    // Original dword gates (Ghidra: this+0x9ED98 select-state gate,
-    // this+0xA0430 frame cursor).  The old literals 650136/657456 were
-    // decimal slips - 650136 landed inside aviOutputPath and 657456 inside
-    // exeDir.  0x9ED98 is a dword over followCameraEnabled and the two shadow bytes;
-    // 0x2F8 is a dword over the first four radio flags.
     const bool frameGate =
         (s->state.followCameraEnabled | s->state.playbackStartsAtCurrentFrame |
          s->state.projectedShadowBlendEnabled) != 0 &&
@@ -59,14 +32,12 @@ static void ViewRefreshGate(MMDApp* s) {
         s->state.cameraParentModel >= 0 &&
         s->state.playbackActive == 0;
     if (frameGate) {
-        // 0xA05D1 = viewDirty view-dirty byte (the old literal 658257 was a
-        // decimal slip that landed on the frame-range dialog HWND's byte 1)
-        s->state.viewDirty = 1;                                   // 0xA05D1
+        s->state.viewDirty = 1;                                   
         s->state.windowLayoutReady = 0;
-        PostLanguageSweep2(s);                                    // 0x40D070
+        PostLanguageSweep2(s);                                    
         s->state.windowLayoutReady = 1;
     }
-    PostViewRefresh(s);                                           // 0x40D130
+    PostViewRefresh(s);                                           
 }
 
 namespace {
@@ -86,10 +57,10 @@ void PollKey(MMDApp* app, std::int32_t& keyState, int virtualKey) {
 
 float DragScale(MMDApp* app) {
     if (app->ShiftModifierActive())
-        return 0.5f;                            // flt_52960C / dbl_52B8F0
+        return 0.5f;                            
     if (app->CtrlModifierActive())
-        return 0.005f;                          // flt_529604 / dbl_52E9C0
-    return 0.05f;                               // flt_52E9A4 / dbl_52D738
+        return 0.005f;                          
+    return 0.05f;                               
 }
 
 void PanCameraPosition(MMDApp* app, int dx, int dy) {
@@ -112,8 +83,6 @@ void PanCameraPosition(MMDApp* app, int dx, int dy) {
                               sy * matrix.m[1][2] + matrix.m[3][2];
 }
 
-// PanSelectedCameraKey (parented-camera-key MMB pan) moved to
-// pump_navigation.cpp with the rest of the x86 0x470BF5..0x47133D block.
 
 int ViewportToolAtPoint(MMDApp* app) {
     app->ViewportToolHovered() = 0;
@@ -140,7 +109,7 @@ int ViewportToolAtPoint(MMDApp* app) {
 
     float scale = 1.0f;
     if (D3DRenderer* r = app->Renderer())
-        scale = r->viewScale;  // wrapper+120048
+        scale = r->viewScale;  
     if (!(scale > 0.0f))
         scale = 1.0f;
 
@@ -241,7 +210,7 @@ HWND ViewportWindow(MMDApp* app) {
 
 float ViewportScale(MMDApp* app) {
     D3DRenderer* r = app->Renderer();
-    const float scale = r != nullptr ? r->viewScale : 1.0f;  // +120048
+    const float scale = r != nullptr ? r->viewScale : 1.0f;  
     return scale > 0.0f ? scale : 1.0f;
 }
 
@@ -427,7 +396,7 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
     }
 }
 
-}  // namespace
+}  
 
 bool PickBoneAtPoint(mdl::ModelRecord& model, int x, int y,
                      int physicsMode, bool additive) {
@@ -438,8 +407,6 @@ bool PickBoneAtPoint(mdl::ModelRecord& model, int x, int y,
     bool changed = false;
     for (std::uint32_t i = 0; i < model.boneCount; ++i) {
         const mdl::BoneRecord& bone = model.boneTable[i];
-        // Original x64 0x7FF7CB451B92..0x7FF7CB451BFE: the physics
-        // gate reads hasRigidBody, independently of the bone type byte.
         if (!(bone.flags & mdl::kBoneFlagVisible) ||
             !(bone.type < mdl::BoneType::InertTip || bone.type == mdl::BoneType::FixedAxis))
             continue;
@@ -459,7 +426,6 @@ bool PickBoneAtPoint(mdl::ModelRecord& model, int x, int y,
             changed = true;
         } else {
             if (first < 0) first = static_cast<int>(i);
-            // Repeated clicks cycle through overlapping markers, then wrap.
             if (static_cast<int>(i) > model.selectedBone) {
                 candidate = static_cast<int>(i);
                 break;
@@ -479,8 +445,6 @@ bool PickBoneAtPoint(mdl::ModelRecord& model, int x, int y,
 }
 
 void MouseInteractionBegin(MMDApp* app) {
-    // 0x46FF02 -> 0x42D3A0 -> 0x40E3D0.  State values are exactly
-    // 0 idle, 1 pressed, 2 released, 3 held.
     struct KeySlot { int key; std::int32_t MMDAppState::* state; };
     static constexpr KeySlot kKeySlots[] = {
         {VK_UP, &MMDAppState::upKeyState},
@@ -499,9 +463,6 @@ void MouseInteractionBegin(MMDApp* app) {
     for (const KeySlot& slot : kKeySlots)
         PollKey(app, app->state.*slot.state, slot.key);
 
-    // Letter hotkeys share the dialog re-entry guard ints (see
-    // MMDAppState::dialogFlags): lowercase and uppercase VK pairs fold
-    // onto the same slot.
     static constexpr struct { int key; int flagIndex; } kLetterKeys[] = {
         {'x', 0}, {'X', 0}, {'z', 1}, {'Z', 1},
         {'c', 2}, {'C', 2}, {'v', 3}, {'V', 3},
@@ -525,9 +486,6 @@ void MouseInteractionBegin(MMDApp* app) {
     PollKey(app, app->RightMouseButtonState(), VK_RBUTTON);
     PollKey(app, app->MiddleMouseButtonState(), VK_MBUTTON);
 
-    // 0x46FF07..0x46FF32 immediately follows the 0x42D3A0 call: input is
-    // active when the foreground HWND is A0D38, or the main HWND when A0D38
-    // is null.
     HWND active = app->FloatingWindow();
     if (active == nullptr)
         active = app->state.hwnd;
@@ -560,10 +518,6 @@ void MouseInteractionBegin(MMDApp* app) {
         }
     }
 
-    // Right/middle-button camera drags (x86 0x470BF5..0x47133D) live in
-    // pump_navigation.cpp ConsumeRightButtonDrag / ConsumeMiddleButtonPan,
-    // wired from FrameDriver before the letter ladder; the approximation
-    // that used to live here was removed with their arrival.
 }
 
 void MouseInteractionEnd(MMDApp* app) {
@@ -571,23 +525,11 @@ void MouseInteractionEnd(MMDApp* app) {
     app->PreviousMouseY() = app->MouseY();
 }
 
-// runtime-initialized in the original (.rdata image differs); the
-// registry-echo conversion pair 0x52B760/0x52B768 turns the stored radian
-// value into the "%3.4f" display figure (best evidence: PI/180 divisor)
-double g_AngleDegreesScale = 180.0;               // VA 0x0052B760
-double g_AnglePiTruncated = 3.141592025756836;   // VA 0x0052B768
+double g_AngleDegreesScale = 180.0;               
+double g_AnglePiTruncated = 3.141592025756836;   
 
-// ---- light/camera/registry chains (raw listing 10776..11260) --------------
-// Common shape per axis mode (selector A=this+0x24==3, B=this+0xC0==3):
-//   direct  (this+0x9ED9C == 1): app[axis] += dy * scale
-//   registry(this+0x9ED9C == 2 && slot): slot[axis'] -=/+ dy * scale,
-//     echo "%3.4f" into the axis edit box via SetWindowTextA.
-// dy = (this+8) - (this+0x10);  slots: this+0x9DD70[this+0x9E170].
 namespace {
 
-// The x64 build rounds each operation to binary32; the x86 path retains
-// its recovered double intermediates. Keep the distinction local to these
-// operation-panel drag modes.
 #ifdef _WIN64
 using PanelDragScalar = float;
 #else
@@ -614,11 +556,9 @@ void EchoEdit(MMDApp* s, int dlgItem, const char* text) {
     SetWindowTextA(GetDlgItem(window, dlgItem), text);
 }
 
-}  // namespace
+}  
 
 void ModeCameraAdjust(MMDApp* app, int axis) {
-    // 0x4786FB..0x4790DF, modes 13..15.  The same operation widgets edit
-    // either the camera target or the selected accessory position.
     static const int kEdit[3] = {0x1DE, 0x1DF, 0x1E0};
     if (axis < 0 || axis > 2) { ViewRefreshGate(app); return; }
     const int target = app->state.coordinateSystem;
@@ -662,8 +602,6 @@ void ModeCameraAdjust(MMDApp* app, int axis) {
 }
 
 void ModeAngleAdjust(MMDApp* app, int axis) {
-    // 0x4790E0..0x4798xx, modes 16..18.  Stored angles are radians;
-    // accessory edit controls display degrees.
     static const int kEdit[3] = {0x1E1, 0x1E2, 0x1E3};
     if (axis < 0 || axis > 2) { ViewRefreshGate(app); return; }
     const int target = app->state.coordinateSystem;
@@ -672,8 +610,6 @@ void ModeAngleAdjust(MMDApp* app, int axis) {
     if (SelA3(app)) scale = kAngleDragCoarse;
     else if (SelB3(app)) scale = kAngleDragFine;
     else scale = kAngleDragNormal;
-    // Unlike position dragging, the angle target does not depend on the
-    // camera radio flag (x64 456788/456933/456A78; x86 479153).
     if (target == 2) {
         auto* accessory = app->AccessorySlot(app->state.selectedObjectSlot);
         if (accessory != nullptr) {
@@ -693,62 +629,33 @@ void ModeAngleAdjust(MMDApp* app, int axis) {
     ViewRefreshGate(app);
 }
 
-void ModeRotate(MMDApp* app, int /*axis*/) {
-    // app+0x34C modes 1..3: view-axis bone rotation.
+void ModeRotate(MMDApp* app, int  ) {
     BoneEditModes(app);
     ViewRefreshGate(app);
 }
 
-void ModeTranslate(MMDApp* app, int /*axis*/) {
-    // app+0x34C modes 4..6: selected-bone local-axis rotation.
+void ModeTranslate(MMDApp* app, int  ) {
     BoneEditModes(app);
     ViewRefreshGate(app);
 }
 
 void ModeScale(MMDApp* app) {
-    // app+0x34C mode 7 is horizontal selected-root translation, not scaling.
     BoneEditModes(app);
     ViewRefreshGate(app);
 }
 
 void ModeBoneRotate(MMDApp* app, int) {
-    // app+0x34C modes 8/9 add vertical or combined screen-plane movement.
     BoneEditModes(app);
     ViewRefreshGate(app);
 }
 
 void ModePhysicsBody(MMDApp* app, int) {
-    // app+0x34C modes 10..12: local-axis translation or active record edits.
     BoneEditModes(app);
     ViewRefreshGate(app);
 }
 
-// ---------------------------------------------------------------------------
-// VA 0x0041ACD0 - ApplyCameraReferenceModeChange(app, oldMode) (was
-// 0x41ACD0): camera-reference switch re-anchor
-// (command dispatch 0x47FA60/0x47FA88, control 0x213 family).  When the mode
-// byte at +0x340 (kByte340) changes, the accessory ground position stored at
-// app+0x308/+0x30C/+0xA08DC is re-anchored: both the OLD mode (the `mode`
-// argument) and the NEW mode (current byte +0x340) resolve to a bone-record
-// origin of the selected model, each origin matrix is rotated through the
-// accessory rotation R = RotY(+0x314) * RotX(+0x310) * RotZ(+0x318) (and the
-// parent transform at +0xA0438 when the parent index +0xA0430 >= 0), and the
-// difference of the rotated translations is subtracted from the position.
-//
-// Bone-record resolution (selected model = slots[+0x910], records at
-// *(model+0x26BC), 0x25C stride - the same array as physics_create.cpp):
-//   mode 1: record index = *(model+0x4CCEC); origin = -(rec+100/104/108)
-//   mode 2: record index = max(0, *(model+0x2D90)); origin = -(M * p) with
-//           M the 4x4 matrix at rec+0x34 (floats 13..28) and p at rec+0x134
-//           (floats 77..79); rows summed left-associative, single rounding
-//           at the float store (x87 extended accumulation - commutative, so
-//           the second block's commuted first add in the listing is
-//           value-identical)
-//   else:   origin = (0, 0, 0)
-// ---------------------------------------------------------------------------
 void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
     auto& api = d3dx::Get();
-    // R = RotY * RotX * RotZ  (0x41ACEB..0x41AD5D)
     d3dx::D3DXMATRIXF ry{}, rot{}, rz{};
     api.rotY(&ry, app->CameraYaw());
     api.rotX(&rot, app->CameraPitch());
@@ -765,14 +672,14 @@ void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
     auto* bones = rinmotiondance::mdl::Bones(model);
 
     auto modeOrigin = [&](int modeValue, d3dx::D3DXMATRIXF* out) {
-        if (modeValue == 1) {                                  // 0x41AD79
+        if (modeValue == 1) {                                  
             const mdl::BoneRecord& rec =
                 bones[mdl::Mdl(model)->centerBone];
             const float tx = -rec.matInit[12];
             const float ty = -rec.matInit[13];
             const float tz = -rec.matInit[14];
             api.translation(out, tx, ty, tz);
-        } else if (modeValue == 2) {                           // 0x41ADC6
+        } else if (modeValue == 2) {                           
             std::int32_t idx = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (idx < 0)
                 idx = 0;
@@ -796,13 +703,13 @@ void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
     };
 
     d3dx::D3DXMATRIXF tOld{}, tNew{};
-    modeOrigin(oldMode, &tOld);                       // a2 (old mode)
+    modeOrigin(oldMode, &tOld);                       
     modeOrigin(static_cast<int>(app->CameraReferenceMode()), &tNew);
-    api.multiply(&tOld, &tOld, &rot);                 // 0x41B005
-    api.multiply(&tNew, &tNew, &rot);                 // 0x41B01A
+    api.multiply(&tOld, &tOld, &rot);                 
+    api.multiply(&tNew, &tNew, &rot);                 
     app->ViewOffsetX() -= tOld.m[3][0] - tNew.m[3][0];
     app->ViewOffsetY() -= tOld.m[3][1] - tNew.m[3][1];
     app->CameraDistance() -= tOld.m[3][2] - tNew.m[3][2];
 }
 
-}  // namespace rinmotiondance
+}  

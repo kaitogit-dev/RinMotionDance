@@ -1,5 +1,3 @@
-# Bare (non-debugged) verification of the ray-mmd drop sequence.
-# Usage: powershell -File verify_bare.ps1 [-Cycles 3]
 param([int]$Cycles = 3)
 $ErrorActionPreference = "Continue"
 $rel = "C:\Users\jstzw\Documents\github\RinMotionDance\build-x64\build\Release"

@@ -1,25 +1,3 @@
-// ===========================================================================
-// VA 0x00424DC0 - InitToonTextures  (original: sub_424DC0, 0x2FA bytes)
-// ===========================================================================
-// Toon-shading gradient loader (NOT the font system - reclassified; the
-// translated file's "font init" comment was wrong):
-//   1. release the 11 texture slots at this+650720..+650760
-//   2. texture slot 0: embedded PNG resource 0x67 via
-//      D3DXCreateTextureFromFileInMemoryEx (A8R8G8B8, MANAGED pool)
-//   3. edge-colour table at this+655632 (30 floats, exact values below;
-//      x64 0x7FF7CB4BA24C..0x7FF7CB4BA388 writes all 30 dwords, literals
-//      below reproduce the original bit patterns, not n/256 values)
-//   4. slots 1..10: data\toon%02d.bmp via D3DXCreateTextureFromFileExA
-//      (fmt 21 = A8R8G8B8, pool 1 = MANAGED); on failure fall back to the
-//      embedded PNG resource (id+103); on success read the bottom-left
-//      pixel via LockRect and store R/G/B * (1/256) into entries
-//      [3*(N-1) .. 3*(N-1)+2] of the same table (stride three floats
-//      per toon texture; x64 0x7FF7CB4BA522..0x7FF7CB4BA567).
-//
-// D3DX fidelity: the original imports d3dx9_32.dll specifically; the port
-// imports the matching runtime through the shared D3DX interface.
-// Device: *(this+657092)+120032 (guard: null until the D3D init is ported).
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -36,8 +14,6 @@
 namespace rinmotiondance {
 namespace {
 
-// Binary-compatible D3DXIMAGE_INFO layout.  The project resolves D3DX at
-// runtime, so it cannot include the legacy D3DX SDK header directly.
 struct D3dxImageInfo {
     UINT Width;
     UINT Height;
@@ -51,32 +27,30 @@ struct D3dxImageInfo {
 auto& g_d3dx = d3dx::Get();
 
 IDirect3DDevice9* DeviceOf(MMDApp* app) {
-    D3DRenderer* sub = app->Renderer();                           // 657092
+    D3DRenderer* sub = app->Renderer();                           
     if (sub == nullptr)
         return nullptr;
-    return sub->device;                                           // +0x1D4E0
+    return sub->device;                                           
 }
 
-}  // namespace
+}  
 
 bool InitToonTextures(MMDApp* app) {
     auto& s = *app;
     IDirect3DDevice9* device = DeviceOf(app);
     if (device == nullptr)
-        return false;   // original would fail on the resource-path call chain
+        return false;   
 
-    SetCurrentDirectoryW(app->ExeDir());                          // 657102
+    SetCurrentDirectoryW(app->ExeDir());                          
 
-    // release the 11 toon texture slots (vtable+8 = Release)
     for (int i = 0; i < 11; ++i) {
-        IDirect3DTexture9* tex = s.ToonTexture(i);                // 650720..
+        IDirect3DTexture9* tex = s.ToonTexture(i);                
         if (tex != nullptr) {
             static_cast<IUnknown*>(tex)->Release();
             s.ToonTexture(i) = nullptr;
         }
     }
 
-    // slot 0: embedded PNG (resource 0x67, type "PNG")
     HRSRC res = FindResourceA(static_cast<HMODULE>(s.HInstance()),
                               MAKEINTRESOURCEA(0x67), "PNG");
     DWORD size = SizeofResource(nullptr, res);
@@ -91,7 +65,6 @@ bool InitToonTextures(MMDApp* app) {
         return false;
     s.ToonTexture(0) = tex0;
 
-    // edge-colour table defaults (this+655632, exact original values)
     const float defaults[14] = {
         0.80078101f, 0.80078101f, 0.80078101f, 0.95703101f, 0.87890601f,
         0.87890601f, 0.60156298f, 0.60156298f, 0.60156298f, 0.96875f,
@@ -99,9 +72,6 @@ bool InitToonTextures(MMDApp* app) {
     };
     for (int i = 0; i < 14; ++i)
         s.state.toonEdgeTable[i] = defaults[i];
-    // Trailing table (dwords 0x28052..0x28061): [14..17] pull the four
-    // rdata floats 0x52c0c0/c0bc/c0b8/c0b4 (0.863281, 0.761719, 0.671875,
-    // 0.011719); [18..29] are all 1.0.
     const float tail[4] = {0.86328101f, 0.76171899f, 0.671875f,
                            0.011719f};
     for (int i = 0; i < 4; ++i)
@@ -109,7 +79,6 @@ bool InitToonTextures(MMDApp* app) {
     for (int i = 18; i < 30; ++i)
         s.state.toonEdgeTable[i] = 1.0f;
 
-    // slots 1..10: toonNN.bmp with embedded PNG fallback, colour from pixel
     for (int i = 1; i < 11; ++i) {
         char path[256];
         sprintf_s(path, 0x100, "data\\toon%02d.bmp", i);
@@ -120,8 +89,8 @@ bool InitToonTextures(MMDApp* app) {
         if (FAILED(g_d3dx.fromFileExA(device, path,
                                       static_cast<UINT>(-1),
                                       static_cast<UINT>(-1), 1, 0,
-                                      D3DFMT_A8R8G8B8 /*21*/,
-                                      D3DPOOL_MANAGED /*1*/,
+                                      D3DFMT_A8R8G8B8  ,
+                                      D3DPOOL_MANAGED  ,
                                       static_cast<DWORD>(-1),
                                       static_cast<DWORD>(-1), 0,
                                       &info, nullptr, slot))) {
@@ -136,30 +105,22 @@ bool InitToonTextures(MMDApp* app) {
                              static_cast<DWORD>(-1), 0, nullptr, nullptr,
                              slot);
         } else {
-            // x64 sub_7FF7CB4BA130+0x3F2..0x437 (0x7FF7CB4BA522..0x7FF7CB4BA567):
-            // the bottom-left pixel of toon%02d.bmp (A8R8G8B8 lock order
-            // B,G,R,A) fills table entry 3*(N-1)..3*(N-1)+2 as R,G,B
-            // (*entry = row[2]/256, entry[1] = row[1]/256, entry[2] =
-            // row[0]/256); the entry pointer then advances by three floats
-            // per texture (add r12,0Ch @0x7FF7CB4BA563).
             D3DLOCKED_RECT rect;
             if (SUCCEEDED((*slot)->LockRect(0, &rect, nullptr, 0))) {
                 auto* row = static_cast<unsigned char*>(rect.pBits) +
                             rect.Pitch * (info.Height - 1);
                 float* out = &s.state.toonEdgeTable[3 * (i - 1)];
-                out[0] = row[2] * 0.00390625f;     // R
-                out[1] = row[1] * 0.00390625f;     // G
-                out[2] = row[0] * 0.00390625f;     // B
+                out[0] = row[2] * 0.00390625f;     
+                out[1] = row[1] * 0.00390625f;     
+                out[2] = row[0] * 0.00390625f;     
                 (*slot)->UnlockRect(0);
             }
         }
         if (*slot != nullptr) {
-            // 内置 MMEffect：登记内置 toon 纹理（GetToonTexture 的
-            // "toonNN.bmp" 裸名查询经 MME 侧别名机制解析）。
             mme::RecordTexture(widePath, *slot);
         }
     }
     return true;
 }
 
-}  // namespace rinmotiondance
+}  

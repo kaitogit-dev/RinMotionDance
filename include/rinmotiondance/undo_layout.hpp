@@ -1,4 +1,3 @@
-// Per-model undo records shared by bone editing and physics-pose capture.
 #pragma once
 
 #include <cstddef>
@@ -20,8 +19,6 @@ struct UndoRecord {
     std::int32_t dirty;
     std::int32_t reserved0;
     std::uint32_t frame;
-    // Owned raw storage: allocate with ::operator new, release with
-    // ::operator delete throughout edit/capture/disposal paths.
     BonePoseSnapshot* bonePose;
     void* auxiliaryPose;
     std::int32_t reserved1;
@@ -45,4 +42,4 @@ static_assert(offsetof(UndoRecord, auxiliaryPose) == 20,
               "undo auxiliary pose x86");
 #endif
 
-}  // namespace rinmotiondance::mdl
+}  

@@ -1,18 +1,3 @@
-// ===========================================================================
-// VA 0x0040DF10 - FillPanelBottom  (original: sub_40DF10, 238 bytes)
-// ===========================================================================
-// GDI panel-fill helper used by WM_PAINT (0x47C0A0) for the bottom control
-// panel and the accessory-hide rects.
-//   color == color2 : solid fill via CreatePen(PS_SOLID,1,color) +
-//                     CreateSolidBrush + Rectangle, then both GDI objects
-//                     are deselected and deleted;
-//   otherwise       : GradientFill over two TRIVERTEX corners with the
-//                     channels pre-scaled <<8 (TRIVERTEX wants 0..0xFF00);
-//                     mode = (flag & 0xFF) ? GRADIENT_FILL_RECT_V
-//                                          : GRADIENT_FILL_RECT_H.
-// Both paths finish with a black 1 px border drawn as MoveTo/LineTo around
-// (left, top) -> (right, top) -> (right, bottom) -> (left, bottom).
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -75,4 +60,4 @@ void FillPanelBottom(HDC hdc, int left, int top, int right, int bottom,
     DeleteObject(border);
 }
 
-}  // namespace rinmotiondance
+}  

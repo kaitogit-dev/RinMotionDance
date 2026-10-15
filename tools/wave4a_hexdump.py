@@ -52,9 +52,6 @@ def rd_cstr(exe, secs, rva):
     o = rva2off(secs, rva); e = exe.index(b'\0', o)
     return exe[o:e]
 
-# Wave5-C: three-way compare (v1 const | v2 const | original x86 .rdata).
-# VA = RVA + 0x400000 image base; single-copy addresses confirmed via IDA
-# xrefs (both loader bodies sub_450000 / sub_458F80 reference each once).
 NAMES = [('kJpChainCapDisp',0x12D770), ('kJpChainFmtPhys',0x12D788),
          ('kJpChainFmtDisp',0x12D848), ('kJpCannotOpenAcc',0x12DAE0)]
 

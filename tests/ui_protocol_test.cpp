@@ -40,8 +40,6 @@ int main() {
         [&](std::size_t, int) { ++calls; });
     check(calls == 0, "Empty selection must not access the hit grid");
 
-    // Exercise the same stop/completion publication used by the real WAV
-    // worker without requiring an audio device or DirectSound buffer.
     rinmotiondance::WaveAudioContext audio{};
     int completionData = 0;
     std::thread worker([&] {

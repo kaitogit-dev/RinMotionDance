@@ -1,6 +1,3 @@
-// D3DX compatibility facade for the host's existing float-array call sites.
-// All functions below use normal PE imports: Windows resolves the required
-// architecture-specific runtime before any application code executes.
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -43,13 +40,11 @@ using FnQuatMultiply = float*(WINAPI*)(float out[4], const float* q1, const floa
 using FnMatrixQuat = D3DXMATRIXF*(WINAPI*)(D3DXMATRIXF* out, const float q[4]);
 using FnQuatToAxisAngle = void(WINAPI*)(const float q[4], float axis[3], float* angle);
 using FnQuatNormalize = float*(WINAPI*)(float out[4], const float q[4]);
-using FnSaveSurfaceToFileW = HRESULT(WINAPI*)(const wchar_t*, int /*D3DXIMAGE_FILEFORMAT*/,
-                                              IDirect3DSurface9*, const void* /*PALETTEENTRY*/,
+using FnSaveSurfaceToFileW = HRESULT(WINAPI*)(const wchar_t*, int  ,
+                                              IDirect3DSurface9*, const void*  ,
                                               const RECT*);
 
 struct Api {
-    // Kept for source compatibility with existing callers. This is no longer
-    // a loader and cannot fail after the Windows loader admitted the process.
     static constexpr bool Load() noexcept { return true; }
     static HRESULT WINAPI fromMemEx(IDirect3DDevice9* device, LPCVOID source, UINT sourceBytes,
                                     UINT width, UINT height, UINT mipLevels, DWORD usage,
@@ -207,4 +202,4 @@ inline Api& Get() {
     static Api api;
     return api;
 }
-}  // namespace rinmotiondance::d3dx
+}  

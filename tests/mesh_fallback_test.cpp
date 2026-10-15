@@ -42,20 +42,18 @@ int main() {
             mesh, device, vertices, indices, 17,
             [&] { ++indexedCalls; return S_FALSE; });
     };
-    // Equality is deliberately allowed (the reference compares capacity,
-    // not capacity - 1). Ordinary MME interception must remain selected.
     CHECK(draw() == S_FALSE && indexedCalls == 1 && mesh.calls == 0);
     device.caps.MaxVertexIndex = 69999;
     mesh.result = E_FAIL;
     CHECK(draw() == E_FAIL && mesh.calls == 1 && mesh.attribute == 17);
-    CHECK(indexedCalls == 1); // native error must never retry via indexed draw
+    CHECK(indexedCalls == 1); 
     device.caps.MaxVertexIndex = 70000;
     device.caps.MaxPrimitiveCount = 99;
     CHECK(draw() == E_FAIL && mesh.calls == 2);
     device.caps.MaxPrimitiveCount = 100;
     vertices.desc.Size = 3 * mesh.stride;
     device.caps.MaxVertexIndex = 65535;
-    CHECK(draw() == E_FAIL && mesh.calls == 3); // even a three-vertex mesh
+    CHECK(draw() == E_FAIL && mesh.calls == 3); 
     device.caps.MaxVertexIndex = 65536;
     CHECK(draw() == S_FALSE && indexedCalls == 2);
     device.result = D3DERR_DEVICELOST;
@@ -66,7 +64,6 @@ int main() {
     vertices.result = S_OK;
     indices.result = D3DERR_INVALIDCALL;
     CHECK(draw() == D3DERR_INVALIDCALL);
-    // 16-bit meshes do not enter the D3DX 32-bit fallback, even on old caps.
     mesh.options = 0;
     const unsigned queries = device.calls;
     CHECK(draw() == S_FALSE && indexedCalls == 3 && device.calls == queries);

@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x00425D20 / 0x00426CD0 / 0x004277E0 - model and shadow render passes
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -24,9 +21,6 @@ namespace {
 
 using Matrix = d3dx::D3DXMATRIXF;
 
-// Porting-era material-state capture under RINMOTIONDANCE_VB_DUMP_DIR
-// (CMake option RINMOTIONDANCE_DIAG, default OFF); the OFF stubs below
-// keep the call sites valid and inline away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 struct MaterialStateCapture {
     FILE* stream = nullptr;
@@ -119,7 +113,6 @@ void DumpMaterialState(MMDApp* app, IDirect3DDevice9* device,
         return;
 
     int slot = -1;
-    // port diagnostic: bound = model-slot capacity (kModelSlotCount)
     for (int i = 0; i < kModelSlotCount; ++i) {
         if (app->ModelSlot(i) == model) {
             slot = i;
@@ -199,9 +192,6 @@ void DumpMaterialState(MMDApp* app, IDirect3DDevice9* device,
         RenderState(device, D3DRS_SRCBLEND),
         RenderState(device, D3DRS_DESTBLEND),
         RenderState(device, D3DRS_LIGHTING));
-    // Emit the actual typed light record.  Reading this as independent x86
-    // dwords bypassed the x64 state-layout translation and made the capture
-    // itself report unrelated values.
     DWORD lightBits[sizeof(D3DLIGHT9) / sizeof(DWORD)]{};
     const D3DLIGHT9& sceneLight = app->SceneLight();
     std::memcpy(lightBits, &sceneLight, sizeof(lightBits));
@@ -233,20 +223,12 @@ inline void DumpMaterialState(MMDApp*, IDirect3DDevice9*, unsigned char*,
 inline void EndMaterialStateCapture() {}
 #endif
 
-// Effect calls go through the shared slot-numbered helpers in
-// fx_slots.hpp; the old byte-offset spells (232/88/128/152/252/256/264/268)
-// were x86-only and silently landed on halved slots on x64.
 
 void Identity(Matrix* out) {
     std::memset(out, 0, sizeof(*out));
     out->m[0][0] = out->m[1][1] = out->m[2][2] = out->m[3][3] = 1.0f;
 }
 
-// The half-texel matrix the original loads from flt_7FF7CB54A4F0..A520
-// ([0.5,0,0,0 / 0,-0.5,0,0 / 0,0,0,0 / 0.5,0.5,0,1]).  sub_7FF7CB4D6D70
-// binds it to D3DTS_TEXTURE1 once per model at the loop head
-// (0x7FF7CB4D6E0A) and re-reads the same stack copy for every sphere
-// cascade that leaves the transform flags in COUNT2 mode.
 Matrix HalfTexelMatrix() {
     Matrix m;
     Identity(&m);
@@ -287,8 +269,6 @@ void CachedTextureColor(D3DRenderer* sub, const wchar_t* path, float out[4]) {
         if (name == nullptr)
             return;
         if (wcscmp(name, path) == 0) {
-            // pool entry tag (wrapper + 12 + 12*i): low three bytes carry
-            // the cached average colour
             const unsigned char* tag = reinterpret_cast<const unsigned char*>(
                 &sub->resourcePool[i].tag);
             out[0] = tag[0] * (1.0f / 256.0f);
@@ -312,10 +292,6 @@ void ModelVertexFormat(unsigned char* model, DWORD* fvf, UINT* stride) {
 IDirect3DTexture9* ToonTexture(MMDApp* app, D3DRenderer* sub,
                                unsigned char* model,
                                unsigned char* material) {
-    // 0x491E8B..0x492163: toonReference == -1 -> shared table slot 0; a
-    // model whose indexed toon file name IS "toonNN.bmp" -> slot N+1; any
-    // other name resolves the texture itself (PMX: the material toon path
-    // at +0x4C0; PMD: modelDirectory + converted file name).
     const int index = static_cast<std::int8_t>(
         mdl::Material(material).toonReference);
     if (index == -1)
@@ -330,13 +306,10 @@ IDirect3DTexture9* ToonTexture(MMDApp* app, D3DRenderer* sub,
             return app->ToonTexture(index + 1);
     }
     if (mdl::Mdl(model)->physicsMode == 2) {
-        // PMX custom toon (0x4920D7): cached texture for material+0x4C0.
         return FindCachedTexture(sub,
                                  mdl::Material(material).toonPath);
     }
     if (index >= 0 && index < 10) {
-        // PMD custom toon (0x492111..0x492157): model directory + the
-        // converted (SJIS -> wide) toon file name.
         wchar_t converted[256] = {};
         wchar_t path[256] = {};
         ConvertAnsiToWide(reinterpret_cast<D3DRenderer*>(sub), mdl::PmdToonFileNames(model)[index],
@@ -353,9 +326,6 @@ bool HasSuffix(const wchar_t* value, const wchar_t* lower,
 
 void Cross3(float out[3], const float left[3], const float right[3]) {
 #if defined(_M_IX86)
-    // 0x491BB0..0x491C1A / 0x491C31..0x491C8D keep each
-    // multiply-subtract in the x87 register stack until the float store.
-    // A double-based equivalent differs by a few ULP after normalization.
     float* destination = out;
     const float* lhs = left;
     const float* rhs = right;
@@ -428,15 +398,11 @@ void BuildToonTransform(MMDApp* app, Matrix* result) {
     Matrix translation;
     Matrix temporary;
     Matrix projected;
-    // flt_530E00 = -(3.141592f * 0.5f) (pi/2 in the original's float
-    // precision).  C++17 has no std::bit_cast; MSVC's __builtin_bit_cast
-    // is accepted in constant expressions, so the static_assert pins the
-    // literal to the original .rdata bit pattern.
     constexpr float kRotationAngle = -(3.141592f * 0.5f);
     static_assert(__builtin_bit_cast(std::uint32_t, kRotationAngle) ==
                       0xBFC90FD8u,
                   "flt_530E00 bit-exact");
-    float rotationAngle = kRotationAngle;                 // 0x530E00
+    float rotationAngle = kRotationAngle;                 
     api.rotX(&rotation, rotationAngle);
     api.scaling(&scaling, 0.5f, -0.5f, 1.0f);
     api.translation(&translation, 0.5f, 0.5f, 0.0f);
@@ -445,31 +411,7 @@ void BuildToonTransform(MMDApp* app, Matrix* result) {
     api.multiply(result, &projected, &translation);
 }
 
-// Faithful transcription of sub_4912F0's per-material texture-cascade setup
-// (0x491470..0x491B38 + LABEL_46 0x491E41..0x492163).  The original only
-// ever touches COLOROP/TEXCOORDINDEX/TEXTURETRANSFORMFLAGS inside the model
-// loop; ARG1/ARG2/ALPHAOP keep the InitRenderStates values (0x406E90) and
-// bound textures persist across materials - unbinding stage 1 or overriding
-// ALPHAOP here would deviate (the shadow/live capture diffs of 2026-08-25
-// traced back to exactly that).
-// All sphere/toon TCI writes below use the literal 0x10000 - the exact
-// immediate of the original's four physical call sites (0x7FF7CB4D70C9 /
-// 0x4D7283 / 0x4D75E4 / 0x4D795C, shared tails of the eight logical branches
-// transcribed here); the binary contains no 0x30000 (SPHEREMAP) TCI immediate.
 void DisableSphereTextureStage(IDirect3DDevice9* device) {
-    // Stage 2 is a per-material sphere-map cascade, and the original closes
-    // an inactive cascade with a SINGLE call: every no-sphere path
-    // converges on TSS(2, COLOROP, DISABLE) - LABEL_45 0x7FF7CB4D767B
-    // (mov r9d,1 / lea edx,[r9+1] / mov r8d,r9d / call [rax+218h]) for the
-    // PMX textured / PMD empty-main / PMD suffix paths and the stage-1
-    // promoted twin at 0x7FF7CB4D73D8 (LABEL_29).  The stage-2 texture
-    // binding, TEXTURETRANSFORMFLAGS and TEXCOORDINDEX keep whatever the
-    // previous material left behind (InitRenderStates 0x406E90 values at
-    // frame start); the stale binding is inert under the disabled COLOROP.
-    // Unbinding stage 2 or rewriting TTF/TCI here would emit device calls
-    // the original never makes (2026-09-14 verdict; the earlier claim that
-    // the original also unbinds/UV-2/disables the transform misread the
-    // LABEL_45 tail).
     device->SetTextureStageState(2, D3DTSS_COLOROP, D3DTOP_DISABLE);
 }
 
@@ -483,7 +425,6 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
     DisableSphereTextureStage(device);
 
     if (mdl::Mdl(model)->physicsMode == 2) {
-        // half-texel / identity stage transforms (v103 / v79 at 0x491353..)
         const Matrix halfTexel = HalfTexelMatrix();
         Matrix identityTexel;
         Identity(&identityTexel);
@@ -493,12 +434,10 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
                                  reinterpret_cast<const D3DMATRIX*>(&m));
         };
         if (mainPath[0] != L'\0') {
-            // PMX main texture: 0x4914D2..0x49152B
             device->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
             device->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 0);
             device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_MODULATE);
             device->SetTexture(1, FindCachedTexture(sub, mainPath));
-            // PMX sphere map on stage 2: 0x491530..0x4916B3
             const unsigned char sphereMode = record.sphereMode;
             if (spherePath[0] != L'\0' && sphereMode != 0) {
                 switch (sphereMode) {
@@ -532,12 +471,11 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
                     device->SetTextureStageState(2, D3DTSS_TEXCOORDINDEX, 1);
                     break;
                 default:
-                    break;  // 0x491558 default: bind only, no stage change
+                    break;  
                 }
                 device->SetTexture(2, FindCachedTexture(sub, spherePath));
             }
         } else if (spherePath[0] != L'\0' && record.sphereMode != 0) {
-            // PMX sphere map promoted to stage 1: 0x4916DC..0x491835
             const unsigned char sphereMode = record.sphereMode;
             switch (sphereMode) {
             case 1:
@@ -573,11 +511,8 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
             device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
         }
     } else if (mainPath[0] == L'\0') {
-        // PMD empty main path: 0x491A78 disables stage 1 and keeps whatever
-        // texture is still bound (stale binding, inert under COLOROP).
         device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
     } else if (HasSuffix(mainPath, L".sph", L".SPH")) {
-        // 0x4919BC + common tail 0x4919D3..0x4918C0
         device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_MODULATE);
         device->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS,
                                      D3DTTFF_COUNT2);
@@ -590,22 +525,12 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
         device->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 0x10000);
         device->SetTexture(1, FindCachedTexture(sub, mainPath));
     } else {
-        // Generic texture (incl. the ".tga"/toon check that lands here too):
-        // 0x49189C..0x4918FC
         device->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
         device->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 0);
         device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_MODULATE);
         device->SetTexture(1, FindCachedTexture(sub, mainPath));
     }
 
-    // Sphere field (PMD): 0x7FF7CB4D74CB..0x7FF7CB4D755C + shared tail
-    // LABEL_11 (0x7FF7CB4D70AD).  The COLOROP test at 0x7FF7CB4D750F..0x7FF7CB4D753D
-    // keeps MODULATE(4) only when the path contains ".sph"/".SPH" (setnz on
-    // both wcsstr results, or'd, jnz skips the lea r9d,[rdx+5]=7) and selects
-    // ADD(7) otherwise - ".spa" and every other suffix alike.  0x7FF7CB4D7556
-    // then binds the half-texel matrix to TEXTURE2 ahead of the COUNT2/TCI
-    // tail.  With no sphere texture the original ONLY disables stage 2
-    // COLOROP - TCI/TF keep their InitRenderStates values.
     if (mdl::Mdl(model)->physicsMode != 2) {
         if (spherePath[0] != L'\0') {
             device->SetTextureStageState(2, D3DTSS_COLOROP,
@@ -621,7 +546,6 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
         }
     }
 
-    // Toon stage 0 (LABEL_46): 0x491E41..0x492163
     Matrix toonTransform;
     BuildToonTransform(app, &toonTransform);
     device->SetTransform(D3DTS_TEXTURE0,
@@ -634,7 +558,6 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
     device->SetTexture(0, ToonTexture(app, sub, model, material));
 }
 
-// Loop-tail stage-1 reset for ".sp*" main paths: 0x4925CE..0x4925E5.
 void ResetSphereStageAfterDraw(IDirect3DDevice9* device,
                                unsigned char* material) {
     const wchar_t* mainPath = mdl::Material(material).texturePath;
@@ -876,13 +799,6 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
     UINT stride;
     ModelVertexFormat(model, &fvf, &stride);
     if (!effectPass && !shadowOnly) {
-        // x64 sub_7FF7CB4D6D70 per-model header, before the material loop:
-        // 0x7FF7CB4D6DC5 re-enables LIGHTING(137) and 0x7FF7CB4D6E0A binds
-        // the half-texel matrix to TEXTURE1 as the standing default for
-        // every sphere cascade that sets TTF=COUNT2 without touching the
-        // transform itself (PMD ".sph"/".spa" main textures most notably).
-        // Without this reset the PMX sphere-promoted case 3 identity matrix
-        // would leak into the next model's stage 1.
         device->SetRenderState(D3DRS_LIGHTING, TRUE);
         const Matrix halfTexel = HalfTexelMatrix();
         device->SetTransform(D3DTS_TEXTURE1,
@@ -900,14 +816,10 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
 
         bool draw = true;
         if (shadowOnly) {
-            // 0x4D8593: the gate reads edgeColor[3] (mat+1208, the same
-            // float EgColor uploads as its 4th component), not edgeSize.
             if (mdl::Mdl(model)->physicsMode == 2 && record.edgeColor[3] <= 0.0f)
                 draw = false;
             if (record.diffuse[3] == 0.9800000190734863f)
                 draw = false;
-            // 0x492925: PMX shadow-cast disable bit (bit 2 of material+2240)
-            // skips the material in the shadow map when clear (PMX mode only).
             if (mdl::Mdl(model)->physicsMode == 2 && (record.flags >> 2 & 1) == 0)
                 draw = false;
         }
@@ -918,16 +830,6 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
                 d3dMaterial.Diffuse.a = 0.5f;
 
             if (!effectPass && !shadowOnly) {
-                // Fixed-function model pass, transcribed from sub_4912F0.
-                // Blend-state prefix (0x491470..0x49149A) runs for every
-                // material; texture cascade and toon setup follow
-                // (ConfigureMaterialStages); the draw branches below carry
-                // the original CULLMODE semantics:
-                //   postLoadFlag2 != 0 -> additive two-pass transparents
-                //                          (DESTBLEND=ONE, back faces with
-                //                          CULL_CW first, then CULL_CCW)
-                //   alpha < 1          -> single pass with CULL_NONE
-                //   opaque             -> cull untouched
                 device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
                 device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
                 device->SetRenderState(D3DRS_DESTBLEND,
@@ -947,12 +849,8 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
                                               state.vertexCount,
                                               firstIndex, indexCount / 3);
                 };
-                // 0x492203 compares the COPY's Diffuse.a (esp+0x138),
-                // which carries the 0.5 displayState override - not the
-                // raw record value.
                 const float alpha = d3dMaterial.Diffuse.a;
                 if (state.postLoadFlag2 != 0) {
-                    // 0x4921D1..0x49237A
                     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
                     device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
                     device->SetMaterial(&d3dMaterial);
@@ -967,7 +865,6 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
                 } else if (alpha < 1.0f ||
                            (mdl::Mdl(model)->physicsMode == 2 &&
                             (record.flags & 1) != 0)) {
-                    // 0x4923D5..0x4924CE
                     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
                     device->SetRenderState(D3DRS_SRCBLEND,
                                            D3DBLEND_SRCALPHA);
@@ -984,30 +881,13 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
                 ResetSphereStageAfterDraw(device, material);
             } else {
                 if (shadowOnly) {
-                    // 0x492938..0x492952: per-material CULLMODE - the
-                    // doubleSided flag (material+0x4A9) selects CCW(3) when
-                    // clear, NONE(1) when set.  No SetMaterial here: the
-                    // original shadow loop does not set one.
                     device->SetRenderState(
                         D3DRS_CULLMODE,
                         record.doubleSided == 0 ? D3DCULL_CCW
                                                 : D3DCULL_NONE);
-                    // 0x492954: BeginPass(effect, 0) per material; the
-                    // enclosing fx::Begin was issued by RenderShadowMap
-                    // before the model loop (its fx::End closes it).
                     if (effectPass && effect != nullptr)
                         fx::BeginPass(effect, 0);
                 } else {
-                    // x64 sub_7FF7CB4D87C0 (effect-frame material loop)
-                    // never calls SetMaterial - its whole device surface is
-                    // SetRenderState/SetTexture/SetFVF/SetStreamSource/
-                    // SetIndices/DrawIndexedPrimitive only (SetMaterial
-                    // vtable slot 0x188 appears zero times; the three
-                    // fixed-function sites live in sub_7FF7CB4D6D70).  The
-                    // device therefore keeps the stale material the
-                    // fixed-function frame last set, which is exactly what
-                    // MME's live GetMaterial EgColor/SpcColor/DifColor
-                    // synthesis (material_bind.cpp) reads at draw time.
                 }
                 if (effectPass && effect != nullptr && !shadowOnly) {
                     device->SetRenderState(D3DRS_CULLMODE,
@@ -1049,8 +929,6 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
         firstIndex += indexCount;
     }
     state.toonShared = static_cast<std::uint32_t>(-1);
-    // 0x4925FD..0x49261D: terminate the fixed-function texture cascade at
-    // stage 1 before outlines, accessories, or the next model are submitted.
     device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 }
 
@@ -1084,26 +962,10 @@ void DrawModelEdgeGeometry(MMDApp* app, unsigned char* model,
         const bool pmx = mdl::Mdl(model)->physicsMode == 2;
         if (pmx && projectedShadow && (record.flags & 2) == 0)
             draw = false;
-        // 0x4D839E: same gate field as the shadow map - edgeColor[3]
-        // (mat+1208), not edgeSize.
         if (pmx && projectedShadow && sub->postProcessEnabled != 0 &&
             record.edgeColor[3] <= 0.0f)
             draw = false;
         if (draw) {
-            // x64 0x7FF7CB4D83AD gate: (physicsMode == 2) &&
-            // *(renderer+240196) && a3 == 0.  renderer+240196 (+0x3AA44) is
-            // the one-shot "HDR texture + dds9 effect created" flag written
-            // only during D3D init (0x7FF7CB428147 sets 1 before the HDR
-            // block; the HDR-surface and effect failure paths
-            // 0x7FF7CB42829F/0x7FF7CB4283CD clear it) - NOT an effect-frame
-            // selector.  The fixed frame's outline call (0x7FF7CB4C0A66,
-            // a3=0) therefore takes this branch too whenever the
-            // post-process pipeline initialised, and so does the effect
-            // frame's (0x7FF7CB4C38D5); only the projected calls (a3=1,
-            // 0x4C0766/0x4C3376) stay out.  postProcessEnabled != 0 implies
-            // effect != nullptr (d3d_init clears both together), and
-            // EndPass/BeginPass without an active Begin just return an
-            // error the original ignores.
             if (pmx && !projectedShadow && sub->postProcessEnabled != 0) {
                 fx::EndPass(effect);
                 fx::SetFloatArray(effect, "EgColor", record.edgeColor, 4);
@@ -1121,10 +983,6 @@ void DrawModelEdgeGeometry(MMDApp* app, unsigned char* model,
 }
 
 void DrawModelsProjectedShadow(MMDApp* app) {
-    // x64 inlined twin sub_7FF7CB4BFB20+0x4C0710..0x4C077A - the silhouette
-    // walk inside the ground-shadow matrix block (per-order call of the edge
-    // draw sub_7FF7CB4D82A0 with flag 1 at 0x4C0766): both loops run to 0xFF
-    // (cmp edx,0FFh @0x4C073C / cmp edi,0FFh @0x4C0774) - kModelSlotCount wide.
     for (int order = 0; order < kModelSlotCount; ++order) {
         for (int slot = 0; slot < kModelSlotCount; ++slot) {
             auto* model = app->ModelSlot(slot);
@@ -1145,32 +1003,6 @@ bool BeginProjectedGroundShadow(MMDApp* app, IDirect3DDevice9* device,
     if (app->GroundShadowEnabled() == 0 || !cameraGate ||
         app->LightDirection()[1] >= 0.0f)
         return false;
-    // Bit-level verdict (2026-09-14): this matrix reproduces the x64 binary
-    // word for word; an earlier audit note claiming row2=(0,1,0,1) /
-    // row3=(0,0,0,0.1) had misread the constant pools.  Fixed-frame twin
-    // sub_7FF7CB4BFB20 head 0x7FF7CB4BFB5F..0x7FF7CB4BFBE3 and effect-frame
-    // twin sub_7FF7CB4C1E60 head 0x7FF7CB4C1E9E..0x7FF7CB4C1F30 build the
-    // same stack matrix M (row-major, D3DX row-vector convention):
-    //   row0 <- xmmword_7FF7CB54A540          = (1, 0, 0, 0)
-    //   row1  = (-(Lx/Ly), 0, -(Lz/Ly), 0)    (divss by [rcx+0x9F044]=Ly,
-    //          then xorps sign mask xmmword_7FF7CB552B80 = 0x80000000 x4 -
-    //          divide first, negate second; Lx=[rcx+0x9F040], Lz=[rcx+0x9F048])
-    //   row2 <- xmmword_7FF7CB54A560          = (0, 0, 1, 0)
-    //   row3 <- xmmword_7FF7CB54A550          = (0, 0.1f, 0, 1)
-    // (0.1f = 0x3DCCCCCD = 0.10000000149011612f below).  Then
-    // D3DXMatrixMultiply(&M, &M, a2): a2 is the caller's stack copy of the
-    // base WORLD matrix - sub_7FF7CB4474F0 sets it once via
-    // SetTransform(D3DTS_WORLD, var_12B0) @0x7FF7CB447EA0 and both call
-    // sites (0x7FF7CB44A587..5B8 fixed, 0x7FF7CB44A54F..580 effect) splice
-    // {var_12B0, var_12A0, var_1290, var_1280} into rdx.  Consumption:
-    // SetTransform(D3DTS_WORLD, &M) @0x7FF7CB4C04A0 (fixed) /
-    // 0x7FF7CB4C3080 (effect), silhouette walk sub_7FF7CB4D82A0 flag=1
-    // contains no SetTransform, then WORLD is restored to a2 @0x7FF7CB4C0795
-    // / 0x7FF7CB4C33A8; VIEW/PROJECTION are never touched inside the twins.
-    // The port reads the same base via GetTransform(D3DTS_WORLD), so the
-    // Multiply below matches D3DXMatrixMultiply(pOut, pM1=P, pM2=frame)
-    // element for element; (-Lx)/Ly is bit-identical to -(Lx/Ly) because
-    // IEEE negate only flips the sign bit and rounding is sign-symmetric.
     Matrix projection{};
     Matrix projected;
     device->GetTransform(D3DTS_WORLD, reinterpret_cast<D3DMATRIX*>(base));
@@ -1185,8 +1017,6 @@ bool BeginProjectedGroundShadow(MMDApp* app, IDirect3DDevice9* device,
     Multiply(&projected, &projection, base);
     device->SetTransform(D3DTS_WORLD,
                          reinterpret_cast<const D3DMATRIX*>(&projected));
-    // CULL/ZFUNC/texture-clear already issued by the caller
-    // (0x426384..0x4263BC); the original does not repeat them here.
     app->ActiveRenderPass() = AccessoryRenderPass::ProjectedGroundShadow;
     return true;
 }
@@ -1213,11 +1043,6 @@ void SetProjectedStencil(D3DRenderer* sub, IDirect3DDevice9* device,
 }
 
 void BeginProjectedShadowPass(D3DRenderer* sub, IDirect3DDevice9* device) {
-    // Original frame trace: NORMALIZENORMALS is cleared by the preceding
-    // accessory pass, then the projected geometry uses stencil value 2,
-    // no culling, and strict depth comparison.  x64 pass 起始段
-    // （0x7FF7CB4C0319..0x7FF7CB4C0402）不写 ALPHABLENDENABLE：混合态由配件
-    // 投射循环逐配件重写，循环收尾再按透明地面影开关统一重写。
     device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
     SetProjectedStencil(sub, device, true);
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -1227,11 +1052,6 @@ void BeginProjectedShadowPass(D3DRenderer* sub, IDirect3DDevice9* device) {
 
 void RestoreModelMaterialPass(MMDApp* app, D3DRenderer* sub,
                               IDirect3DDevice9* device) {
-    // Fixed-frame restore, x64 sub_7FF7CB4BFB20 @0x7FF7CB4C07B0..0x7FF7CB4C0875
-    // (FILLMODE -> stencil trio -> CULLMODE -> ZFUNC; port collapses the
-    // FILLMODE/stencil order).  The effect frame no longer routes through
-    // here: sub_7FF7CB4C1E60 defers CULLMODE/ZFUNC past the fx::Set block and
-    // adds ALPHABLENDENABLE, so RenderModelsEffect spells its restore inline.
     SetProjectedStencil(sub, device, false);
     device->SetRenderState(D3DRS_FILLMODE,
         app->WireframeRenderingEnabled() == 0 ? D3DFILL_SOLID
@@ -1251,13 +1071,6 @@ void DrawModelOutlines(MMDApp* app, bool effectEdge) {
         fx::SetTechnique(effect, "ColorRenderTec");
         fx::Begin(effect, &passes);
     }
-    // x64 inlines this walk into both callers with 0xFF bounds: fixed pass
-    // sub_7FF7CB4BFB20+0x4C09E0 (cmp edi,0FFh @0x4C0A74 / cmp r8d,0FFh
-    // @0x4C0A0D), effect pass sub_7FF7CB4C1E60+0x4C37A0 (@0x4C38FE /
-    // @0x4C37CE).  The outline-suppression byte (app+0xA1105) is checked
-    // only by the effect frame's copy (0x7FF7CB4C3815, after the
-    // edgeScale/postLoad/camera gates); the fixed frame's copy has no
-    // reference to it anywhere in sub_7FF7CB4BFB20.
     const bool suppressed = effectEdge &&
         app->ModelNonDisplayMode() != 0;
     for (int order = 0; order < kModelSlotCount; ++order) {
@@ -1342,9 +1155,6 @@ void DrawPreModelQuad(IDirect3DDevice9* device,
     device->SetTexture(0, texture);
     device->SetStreamSource(0, vertices, 0, 28);
     device->SetFVF(324);
-    // 原版两处背景四边形均为 DrawPrimitive(TRIANGLELIST, 0, 2)（图片
-    // 0x7FF7CB4BFD24 / AVI 0x7FF7CB4BFDFA：edx=4、r8d=0、r9d=2，6 顶点 LIST
-    // 布局）；STRIP 只消费 4 顶点会漏画一半。
     mme::DrawPrimitive(device, D3DPT_TRIANGLELIST, 0, 2);
     device->SetRenderState(D3DRS_ZENABLE, TRUE);
 }
@@ -1363,32 +1173,21 @@ void DrawPreModelQuads(MMDApp* app, IDirect3DDevice9* device) {
 }
 
 bool EffectRenderEnabled(const MMDApp* app) {
-    // x64 gate 0x7FF7CB44A427..0x7FF7CB44A459 (cmp/setnl/setnle/test):
-    //   ([13E4]=editMode >= 2 signed || [368]=playbackActive != 0)
-    //   && [A1DD0]=selfShadowMode > 0 && [A10F8]=selfShadowEnabled != 0.
-    // The >= 2 comparison matters: editMode 1 (BoneBox) keeps the
-    // fixed-function renderer, and UsesViewportTool implements exactly
-    // "EditMode() >= ViewportEditMode::None (= 2)".
     const bool cameraGate = app->PlaybackActive() != 0 ||
         app->UsesViewportTool();
-    return cameraGate && app->state.selfShadowMode > 0 &&    // 0xA1DD0
-           app->state.selfShadowEnabled != 0;            // 0xA10F8
+    return cameraGate && app->state.selfShadowMode > 0 &&    
+           app->state.selfShadowEnabled != 0;            
 }
 
-}  // namespace
+}  
 
 bool UseEffectModelRenderer(MMDApp* app) {
     return EffectRenderEnabled(app);
 }
 
-void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
+void RenderModelsFixed(MMDApp* app) {                         
     D3DRenderer* sub = app->Renderer();
     auto* device = sub->device;
-    // x64 帧头 0x7FF7CB4BFC08 仅一条 SetTextureStageState(2, TEXCOORDINDEX,
-    // 0x10000)（= D3DTSS_TCI_CAMERASPACENORMAL，原版立即数，与 accessory.cpp
-    // 一致写字面量）：不解绑纹理 2、不写 COLOROP/TTF。完整的球面贴图级联
-    // 关闭保留在 ConfigureMaterialStages 的逐材质循环里（0x491470.. 的逐材质
-    // 行为）。
     device->SetTextureStageState(2, D3DTSS_TEXCOORDINDEX, 0x10000);
     if (sub->d3dInitialized != 0) {
         device->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
@@ -1397,10 +1196,6 @@ void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
     }
     DrawPreModelQuads(app, device);
     DrawGroundGeometry(app, device);
-    // FILLMODE 排在背景图/AVI 四边形与地面之后：x64 sub_7FF7CB4BFB20 先画
-    // 背景四边形（0x7FF7CB4BFC74 图片 / 0x7FF7CB4BFD4A AVI）、地面
-    // （0x7FF7CB4BFE20），然后才在 0x7FF7CB4BFE88..0x7FF7CB4BFEA8 按线框开关
-    // 写 RS(8) 并紧跟 RS(137)=1——线框模式下背景与地面仍实体填充。
     device->SetRenderState(D3DRS_FILLMODE,
         app->WireframeRenderingEnabled() == 0 ? D3DFILL_SOLID : D3DFILL_WIREFRAME);
     device->SetRenderState(D3DRS_LIGHTING, TRUE);
@@ -1413,10 +1208,6 @@ void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
     RestoreModelMaterialPass(app, sub, device);
 
     const bool materialCapture = BeginMaterialStateCapture();
-    // x64 twin sub_7FF7CB4BFB20+0x4C0880..0x4C0916 - the main body walk
-    // calling sub_7FF7CB4D6D70 at 0x4C0902 (gated by model loadComplete
-    // @0x4C08E7): order and slot both run to 0xFF (cmp edi,0FFh @0x4C0910 /
-    // cmp edx,0FFh @0x4C08AC).
     for (int order = 0; order < kModelSlotCount; ++order) {
         for (int slot = 0; slot < kModelSlotCount; ++slot) {
             auto* model = app->ModelSlot(slot);
@@ -1432,10 +1223,6 @@ void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
     if (materialCapture)
         EndMaterialStateCapture();
 
-    // Edge preamble, x64 sub_7FF7CB4BFB20 @0x7FF7CB4C0930..0x7FF7CB4C09C8
-    // (inside the wireframe gate): pass=4, SetTexture(0,null),
-    // LIGHTING(137)=FALSE, ALPHABLENDENABLE(27)=TRUE, CULLMODE(22)=CW(2),
-    // ZFUNC(23)=LESS(2); then the model walk.
     if (app->WireframeRenderingEnabled() == 0) {
         app->ActiveRenderPass() = AccessoryRenderPass::ModelOutline;
         device->SetTexture(0, nullptr);
@@ -1445,10 +1232,6 @@ void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
         device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
         DrawModelOutlines(app, false);
     }
-    // Second accessory range preamble, x64 0x7FF7CB4C0A87..0x7FF7CB4C0B89 -
-    // runs unconditionally (wireframe-on jumps straight here from the gate):
-    // pass=1, CULLMODE=CCW(3), ZFUNC=LESSEQUAL(4), LIGHTING=TRUE,
-    // stage-0 passthrough reset, wrap samplers, then ALPHABLENDENABLE=TRUE.
     app->ActiveRenderPass() = AccessoryRenderPass::FixedFunction;
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
     device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
@@ -1459,15 +1242,12 @@ void RenderModelsFixed(MMDApp* app) {                         // 0x425D20
     device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     RenderAccessoriesFixedRange(app, accessorySplit, 255);
-    // Frame tail, x64 sub_7FF7CB4BFB20 @0x7FF7CB4C0FC3/0x7FF7CB4C0FE3:
-    // DESTBLEND(20)=INVSRCALPHA then FILLMODE(8)=SOLID.  No ZENABLE write
-    // here in the original.
     device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
     device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
     app->ActiveRenderPass() = AccessoryRenderPass::None;
 }
 
-void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
+void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { 
     D3DRenderer* sub = app->Renderer();
     auto* device = sub->device;
     void* effect = sub->effect;
@@ -1485,27 +1265,9 @@ void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
                          reinterpret_cast<D3DMATRIX*>(&view));
     device->GetTransform(D3DTS_PROJECTION,
                          reinterpret_cast<D3DMATRIX*>(&projection));
-    // 0x4275F9..0x42764B prepares app+A0228 as
-    // (frame world * D3DTS_VIEW) * D3DTS_PROJECTION.  The previous port
-    // skipped VIEW, so the effect vertex shader emitted clip-space geometry
-    // as giant black/cyan triangles while fixed-function rendering remained
-    // correct.
     Multiply(&worldView, &frame, &view);
     Multiply(&wvp, &worldView, &projection);
     std::memcpy(&app->WorldViewProjection(), &wvp, sizeof(wvp));
-    // x64 twin sub_7FF7CB4C1E60 submits the background before any frame
-    // render state: picture quad 0x7FF7CB4C1F36..0x7FF7CB4C1F61 (gate
-    // app+0x9F310, ZENABLE(7) off/on around the quad), AVI quad
-    // 0x7FF7CB4C200C..0x7FF7CB4C20DC (gate app+0x13EC == 1), then the ground
-    // 0x7FF7CB4C20E2..0x7FF7CB4C2133 (gate app+0x355).  Only afterwards come
-    // the LightDir/Place/matrix fx::Sets (0x7FF7CB4C2193..0x7FF7CB4C22FD) and
-    // the ALPHABLENDENABLE/FILLMODE/LIGHTING triple
-    // (0x7FF7CB4C231D..0x7FF7CB4C236C) - the same quads -> ground -> RS(8)
-    // shape the fixed frame gained in the FILLMODE round, so wireframe mode
-    // never rasterises the background or the ground here either.  The head
-    // also binds nothing to stage 0: the first stage-0 write after the
-    // matrices is the projected-pass preamble's null (0x7FF7CB4C301B); every
-    // accessory path rebinds stage 0 itself.
     DrawPreModelQuads(app, device);
     DrawGroundGeometry(app, device);
 
@@ -1538,17 +1300,6 @@ void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
     RenderAccessoriesEffectRange(app, 0, accessorySplit);
     BeginProjectedShadowPass(sub, device);
     RenderProjectedGroundShadowPass(app, device);
-    // Post-projected restore + model preamble, x64 0x7FF7CB4C33B1..0x7FF7CB4C3566
-    // (unconditional - the ground-shadow gate re-enters at 0x7FF7CB4C33B1):
-    // stencil trio -> FILLMODE -> TSS(1, TEXCOORDINDEX, 1) -> SetTexture(0,
-    // hdr) -> matWorldViewProj/matLightViewProj re-set -> transp -> ZFUNC ->
-    // CULLMODE -> ALPHABLENDENABLE, immediately before the walk.  The matrix
-    // re-set is load-bearing: the accessory effect range leaves the last
-    // accessory's matWorldViewProj/matLightViewProj in the effect, and the
-    // model materials would sample those without it.  matRotate stays
-    // clobbered - the original does not restore it here either.  transp is
-    // first set at 0x7FF7CB4C34E9 (not at the frame head), so the leading
-    // accessory range runs with the previous frame's trailing zero.
     SetProjectedStencil(sub, device, false);
     device->SetRenderState(D3DRS_FILLMODE,
         app->WireframeRenderingEnabled() == 0 ? D3DFILL_SOLID
@@ -1564,9 +1315,6 @@ void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 
-    // x64 twin sub_7FF7CB4C1E60+0x4C3570..0x4C36D0 (toonFlag dispatch at
-    // model+0x3B68): order and slot both run to 0xFF (cmp edi,0FFh
-    // @0x4C36CA / cmp edx,0FFh @0x4C359C).
     for (int order = 0; order < kModelSlotCount; ++order) {
         for (int slot = 0; slot < kModelSlotCount; ++slot) {
             auto* model = app->ModelSlot(slot);
@@ -1588,23 +1336,12 @@ void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
         }
     }
     fx::SetBool(effect, "transp", 0);
-    // x64 sub_7FF7CB4C1E60 @0x7FF7CB4C3711: ALPHABLENDENABLE=TRUE is set
-    // before the wireframe gate, so blending stays on when the edge pass
-    // is skipped.  The gate jumps straight to the restore sequence
-    // (@0x7FF7CB4C395D); this preamble has no ZFUNC write - the edge
-    // geometry keeps the LESSEQUAL comparison restored earlier, and the
-    // edge draw itself (sub_7FF7CB4D82A0) sets no comparison state.
     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     if (app->WireframeRenderingEnabled() == 0) {
         app->ActiveRenderPass() = AccessoryRenderPass::ModelOutline;
         device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
         DrawModelOutlines(app, true);
     }
-    // Restore sequence, x64 0x7FF7CB4C395D..0x7FF7CB4C3A3C (unconditional;
-    // the wireframe gate enters here directly): CULLMODE=CCW(3),
-    // ZFUNC=LESSEQUAL(4), LIGHTING=TRUE, then the same stage-0 passthrough
-    // reset and wrap samplers as the fixed frame.  No trailing
-    // ALPHABLENDENABLE here - it was already set before the gate.
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
     device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
     device->SetRenderState(D3DRS_LIGHTING, TRUE);
@@ -1613,23 +1350,12 @@ void RenderModelsEffect(MMDApp* app, const float frameMatrix[16]) { // 0x4277E0
     device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
     device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
     RenderAccessoriesEffectRange(app, accessorySplit, 255);
-    // Frame tail, x64 sub_7FF7CB4C1E60 @0x7FF7CB4C461F/0x7FF7CB4C463D (after
-    // the accessory-light restore SetLight at 0x7FF7CB4C4601):
-    // DESTBLEND(20)=INVSRCALPHA then FILLMODE(8)=SOLID - the same closing
-    // pair as the fixed frame (0x7FF7CB4C0FC3/0x7FF7CB4C0FE3) - and nothing
-    // else.  The accessory loop (cmp r12d,0FFh @0x7FF7CB4C458C) drops
-    // straight into the light update and the two render states; there is no
-    // trailing shader clear, no SetTexture(0,null) and no texture-stage
-    // teardown anywhere in the tail (2026-09-14 verdict).  The only
-    // SetVertexShader/SetPixelShader(nullptr) pairs of this frame live in
-    // DrawModelOutlines' wireframe-gated fx::End block and the per-accessory
-    // effect tails; the previous port-only cascade teardown is removed.
     device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
     device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
     app->ActiveRenderPass() = AccessoryRenderPass::None;
 }
 
-void RenderShadowMap(MMDApp* app, const float frameMatrix[16]) {   // 0x426CD0
+void RenderShadowMap(MMDApp* app, const float frameMatrix[16]) {   
     D3DRenderer* sub = app->Renderer();
     auto* device = sub->device;
     void* effect = sub->effect;
@@ -1769,15 +1495,6 @@ void RenderShadowMap(MMDApp* app, const float frameMatrix[16]) {   // 0x426CD0
     UINT passes = 0;
     app->ActiveRenderPass() = AccessoryRenderPass::ModelEffect;
     if (SUCCEEDED(fx::Begin(effect, &passes))) {
-        // x64 sub_7FF7CB4C1030 order inside the Begin/End block: the
-        // accessory shadow casters come first (0x7FF7CB4C1992..0x7FF7CB4C1BD4,
-        // sub_7FF7CB4FDCB0 per slot), then matLightViewProj is set
-        // (0x7FF7CB4C1BF9), then matWorldViewProj is computed from
-        // frame*view*proj and set (0x7FF7CB4C1C0E..0x7FF7CB4C1C86) between
-        // the two loops, and only then does the model slot walk run
-        // (0x7FF7CB4C1CB5..0x7FF7CB4C1CF4, sub_7FF7CB4D8520; 255-count
-        // do/while over app+0xBE8, mov r13d,0FFh @0x4C198C / dec r13/jnz,
-        // toonFlag read at model+0x3B68).
         RenderAccessoriesShadow(app);
         fx::SetMatrix(effect, "matLightViewProj", &shadowMatrix);
         Matrix wvp;
@@ -1808,10 +1525,8 @@ void RenderShadowMap(MMDApp* app, const float frameMatrix[16]) {   // 0x426CD0
     device->SetViewport(&oldViewport);
     device->SetTransform(D3DTS_PROJECTION,
                          reinterpret_cast<const D3DMATRIX*>(&projection));
-    // x64 sub_7FF7CB4C1030 tail @0x7FF7CB4C1E1D/0x7FF7CB4C1E43:
-    // ALPHABLENDENABLE(27)=TRUE, then CULLMODE(22)=CCW(3).
     device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 }
 
-}  // namespace rinmotiondance
+}  

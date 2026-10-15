@@ -1,6 +1,3 @@
-// Real D3D surfaces through the production snapshot and lifetime entry points.
-// The forwarding device injects only creation results; the host edit-mode
-// query is controlled so the real OnEndScene callback can cover both modes.
 #include <windows.h>
 #include <cstdio>
 #include <stdexcept>
@@ -59,7 +56,7 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
         explicit ContextScope(mme::MmeContext* ctx) { mme::g_context = ctx; }
         ~ContextScope() { mme::g_context = nullptr; }
     } scope(&ctx);
-    ctx.effectEnabled = 0; // EndScene tests maintenance, not unrelated effects.
+    ctx.effectEnabled = 0; 
     auto color0 = Color(real, D3DFMT_A8R8G8B8);
     auto color1 = Color(real, D3DFMT_A8R8G8B8);
     auto other0 = Color(real, D3DFMT_X8R8G8B8);
@@ -94,7 +91,6 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
     Check(device.colorCreates == 4 && device.depthCreates == 2, "family A creation count");
     Check(ctx.snapshotCache.active.size() == 6, "all acquired identities become active");
 
-    // A non-boundary repeat must not clear active; ==N must clear it.
     ctx.renderPassList.resize(2);
     ctx.lastRepeatCount = 1;
     mme::MmeUpdatePassBookkeeping(&ctx);
@@ -143,7 +139,6 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
     Check(ctx.snapshotCache.colors[0].exactSize.empty() &&
           ctx.snapshotCache.depth.exactSize.empty(), "switch to B drops A");
 
-    // Too-small family-B nodes become empty before persistent borrowing.
     bind(64);
     ctx.persistentLayerEligible = 1;
     ctx.persistentClearUsed = 0;
@@ -159,7 +154,6 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
           !ctx.snapshotCache.depth.atLeastSize.begin()->second,
           "persistent hit retains existing empty format nodes");
 
-    // Inject two distinct failures into real device creation boundaries.
     bind(48);
     ctx.allObjectsSpecialFlag = 0;
     device.colorResults = {E_OUTOFMEMORY, D3DERR_INVALIDCALL};
@@ -174,8 +168,6 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
     Check(again.color0 == color0 && again.color1 == color1 && again.depth == depth,
           "failure restores the input bindings");
 
-    // A successful earlier slot must survive working-set cleanup after a
-    // later failure; also exercise the original hr!=0 test with S_FALSE.
     bind(48);
     device.colorResults = {S_OK, S_FALSE};
     Check(mme::MmeSnapshotMainTargets(&ctx, true, true, 0, 1) == S_FALSE,
@@ -191,7 +183,6 @@ void Run(IDirect3DDevice9* real, D3DPRESENT_PARAMETERS& pp) {
     Check(ctx.snapshotCache.active.size() == activeBeforeReset,
           "reset cleanup preserves non-owning active identities until repeat boundary");
 
-    // Remove every external/default-pool reference and actually reset D3D.
     a = {}; b = {}; again = {}; larger = {}; borrowed = {};
     Hr(real->SetRenderTarget(1, nullptr), "unbind MRT before reset");
     Hr(real->SetDepthStencilSurface(nullptr), "unbind depth before reset");

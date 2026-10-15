@@ -1,7 +1,3 @@
-# Wave5-D2: split BoneFrameTransform (src/model/bone_transform.cpp) into the
-# five phase functions A-E at the original address boundaries.  Phase bodies
-# move by line slices (byte-exact modulo the 4-space dedent and the two
-# lambda-to-function gate substitutions); the IK float sequence is untouched.
 import re
 
 PATH = r"src\model\bone_transform.cpp"
@@ -9,9 +5,8 @@ PATH = r"src\model\bone_transform.cpp"
 raw = open(PATH, "rb").read().decode("utf-8")
 eol = "\r\n" if "\r\n" in raw else "\n"
 lines = raw.split(eol)
-assert len(lines) == 1228, len(lines)  # 1227 lines + trailing split
+assert len(lines) == 1228, len(lines)  
 
-# pin the slices against the current file
 assert "phase A" in lines[585], lines[585]
 assert lines[586].lstrip().startswith("for (int i = 0; i < boneCount"), lines[586]
 assert "phase B" in lines[618], lines[618]
@@ -37,7 +32,7 @@ def dedent4(chunk):
         if ln.startswith("    "):
             out.append(ln[4:])
         elif ln.startswith("#") or ln.strip() == "":
-            out.append(ln)  # preprocessor directives stay at column 0
+            out.append(ln)  
         else:
             raise AssertionError(repr(ln))
     return out
@@ -84,7 +79,7 @@ out += [
     "//   BoneTransform_CcdIk               D 0x494A56",
     "//   BoneTransform_PostIkPass          E 0x496881",
 ]
-out += sl(48, 555)  # through ClampEuler, still inside the anonymous namespace
+out += sl(48, 555)  
 out += [
     "",
     "// ---- BoneFrameTransform phase passes --------------------------------------",
@@ -168,7 +163,7 @@ out += dedent4(E)
 out += [
     "}",
 ]
-out += sl(556, 564)  # anon-namespace close + ArmBoneTransformIkProbe
+out += sl(556, 564)  
 out += [
     "",
     "void BoneFrameTransform(unsigned char* m, unsigned char afterPhysics,",
@@ -201,7 +196,7 @@ out += [
     "                              physicsMode);                          // E 0x496881",
     "}",
 ]
-out += sl(1226, 1227)  # blank + namespace close
+out += sl(1226, 1227)  
 
 text = eol.join(out)
 assert text.count("typedChannelPass") == 0

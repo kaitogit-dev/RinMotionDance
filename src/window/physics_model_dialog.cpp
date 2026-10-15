@@ -1,66 +1,3 @@
-// ===========================================================================
-// Physics-model editor (menu 262 "enhance model / physics model", dialog
-// 0x2AC EN / 0x2AB JP, x86 dialog proc 0x465020)
-// ===========================================================================
-// Split out of src/window/command_view_menu.cpp (the menu-251..302 command
-// family).  The dialog edits the *selected model's* rigid bodies and joints
-// (PMD physics) in two 100000-slot scratch arrays owned by the app object,
-// then rebuilds the model tables and the Bullet world contents on OK.
-//
-// The previous body of PhysicsModelDlgProc in this file was a wrong transplant that
-// read the very same record slots as camera/bone *frame* records; it has
-// been rewritten from the original binary.  The control-ID call sites,
-// array slots and helper VAs were already right - only the record
-// semantics had been misread.
-//
-// x86 <-> x64 helper map (x64 = MikuMikuDanceE_v932x64 recompile):
-//   x86 0x465020  dialog proc            x64 sub_7FF7CB4AD800
-//   x86 0x41EC50  edit subclass proc     x64 sub_7FF7CB4AE950
-//   x86 0x45F670  dialog init            x64 sub_7FF7CB4B1D20
-//   x86 0x41FF30  collect body edits     x64 sub_7FF7CB4AFEB0
-//   x86 0x45F480  add rigid body         x64 sub_7FF7CB4B17B0
-//   x86 0x4204F0  collect joint edits    x64 sub_7FF7CB4B05C0
-//   x86 0x43CA50  add joint              x64 sub_7FF7CB4B1A30
-//   x86 0x43CCD0  body record -> edits   x64 sub_7FF7CB4B2590
-//   x86 0x4214A0  joint record -> edits  x64 sub_7FF7CB4B2D90
-//   x86 0x421C20  body/joint page flip   x64 sub_7FF7CB4B3720
-//   x86 0x421CE0  shape radio/labels     x64 sub_7FF7CB4B3810
-//   x86 0x420DC0  bone-combo pivot pick  x64 sub_7FF7CB4B0FF0
-//   x86 0x4220F0  commit model+physics   x64 sub_7FF7CB4B3D40
-//   (x86 0x4220C0 seek+re-eval = x64 sub_7FF7CB4B3D00 lives in
-//    src/model/model_frame_seek.cpp and is called on close.)
-//
-// Editor storage (app blob slots, shared with the accessory physics
-// editor): rigidScratchArray = rigid-body scratch array
-// (mdl::RigidRecord x 100000, index state.selectedRigidIndex), jointScratchArray =
-// joint scratch array (mdl::JointRecord x 100000, index state.selectedJointIndex).
-// In the scratch copies the RigidRecord::keyData slot holds the combo-box
-// index (-1 = deleted slot) and JointRecord::constraint holds the joint
-// combo index; RigidRecord::noCollapse holds the *collision* mask while
-// editing (bit set = collides with group N+1; inverted back to the PMD
-// no-collapse sense on commit).
-//
-// Dialog control map (template 684_0411.bin / x64 proc):
-//   685  add body button          0x2AD      735  add joint button    0x2DF
-//   704  body list combo          selchg     736  joint list combo    selchg
-//   705  body name edit (20 SJIS) enter      740  joint name edit     enter
-//   706  delete body button       0x2C2      737  delete joint button 0x2E1
-//   707  related bone combo       selchg     741  joint body-A combo   selchg
-//   708  group combo (1..16)      selchg     742  joint body-B combo   selchg
-//   709-711 body size x/y/z                  743  place-at-bone combo selchg
-//   712-714 body position x/y/z              744-746 joint position x/y/z
-//   715-717 body rotation deg                747/758/760 linear lower limit
-//   718  body mass                            748/749/750 spring linear xyz
-//   719  group list text ("1 5 9 ")           751/752/753 spring angular xyz
-//   720-723 damp/damp/restit/friction         754-756 joint rotation deg
-//   724  copy body button        0x2D4       757/759/761 linear upper limit
-//   725  paste body button       0x2D5       762/764/766 angular lower deg
-//   726-728 shape radio sph/box/caps          763/765/767 angular upper deg
-//   729  physical radio (mode!=0)             738  copy joint button   0x2E2
-//   730  bone-follow radio (mode==0)          739  paste joint button  0x2E3
-//   731  bone-alignment checkbox              800/801 body/joint page radio
-//   732-734 size labels radius/w+h/depth
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -84,30 +21,27 @@
 
 namespace rinmotiondance {
 
-// Forward declarations (twins of the block in command_view_menu.cpp - the
-// helpers are defined in this file).
-void AddRigidBody(HWND hDlg);                                // VA 0x0045F480
-LRESULT CALLBACK PhysicsEditSubclassProc(HWND, UINT, WPARAM, LPARAM);  // VA 0x0041EC50
-void InitPhysicsModelDialog(HWND hDlg);                      // VA 0x0045F670
-void CollectBodyEdits(MMDApp* app);                          // VA 0x0041FF30
-void CollectJointEdits(MMDApp* app);                         // VA 0x004204F0
-void AddJoint(HWND hDlg);                                    // VA 0x0043CA50
-void ApplyBodyRecordToEdits(HWND hDlg, int idx);             // VA 0x0043CCD0
-void ApplyJointRecordToEdits(HWND hDlg, int idx);            // VA 0x004214A0
-void FlipPhysicsDialogPage(HWND hDlg, int flag);             // VA 0x00421C20
-void UpdateShapeControls(HWND hDlg, int mode, int idx);      // VA 0x00421CE0
-void CommitPhysicsEdits(HWND hDlg);                          // VA 0x004220F0
-void PickPivotBone(HWND hDlg);                               // VA 0x00420DC0
+void AddRigidBody(HWND hDlg);                                
+LRESULT CALLBACK PhysicsEditSubclassProc(HWND, UINT, WPARAM, LPARAM);  
+void InitPhysicsModelDialog(HWND hDlg);                      
+void CollectBodyEdits(MMDApp* app);                          
+void CollectJointEdits(MMDApp* app);                         
+void AddJoint(HWND hDlg);                                    
+void ApplyBodyRecordToEdits(HWND hDlg, int idx);             
+void ApplyJointRecordToEdits(HWND hDlg, int idx);            
+void FlipPhysicsDialogPage(HWND hDlg, int flag);             
+void UpdateShapeControls(HWND hDlg, int mode, int idx);      
+void CommitPhysicsEdits(HWND hDlg);                          
+void PickPivotBone(HWND hDlg);                               
 
-// ---- control IDs ----------------------------------------------------------
-constexpr int kAddBodyButton = 685;        // 0x2AD
+constexpr int kAddBodyButton = 685;        
 constexpr int kBodyPageFirst = 685;
 constexpr int kBodyPageLast = 734;
-constexpr int kDeleteBodyButton = 706;     // 0x2C2
+constexpr int kDeleteBodyButton = 706;     
 constexpr int kBodyListCombo = 704;
 constexpr int kBodyNameEdit = 705;
-constexpr int kBoneCombo = 707;            // related bone ("none" + bones)
-constexpr int kGroupCombo = 708;           // "1".."15", "16(F)"
+constexpr int kBoneCombo = 707;            
+constexpr int kGroupCombo = 708;           
 constexpr int kSizeXEdit = 709;
 constexpr int kSizeYEdit = 710;
 constexpr int kSizeZEdit = 711;
@@ -123,117 +57,96 @@ constexpr int kLinDampEdit = 720;
 constexpr int kAngDampEdit = 721;
 constexpr int kRestitutionEdit = 722;
 constexpr int kFrictionEdit = 723;
-constexpr int kCopyBodyButton = 724;       // 0x2D4
-constexpr int kPasteBodyButton = 725;      // 0x2D5
-constexpr int kShapeSphereRadio = 726;     // 0x2D6
-constexpr int kShapeBoxRadio = 727;        // 0x2D7
-constexpr int kShapeCapsuleRadio = 728;    // 0x2D8
-constexpr int kPhysicalRadio = 729;        // 0x2D9
-constexpr int kBoneFollowRadio = 730;      // 0x2DA
-constexpr int kBoneAlignCheckbox = 731;    // 0x2DB
+constexpr int kCopyBodyButton = 724;       
+constexpr int kPasteBodyButton = 725;      
+constexpr int kShapeSphereRadio = 726;     
+constexpr int kShapeBoxRadio = 727;        
+constexpr int kShapeCapsuleRadio = 728;    
+constexpr int kPhysicalRadio = 729;        
+constexpr int kBoneFollowRadio = 730;      
+constexpr int kBoneAlignCheckbox = 731;    
 constexpr int kSizeXLabel = 732;
 constexpr int kSizeYLabel = 733;
 constexpr int kSizeZLabel = 734;
 constexpr int kJointPageFirst = 735;
 constexpr int kJointPageLast = 799;
-constexpr int kAddJointButton = 735;       // 0x2DF
+constexpr int kAddJointButton = 735;       
 constexpr int kJointListCombo = 736;
 constexpr int kJointNameEdit = 740;
-constexpr int kDeleteJointButton = 737;    // 0x2E1
+constexpr int kDeleteJointButton = 737;    
 constexpr int kBodyACombo = 741;
 constexpr int kBodyBCombo = 742;
 constexpr int kPivotBoneCombo = 743;
-constexpr int kCopyJointButton = 738;      // 0x2E2
-constexpr int kPasteJointButton = 739;     // 0x2E3
+constexpr int kCopyJointButton = 738;      
+constexpr int kPasteJointButton = 739;     
 constexpr int kJointPosXEdit = 744;
 constexpr int kJointPosYEdit = 745;
 constexpr int kJointPosZEdit = 746;
-constexpr int kLinLowerXEdit = 747;      // linear lower limit x
-constexpr int kSpringLinXEdit = 748;     // spring linear x
+constexpr int kLinLowerXEdit = 747;      
+constexpr int kSpringLinXEdit = 748;     
 constexpr int kSpringLinYEdit = 749;
 constexpr int kSpringLinZEdit = 750;
-constexpr int kSpringAngXEdit = 751;     // spring angular x
+constexpr int kSpringAngXEdit = 751;     
 constexpr int kSpringAngYEdit = 752;
 constexpr int kSpringAngZEdit = 753;
 constexpr int kJointRotXEdit = 754;
 constexpr int kJointRotYEdit = 755;
 constexpr int kJointRotZEdit = 756;
-constexpr int kLinUpperXEdit = 757;      // linear upper limit x
+constexpr int kLinUpperXEdit = 757;      
 constexpr int kLinLowerYEdit = 758;
 constexpr int kLinUpperYEdit = 759;
 constexpr int kLinLowerZEdit = 760;
 constexpr int kLinUpperZEdit = 761;
-constexpr int kAngLowerXEdit = 762;      // angular lower limit x (deg)
-constexpr int kAngUpperXEdit = 763;      // angular upper limit x (deg)
-constexpr int kAngLowerYEdit = 764;      // y axis: clamped to +-80
-constexpr int kAngUpperYEdit = 765;      // y axis: clamped to +-80
+constexpr int kAngLowerXEdit = 762;      
+constexpr int kAngUpperXEdit = 763;      
+constexpr int kAngLowerYEdit = 764;      
+constexpr int kAngUpperYEdit = 765;      
 constexpr int kAngLowerZEdit = 766;
 constexpr int kAngUpperZEdit = 767;
-constexpr int kBodyPageRadio = 800;        // 0x320
-constexpr int kJointPageRadio = 801;       // 0x321
+constexpr int kBodyPageRadio = 800;        
+constexpr int kJointPageRadio = 801;       
 
-// ---- capacities / numeric literals of the original ------------------------
-// The two original builds sized the scratch arrays by a byte constant
-// (x86: 1,400,000 / record 140 = 10,000 slots; the x64 recompile doubled the
-// record sizes with its pointers and raised the pool tenfold:
-// 15,200,000 / 152 = 100,000 slots).
 #if defined(_M_X64)
-constexpr int kMaxEditRecords = 100000;    // slots per scratch array
+constexpr int kMaxEditRecords = 100000;    
 #else
-constexpr int kMaxEditRecords = 10000;     // x86 original capacity
+constexpr int kMaxEditRecords = 10000;     
 #endif
-constexpr float kPiF = 3.1415927f;         // float-rounded pi (0x40490FDB)
+constexpr float kPiF = 3.1415927f;         
 static_assert(__builtin_bit_cast(std::uint32_t, kPiF) == 0x40490FDBu,
               "float-rounded pi bit-exact");
-constexpr float kPiShort = 3.141592f;      // truncated pi used for deg<->rad
+constexpr float kPiShort = 3.141592f;      
 static_assert(__builtin_bit_cast(std::uint32_t, kPiShort) == 0x40490FD8u,
               "truncated pi bit-exact");
 
-// ---- JP strings, byte-exact Shift-JIS as in the binary --------------------
-// x64 0x7FF7CB54F2A0 / x86 0x52E724:
-// "編集結果を'拡張モデル保存'で新しいモデルとして保存して下さい"
 static const char kMsgEnhanceModelJp[] =
     "\x95\xd2\x8f\x57\x8c\x8b\x89\xca\x82\xcd\x27\x8a\x67\x92\xa3"
     "\x83\x82\x83\x66\x83\x8b\x95\xdb\x91\xb6\x27\x82\xc5\x90\x56"
     "\x82\xb5\x82\xa2\x83\x82\x83\x66\x83\x8b\x82\xc6\x82\xb5\x82"
     "\xc4\x95\xdb\x91\xb6\x82\xb5\x82\xc4\x89\xba\x82\xb3\x82\xa2";
-// x64 0x7FF7CB54F290 / x86 0x52E764: "モデル拡張"
 static const char kCaptionEnhanceModelJp[] =
     "\x83\x82\x83\x66\x83\x8b\x8a\x87\x92\xa3";
-// x64 0x7FF7CB551198: "Joint角度制限"
 static const char kCaptionAngleLimitJp[] =
     "Joint\x8a\x70\x93\x78\x90\xa7\x8c\xc0";
-// x64 0x7FF7CB5511A8:
-// "Bulletの仕様上、y軸の角度制限は-90<y<90の間しか設定できません"
 static const char kMsgAngleLimitJp[] =
     "Bullet\x82\xcc\x8e\x64\x97\x6c\x8f\xe3\x81\x41y\x8e\xb2\x82"
     "\xcc\x8a\x70\x93\x78\x90\xa7\x8c\xc0\x82\xcd-90<y<90\x82\xcc"
     "\x8a\xd4\x82\xb5\x82\xa9\x90\xdd\x92\xe8\x82\xc5\x82\xab\x82"
     "\xdc\x82\xb9\x82\xf1";
-// x64 0x7FF7CB551240: "ジョイント追加"
 static const char kCaptionAddJointJp[] =
     "\x83\x57\x83\x87\x83\x43\x83\x93\x83\x67\x92\xc7\x89\xc1";
-// x64 0x7FF7CB551250:
-// "剛体が一つもありません\n先に剛体を追加して下さい"
 static const char kMsgNoBodyJp[] =
     "\x8d\x84\x91\xcc\x82\xaa\x88\xea\x82\xc2\x82\xe0\x82\xa0\x82"
     "\xe8\x82\xdc\x82\xb9\x82\xf1\x0a\x90\xe6\x82\xc9\x8d\x84\x91"
     "\xcc\x82\xf0\x92\xc7\x89\xc1\x82\xb5\x82\xc4\x89\xba\x82\xb3"
     "\x82\xa2";
-// x64 0x7FF7CB55129C: last group-combo entry (Shift-JIS)
 static const char kGroup16Jp[] = "16(\x8f\xb0)";
-// x64 0x7FF7CB5512B8 / x86 0x52BF90: "半径" (径 = 0x8C61; 0x8CA1 would be 牽)
 static const char kLabelRadiusJp[] = "\x94\xbc\x8c\x61";
-// x64 0x7FF7CB5512D8: "　幅" (full-width space + width)
 static const char kLabelWidthJp[] = "\x81\x40\x95\x9d";
-// x64 0x7FF7CB5512E0: "高さ"
 static const char kLabelHeightJp[] = "\x8d\x82\x82\xb3";
-// x64 0x7FF7CB5512E8: "奥行"
 static const char kLabelDepthJp[] = "\x89\x9c\x8d\x73";
 
 namespace {
 
-// ---- editor-array views over the shared app slots -------------------------
 using Rigid = mdl::RigidRecord;
 using Joint = mdl::JointRecord;
 
@@ -246,31 +159,17 @@ Joint* EditJoints() {
     return static_cast<Joint*>(app->state.jointScratchArray);
 }
 
-// The scratch copies reuse RigidRecord::keyData as the body-list combo index
-// (-1 marks a deleted slot; the original stores the plain int there).
 int BodyComboIndex(const Rigid& rb) {
     return static_cast<int>(reinterpret_cast<std::intptr_t>(rb.keyData));
 }
 void SetBodyComboIndex(Rigid& rb, int index) {
     rb.keyData = reinterpret_cast<void*>(static_cast<std::intptr_t>(index));
 }
-// JointRecord::constraint doubles as the joint-list combo index while the
-// dialog owns the records.
 
-// Copy/paste staging.  The original stages the records in the app blob right
-// behind the array pointers (x86 0xA0B80 / 0xA0C34); those blob slots were
-// sized for the mis-read 172/140 layout, so the staging lives here instead -
-// it is private to this dialog either way.
 Rigid s_bodyCopyScratch;
 Joint s_jointCopyScratch;
-// "joint page visible" flag (x64 app+654528, written by the page flip and
-// the init; nothing else in the ported window reads it).
 unsigned char s_jointPageVisible = 0;
 
-// ---- physics-world removal helpers ----------------------------------------
-// Mirrors the ModelDispose teardown (src/model/model_dispose.cpp): the
-// original's 0x4260E0/0x426760 twins remove one constraint / rigid body
-// from the shared Bullet world.
 void RemovePhysJointByUid(PhysicsScene* scene, int uid) {
     if (scene == nullptr || scene->world == nullptr)
         return;
@@ -294,7 +193,6 @@ void RemovePhysRigidBody(PhysicsScene* scene, btRigidBody* body) {
     delete body;
 }
 
-// out = m * point (row-vector convention of the D3DX-style matrices).
 void TransformPoint(float out[3], const float point[3], const float m[16]) {
     for (int column = 0; column < 3; ++column) {
         out[column] = point[0] * m[column] + point[1] * m[4 + column] +
@@ -302,7 +200,6 @@ void TransformPoint(float out[3], const float point[3], const float m[16]) {
     }
 }
 
-// ---- edit-box float commits (subclass proc 0x41EC50 / collect paths) ------
 void ReadEditFloat(HWND hWnd, float& field) {
     char text[256];
     GetWindowTextA(hWnd, text, 256);
@@ -323,16 +220,12 @@ void ReadEditDegrees(HWND hWnd, float& field) {
     field = static_cast<float>(atof(text)) / 180.0f * kPiF;
 }
 
-// Rename-commit for the body name edit: refresh the entry in the list combo
-// and the joint body-A/B combos in place (delete + insert at the same slot).
 void CommitNameToCombo(HWND hList, int current, const char* text) {
     SendMessageA(hList, CB_DELETESTRING, current, 0);
     SendMessageA(hList, CB_INSERTSTRING, current,
                  reinterpret_cast<LPARAM>(text));
 }
 
-// Joint y-axis angular limit check shared by edits 765/764 (0x4B05C0).
-// Returns the (possibly clamped) value and fixes the edit text.
 float CheckYAngleLimit(HWND hDlg, HWND hEdit, float value) {
     MMDApp* app = g_Block;
     char text[256];
@@ -355,23 +248,13 @@ float CheckYAngleLimit(HWND hDlg, HWND hEdit, float value) {
     return value;
 }
 
-}  // namespace
+}  
 
-// ---------------------------------------------------------------------------
-// 0x41EC50 (x64 sub_7FF7CB4AE950) - subclass wndproc installed on the body
-// name edit 705, the body float edits 709..723, the joint name edit 740 and
-// the joint float edits 744..767.  Enter (VK_RETURN) commits the edit into
-// the selected scratch record; the two name edits additionally rename the
-// entry in their list combos (and the joint body-A/B combos for bodies).
-// Everything else forwards to the saved edit proc of 705.
-// ---------------------------------------------------------------------------
-LRESULT CALLBACK PhysicsEditSubclassProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {  // VA 0x0041EC50
+LRESULT CALLBACK PhysicsEditSubclassProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {  
     MMDApp* app = g_Block;
     if (msg != WM_KEYDOWN || wParam != VK_RETURN)
         return CallWindowProcA(app->FrameCopyEditProc(), hWnd, msg, wParam,
                                lParam);
-    // dirty write: invalidates the cached time like every WM_COMMAND of
-    // the dialog (original app+663064 = state.timeNowHigh)
     app->state.timeNowHigh = 1;
     HWND hDlg = app->state.frameCopyDialog;
     Rigid* bodies = EditBodies();
@@ -445,7 +328,6 @@ LRESULT CALLBACK PhysicsEditSubclassProc(HWND hWnd, UINT msg, WPARAM wParam, LPA
     if (hWnd == GetDlgItem(hDlg, kSpringAngYEdit)) { ReadEditFloat(hWnd, jt.springs[4]); return 0; }
     if (hWnd == GetDlgItem(hDlg, kSpringAngZEdit)) { ReadEditFloat(hWnd, jt.springs[5]); return 0; }
 
-    // edits 765 / 764 (y-axis angular limits) validate against +-90 here too
     if (hWnd == GetDlgItem(hDlg, kAngUpperYEdit)) {
         char text[256];
         GetWindowTextA(hWnd, text, 256);
@@ -466,15 +348,7 @@ LRESULT CALLBACK PhysicsEditSubclassProc(HWND hWnd, UINT msg, WPARAM wParam, LPA
                            lParam);
 }
 
-// ---------------------------------------------------------------------------
-// 0x45F670 (x64 sub_7FF7CB4B1D20) - WM_INITDIALOG body.  Disables the main
-// window's model combo (408), allocates the two 100000-slot scratch arrays,
-// seeds them from the selected model's rigid/joint tables (converting the
-// mode flags into the editor's 0/1/2 mode byte and inverting the collision
-// mask), fills the list/bone/group combos and parks the dialog on the
-// rigid-body page.
-// ---------------------------------------------------------------------------
-void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
+void InitPhysicsModelDialog(HWND hDlg) {  
     MMDApp* app = g_Block;
     mdl::ModelRecord* model = mdl::Mdl(app->SelectedModel());
 
@@ -506,15 +380,12 @@ void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
     for (std::uint32_t i = 0; i < model->rigidCount; ++i) {
         Rigid& dst = bodies[i];
         std::memcpy(&dst, &model->rigidTable[i], sizeof(Rigid));
-        // model flags -> editor mode byte (0 bone-follow / 1 physical /
-        // 2 physical + bone alignment)
         if (model->rigidTable[i].staticFlag != 0)
             dst.mode = 0;
         else if (model->rigidTable[i].kinematicFlag != 0)
             dst.mode = 2;
         else
             dst.mode = 1;
-        // PMD no-collapse mask -> positive collision mask for editing
         dst.noCollapse = static_cast<std::uint16_t>(~dst.noCollapse);
         const LPARAM name = reinterpret_cast<LPARAM>(dst.name);
         SendMessageA(GetDlgItem(hDlg, kBodyListCombo), CB_ADDSTRING, 0, name);
@@ -535,11 +406,6 @@ void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
     SendMessageA(GetDlgItem(hDlg, kBodyACombo), CB_SETCURSEL, 0, 0);
     SendMessageA(GetDlgItem(hDlg, kBodyBCombo), CB_SETCURSEL, 0, 0);
 
-    // related-bone combo: "none" + every bone name (EN uses the English
-    // slot, JP the primary name).  The pivot combo 743 gets the bone names
-    // without the leading "none".  The JP "none" entry reaches the W API
-    // as the ANSI bytes "j0W0", which little-endian-reinterpret to
-    // L"なし" - reproduced by passing the wide literal directly.
     SendMessageA(GetDlgItem(hDlg, kBoneCombo), CB_RESETCONTENT, 0, 0);
     if (app->state.englishUI != 0) {
         SendMessageA(GetDlgItem(hDlg, kBoneCombo), CB_ADDSTRING, 0,
@@ -558,7 +424,6 @@ void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
                      reinterpret_cast<LPARAM>(name));
     }
 
-    // group combo: "1".."15" + "16(F)"
     SendMessageA(GetDlgItem(hDlg, kGroupCombo), CB_RESETCONTENT, 0, 0);
     char text[8];
     for (int n = 1; n <= 15; ++n) {
@@ -570,7 +435,6 @@ void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
                  reinterpret_cast<LPARAM>(
                      app->state.englishUI != 0 ? "16(F)" : kGroup16Jp));
 
-    // neutralize every bone's edit transform before the first refresh
     for (std::uint32_t b = 0; b < model->boneCount; ++b) {
         bones[b].trans[0] = bones[b].trans[1] = bones[b].trans[2] = 0.0f;
         bones[b].rotQuat[0] = bones[b].rotQuat[1] = bones[b].rotQuat[2] = 0.0f;
@@ -593,13 +457,7 @@ void InitPhysicsModelDialog(HWND hDlg) {  // VA 0x0045F670
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x41FF30 (x64 sub_7FF7CB4AFEB0) - pull the body edits of the selected
-// record into its scratch slot: name, size (0.1-clamped), position, rotation
-// (deg -> rad), mass, damping/restitution/friction, and the group-list text
-// ("1 5 9 " -> 16-bit collision mask, bit N set = group N+1).
-// ---------------------------------------------------------------------------
-void CollectBodyEdits(MMDApp* app) {  // VA 0x0041FF30
+void CollectBodyEdits(MMDApp* app) {  
     if (app->state.selectedRigidIndex == -1)
         return;
     Rigid& rb = EditBodies()[app->state.selectedRigidIndex];
@@ -641,13 +499,7 @@ void CollectBodyEdits(MMDApp* app) {  // VA 0x0041FF30
     rb.noCollapse = mask;
 }
 
-// ---------------------------------------------------------------------------
-// 0x45F480 (x64 sub_7FF7CB4B17B0) - "add body": take the first free scratch
-// slot, name it BODY_<slot>, register it in the list and body-A/B combos and
-// fill editor defaults (shape sphere, size 2, mass 1, damping 0.5,
-// friction 0.5, restitution 0, bone/group 0, mode 0).
-// ---------------------------------------------------------------------------
-void AddRigidBody(HWND hDlg) {  // VA 0x0045F480
+void AddRigidBody(HWND hDlg) {  
     MMDApp* app = g_Block;
     Rigid* bodies = EditBodies();
 
@@ -685,13 +537,7 @@ void AddRigidBody(HWND hDlg) {  // VA 0x0045F480
     ApplyBodyRecordToEdits(hDlg, slot);
 }
 
-// ---------------------------------------------------------------------------
-// 0x4204F0 (x64 sub_7FF7CB4B05C0) - pull the joint edits of the selected
-// record into its scratch slot.  Both y-axis angular limits (edits 765/764)
-// are validated against -90..90 with a message box and clamped to +-80,
-// matching the Bullet 6DOF y-rotation restriction.
-// ---------------------------------------------------------------------------
-void CollectJointEdits(MMDApp* app) {  // VA 0x004204F0
+void CollectJointEdits(MMDApp* app) {  
     if (app->state.selectedJointIndex == -1)
         return;
     Joint& jt = EditJoints()[app->state.selectedJointIndex];
@@ -715,7 +561,7 @@ void CollectJointEdits(MMDApp* app) {  // VA 0x004204F0
     ReadEditFloat(GetDlgItem(hDlg, kLinLowerZEdit), jt.limits[5]);
 
     ReadEditDegrees(GetDlgItem(hDlg, kAngUpperXEdit), jt.limits[6]);
-    {   // 765: angular y - validated
+    {   
         GetWindowTextA(GetDlgItem(hDlg, kAngUpperYEdit), text, 10);
         float value = static_cast<float>(atof(text));
         value = CheckYAngleLimit(hDlg, GetDlgItem(hDlg, kAngUpperYEdit), value);
@@ -723,7 +569,7 @@ void CollectJointEdits(MMDApp* app) {  // VA 0x004204F0
     }
     ReadEditDegrees(GetDlgItem(hDlg, kAngUpperZEdit), jt.limits[8]);
     ReadEditDegrees(GetDlgItem(hDlg, kAngLowerXEdit), jt.limits[9]);
-    {   // 764: angular y - validated
+    {   
         GetWindowTextA(GetDlgItem(hDlg, kAngLowerYEdit), text, 10);
         float value = static_cast<float>(atof(text));
         value = CheckYAngleLimit(hDlg, GetDlgItem(hDlg, kAngLowerYEdit), value);
@@ -739,13 +585,7 @@ void CollectJointEdits(MMDApp* app) {  // VA 0x004204F0
     ReadEditFloat(GetDlgItem(hDlg, kSpringAngZEdit), jt.springs[5]);
 }
 
-// ---------------------------------------------------------------------------
-// 0x43CA50 (x64 sub_7FF7CB4B1A30) - "add joint": refuses with a message box
-// when no live body exists, else takes the first free joint slot, names it
-// JOINT_<slot>, registers it in the joint list and zeroes every numeric
-// field (both link indices point at scratch slot 0).
-// ---------------------------------------------------------------------------
-void AddJoint(HWND hDlg) {  // VA 0x0043CA50
+void AddJoint(HWND hDlg) {  
     MMDApp* app = g_Block;
     Rigid* bodies = EditBodies();
     Joint* joints = EditJoints();
@@ -789,21 +629,13 @@ void AddJoint(HWND hDlg) {  // VA 0x0043CA50
     ApplyJointRecordToEdits(hDlg, slot);
 }
 
-// ---------------------------------------------------------------------------
-// 0x421CE0 (x64 sub_7FF7CB4B3810) - shape-dependent UI: checks the
-// sphere/box/capsule radio, relabels the size fields (radius / width x
-// height x depth / radius x height), shows only the size edits the shape
-// uses and refills them from the record.  idx == -1 clears the visible
-// edits instead (no selection); the original would sprintf from slot -1
-// for the non-sphere shapes, the port skips the refill in that case.
-// ---------------------------------------------------------------------------
-void UpdateShapeControls(HWND hDlg, int shape, int idx) {  // VA 0x00421CE0
+void UpdateShapeControls(HWND hDlg, int shape, int idx) {  
     MMDApp* app = g_Block;
     const bool english = app->state.englishUI != 0;
     Rigid* bodies = EditBodies();
     char text[256];
 
-    if (shape == 0) {          // sphere: radius only
+    if (shape == 0) {          
         CheckRadioButton(hDlg, kShapeSphereRadio, kShapeCapsuleRadio,
                          kShapeSphereRadio);
         SetWindowTextA(GetDlgItem(hDlg, kSizeXLabel),
@@ -820,7 +652,7 @@ void UpdateShapeControls(HWND hDlg, int shape, int idx) {  // VA 0x00421CE0
         }
         return;
     }
-    if (shape == 1) {          // box: width x height x depth
+    if (shape == 1) {          
         CheckRadioButton(hDlg, kShapeSphereRadio, kShapeCapsuleRadio,
                          kShapeBoxRadio);
         SetWindowTextA(GetDlgItem(hDlg, kSizeXLabel),
@@ -843,7 +675,6 @@ void UpdateShapeControls(HWND hDlg, int shape, int idx) {  // VA 0x00421CE0
         }
         return;
     }
-    // capsule: radius x height
     CheckRadioButton(hDlg, kShapeSphereRadio, kShapeCapsuleRadio,
                      kShapeCapsuleRadio);
     SetWindowTextA(GetDlgItem(hDlg, kSizeXLabel),
@@ -862,11 +693,7 @@ void UpdateShapeControls(HWND hDlg, int shape, int idx) {  // VA 0x00421CE0
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x421C20 (x64 sub_7FF7CB4B3720) - body/joint page flip: shows one page's
-// control range (685..734 body, 735..799 joint) and hides the other.
-// ---------------------------------------------------------------------------
-void FlipPhysicsDialogPage(HWND hDlg, int bodyPage) {  // VA 0x00421C20
+void FlipPhysicsDialogPage(HWND hDlg, int bodyPage) {  
     if (bodyPage != 0) {
         for (int id = kJointPageFirst; id <= kJointPageLast; ++id)
             ShowWindow(GetDlgItem(hDlg, id), SW_HIDE);
@@ -882,12 +709,7 @@ void FlipPhysicsDialogPage(HWND hDlg, int bodyPage) {  // VA 0x00421C20
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x420DC0 (x64 sub_7FF7CB4B0FF0) - pivot-bone combo: copies the selected
-// bone's model-space position into the joint position and refreshes the
-// position edits.
-// ---------------------------------------------------------------------------
-void PickPivotBone(HWND hDlg) {  // VA 0x00420DC0
+void PickPivotBone(HWND hDlg) {  
     MMDApp* app = g_Block;
     mdl::ModelRecord* model = mdl::Mdl(app->SelectedModel());
     const int sel = static_cast<int>(
@@ -904,15 +726,7 @@ void PickPivotBone(HWND hDlg) {  // VA 0x00420DC0
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x43CCD0 (x64 sub_7FF7CB4B2590) - push the selected body record into the
-// body edits: name, related bone (combo index = bone + 1 for "none"),
-// group, shape UI, position, rotation (rad -> deg), mass and the
-// damping/restitution/friction quartet (%4.3f), the group-list text, and
-// the physical/bone radio + bone-alignment checkbox.  idx == -1 disables
-// and clears the whole body group instead.
-// ---------------------------------------------------------------------------
-void ApplyBodyRecordToEdits(HWND hDlg, int idx) {  // VA 0x0043CCD0
+void ApplyBodyRecordToEdits(HWND hDlg, int idx) {  
     MMDApp* app = g_Block;
     Rigid* bodies = EditBodies();
     char text[256];
@@ -957,7 +771,6 @@ void ApplyBodyRecordToEdits(HWND hDlg, int idx) {  // VA 0x0043CCD0
     sprintf_s(text, sizeof text, "%4.3f", rb.friction);
     SetWindowTextA(GetDlgItem(hDlg, kFrictionEdit), text);
 
-    // group list text: "1 5 9 " for every set collision-mask bit
     text[0] = '\0';
     char group[16];
     for (int bit = 0; bit < 16; ++bit) {
@@ -982,13 +795,7 @@ void ApplyBodyRecordToEdits(HWND hDlg, int idx) {  // VA 0x0043CCD0
                  rb.mode == 2 ? 1 : 0, 0);
 }
 
-// ---------------------------------------------------------------------------
-// 0x4214A0 (x64 sub_7FF7CB4B2D90) - push the selected joint record into the
-// joint edits: name, body-A/B combos (via their scratch combo indices),
-// position (%5.4f), rotation (rad -> deg), the four limit triples and both
-// spring triples (%3.2f).  idx == -1 disables and clears the joint group.
-// ---------------------------------------------------------------------------
-void ApplyJointRecordToEdits(HWND hDlg, int idx) {  // VA 0x004214A0
+void ApplyJointRecordToEdits(HWND hDlg, int idx) {  
     MMDApp* app = g_Block;
     Rigid* bodies = EditBodies();
     Joint* joints = EditJoints();
@@ -1021,7 +828,6 @@ void ApplyJointRecordToEdits(HWND hDlg, int idx) {  // VA 0x004214A0
                   jt.rotation[axis] / kPiShort * 180.0f);
         SetWindowTextA(GetDlgItem(hDlg, kJointRotXEdit + axis), text);
     }
-    // linear upper (757/759/761), linear lower (747/758/760)
     const int kLinearUpperEdits[3] = {kLinUpperXEdit, kLinUpperYEdit,
                                       kLinUpperZEdit};
     const int kLinearLowerEdits[3] = {kLinLowerXEdit, kLinLowerYEdit,
@@ -1032,7 +838,6 @@ void ApplyJointRecordToEdits(HWND hDlg, int idx) {  // VA 0x004214A0
         sprintf_s(text, sizeof text, "%3.2f", jt.limits[3 + axis]);
         SetWindowTextA(GetDlgItem(hDlg, kLinearLowerEdits[axis]), text);
     }
-    // angular upper (763/765/767), angular lower (762/764/766) - degrees
     const int kAngUpperEdits[3] = {kAngUpperXEdit, kAngUpperYEdit,
                                    kAngUpperZEdit};
     const int kAngLowerEdits[3] = {kAngLowerXEdit, kAngLowerYEdit,
@@ -1045,7 +850,6 @@ void ApplyJointRecordToEdits(HWND hDlg, int idx) {  // VA 0x004214A0
                   jt.limits[9 + axis] / kPiShort * 180.0f);
         SetWindowTextA(GetDlgItem(hDlg, kAngLowerEdits[axis]), text);
     }
-    // spring linear (748..750), spring angular (751..753)
     for (int axis = 0; axis < 3; ++axis) {
         sprintf_s(text, sizeof text, "%3.2f", jt.springs[axis]);
         SetWindowTextA(GetDlgItem(hDlg, kSpringLinXEdit + axis), text);
@@ -1054,17 +858,7 @@ void ApplyJointRecordToEdits(HWND hDlg, int idx) {  // VA 0x004214A0
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x4220F0 (x64 sub_7FF7CB4B3D40) - commit on OK: drop the model's joints
-// and rigid bodies out of the Bullet world, compact the live scratch
-// records into fresh model tables, recreate every body (world matrix =
-// Rz*Rx*Ry*T(position)*T(bonePos)*boneInitMat; inverse stored for the
-// physics readback) and every joint (pivots through both bodies' inverse
-// transforms, frame quaternions from joint-rotations composed with the
-// negated body rotations), renumbering the scratch combo indices to the
-// compacted order.
-// ---------------------------------------------------------------------------
-void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
+void CommitPhysicsEdits(HWND hDlg) {  
     (void)hDlg;
     MMDApp* app = g_Block;
     mdl::ModelRecord* model = mdl::Mdl(app->SelectedModel());
@@ -1074,7 +868,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
     Joint* joints = EditJoints();
     using d3dx::D3DXMATRIXF;
 
-    // ---- tear the old physics objects out of the world --------------------
     for (std::uint32_t i = 0; i < model->jointCount; ++i)
         RemovePhysJointByUid(scene, model->jointTable[i].constraint);
     ::operator delete(model->jointTable);
@@ -1085,7 +878,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
     ::operator delete(model->rigidTable);
     model->rigidTable = nullptr;
 
-    // ---- compacted rigid table --------------------------------------------
     int liveBodies = 0;
     for (int i = 0; i < kMaxEditRecords; ++i)
         if (BodyComboIndex(bodies[i]) >= 0)
@@ -1096,7 +888,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
     std::memset(model->rigidTable, 0,
                 sizeof(Rigid) * static_cast<std::size_t>(liveBodies));
 
-    // clear the bone "has dynamic rigid" flags before re-linking
     mdl::BoneRecord* bones = model->boneTable;
     for (std::uint32_t b = 0; b < model->boneCount; ++b)
         bones[b].hasRigidBody = 0;
@@ -1106,12 +897,10 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
         if (BodyComboIndex(bodies[i]) < 0)
             continue;
         Rigid& ed = bodies[i];
-        // collision mask -> PMD no-collapse sense for storage
         ed.noCollapse = static_cast<std::uint16_t>(~ed.noCollapse);
         Rigid& dst = model->rigidTable[bodyIndex];
         std::memcpy(&dst, &ed, sizeof(Rigid));
 
-        // world matrix Rz*Rx*Ry * T(position) * T(bonePos) * boneInitMat
         D3DXMATRIXF mat, tmp;
         d3dx.rotZ(&mat, ed.rotation[2]);
         d3dx.rotX(&tmp, ed.rotation[0]);
@@ -1142,7 +931,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
         if (ed.mode > 0 && ed.boneIndex >= 0)
             bones[ed.boneIndex].hasRigidBody = 1;
 
-        // inverse transform T(-bonePos)*T(-position)*Ry(-y)*Rx(-x)*Rz(-z)
         D3DXMATRIXF inv, t2;
         d3dx.translation(&inv, -linkedBone.position[0],
                          -linkedBone.position[1], -linkedBone.position[2]);
@@ -1160,7 +948,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
         ++bodyIndex;
     }
 
-    // ---- compacted joint table --------------------------------------------
     int liveJoints = 0;
     for (int i = 0; i < kMaxEditRecords; ++i)
         if (joints[i].constraint >= 0)
@@ -1176,7 +963,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
         if (joints[i].constraint < 0)
             continue;
         Joint& ed = joints[i];
-        // relink through the renumbered body slots
         ed.rigidA = BodyComboIndex(bodies[ed.rigidA]);
         ed.rigidB = BodyComboIndex(bodies[ed.rigidB]);
         Joint& dst = model->jointTable[jointIndex];
@@ -1185,7 +971,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
         const Rigid& rbA = model->rigidTable[ed.rigidA];
         const Rigid& rbB = model->rigidTable[ed.rigidB];
 
-        // joint anchors through both bodies' inverse transforms
         float pivotA[3], pivotB[3];
         TransformPoint(pivotA, ed.position, rbA.invTransform);
         TransformPoint(pivotB, ed.position, rbB.invTransform);
@@ -1197,7 +982,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
                                       pivotB[2] * pivotB[2]);
         dst.radiusBound = distA + distB;
 
-        // limit radius: per-axis max of |linear upper| / |linear lower|
         float maxAbs[3];
         for (int axis = 0; axis < 3; ++axis) {
             float upper = std::fabs(ed.limits[axis]);
@@ -1210,8 +994,6 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
                                      maxAbs[1] * maxAbs[1] +
                                      maxAbs[2] * maxAbs[2]);
 
-        // frame orientations: joint rotation composed with the negated
-        // body rotation, one quaternion per side
         float qa[4], qb[4];
         for (int side = 0; side < 2; ++side) {
             const Rigid& rb = side == 0 ? rbA : rbB;
@@ -1245,37 +1027,12 @@ void CommitPhysicsEdits(HWND hDlg) {  // VA 0x004220F0
     }
 }
 
-// ---------------------------------------------------------------------------
-// 0x465020 (x64 sub_7FF7CB4AD800) - the dialog proc.
-// WM_INITDIALOG: subclass the name/float edits (705, 709..723, 740,
-// 744..767) with PhysicsEditSubclassProc, saving 705's old proc, then InitPhysicsModelDialog init.
-// WM_COMMAND (sets the cached-time dirty word first):
-//   0x2AD/0x2DF   add body / add joint (collect current edits first)
-//   0x2C2         delete body: drop it from the three body combos, drop
-//                 every joint attached to it (with combo renumbering),
-//                 mark the scratch slot free and renumber the combos
-//   0x2E1         delete joint
-//   0x2D4/0x2D5   body copy to / paste from the staging record
-//   0x2E2/0x2E3   joint copy to / paste from the staging record
-//   0x2D6..0x2D8  shape radio sphere/box/capsule (record shape byte)
-//   0x2D9..0x2DB  physical radio / bone-follow radio / alignment checkbox:
-//                 editor mode byte 0 = bone-follow, 1 = physical,
-//                 2 = physical + bone alignment (kinematicFlag)
-//   0x320/0x321   body / joint page flip
-//   CBN_SELCHANGE of 704/736 (list selection), 741/742 (joint body A/B),
-//   707/708 (related bone / group), 743 (pivot bone)
-//   id 1 (OK): seek+re-eval (SeekSelectedModelToCurrentFrame), collect both records, commit
-//   (CommitPhysicsEdits), free the scratch arrays, close, re-enable the main
-//   combos 436/408, show the preserve-model box, set the enhanced-model
-//   dirty flag
-//   id 2 (Cancel): seek+re-eval, free, close, re-enable
-// ---------------------------------------------------------------------------
-INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {  // VA 0x00465020
+INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {  
     MMDApp* app = g_Block;
     if (msg == WM_INITDIALOG) {
         if (app->state.floatingWindow != 0)
             SetWindowPos(hDlg, HWND_TOPMOST, 0, 0, 0, 0,
-                         SWP_NOSIZE | SWP_NOMOVE);  // x64 0x7FF7CB4AE84E: or rdx,-1, flags 3
+                         SWP_NOSIZE | SWP_NOMOVE);  
         HWND nameEdit = GetDlgItem(hDlg, kBodyNameEdit);
         app->FrameCopyEditProc() = reinterpret_cast<WNDPROC>(
             GetWindowLongPtrA(nameEdit, GWLP_WNDPROC));
@@ -1295,7 +1052,6 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
     if (msg != WM_COMMAND)
         return 0;
 
-    // dirty write: the dialog deliberately invalidates the cached time
     app->state.timeNowHigh = 1;
 
     const HWND hCtrl = reinterpret_cast<HWND>(lParam);
@@ -1303,15 +1059,15 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
     Joint* joints = EditJoints();
 
     switch (LOWORD(wParam)) {
-    case 0x2AD:  // add body
+    case 0x2AD:  
         CollectBodyEdits(app);
         AddRigidBody(hDlg);
         return 0;
-    case 0x2DF:  // add joint
+    case 0x2DF:  
         CollectJointEdits(app);
         AddJoint(hDlg);
         return 0;
-    case 0x2C2: {  // delete body (also deletes its joints)
+    case 0x2C2: {  
         const int sel = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kBodyListCombo), CB_GETCURSEL, 0, 0));
         SendMessageA(GetDlgItem(hDlg, kBodyListCombo), CB_DELETESTRING, sel, 0);
@@ -1351,7 +1107,7 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         ApplyJointRecordToEdits(hDlg, app->state.selectedJointIndex);
         return 0;
     }
-    case 0x2E1: {  // delete joint
+    case 0x2E1: {  
         const int sel = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kJointListCombo), CB_GETCURSEL, 0, 0));
         SendMessageA(GetDlgItem(hDlg, kJointListCombo), CB_DELETESTRING, sel, 0);
@@ -1369,13 +1125,12 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         ApplyJointRecordToEdits(hDlg, app->state.selectedJointIndex);
         return 0;
     }
-    case 0x2D4:  // copy body
+    case 0x2D4:  
         CollectBodyEdits(app);
         std::memcpy(&s_bodyCopyScratch, &bodies[app->state.selectedRigidIndex],
                     sizeof(Rigid));
         return 0;
-    case 0x2D5: {  // paste body (restitution/friction stay untouched, as
-                   // in the original field list)
+    case 0x2D5: {  
         Rigid& rb = bodies[app->state.selectedRigidIndex];
         const Rigid& src = s_bodyCopyScratch;
         rb.boneIndex = src.boneIndex;
@@ -1393,12 +1148,12 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         ApplyBodyRecordToEdits(hDlg, app->state.selectedRigidIndex);
         return 0;
     }
-    case 0x2E2:  // copy joint
+    case 0x2E2:  
         CollectJointEdits(app);
         std::memcpy(&s_jointCopyScratch, &joints[app->state.selectedJointIndex],
                     sizeof(Joint));
         return 0;
-    case 0x2E3: {  // paste joint
+    case 0x2E3: {  
         Joint& jt = joints[app->state.selectedJointIndex];
         const Joint& src = s_jointCopyScratch;
         jt.rigidA = src.rigidA;
@@ -1416,19 +1171,19 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         ApplyJointRecordToEdits(hDlg, app->state.selectedJointIndex);
         return 0;
     }
-    case 0x2D6:  // shape: sphere
+    case 0x2D6:  
         bodies[app->state.selectedRigidIndex].shape = 0;
         UpdateShapeControls(hDlg, 0, app->state.selectedRigidIndex);
         return 0;
-    case 0x2D7:  // shape: box
+    case 0x2D7:  
         bodies[app->state.selectedRigidIndex].shape = 1;
         UpdateShapeControls(hDlg, 1, app->state.selectedRigidIndex);
         return 0;
-    case 0x2D8:  // shape: capsule
+    case 0x2D8:  
         bodies[app->state.selectedRigidIndex].shape = 2;
         UpdateShapeControls(hDlg, 2, app->state.selectedRigidIndex);
         return 0;
-    case 0x2D9:  // physical radio clicked
+    case 0x2D9:  
         EnableWindow(GetDlgItem(hDlg, kBoneAlignCheckbox), TRUE);
         if (IsDlgButtonChecked(hDlg, kBoneAlignCheckbox) == 1) {
             bodies[app->state.selectedRigidIndex].mode = 2;
@@ -1438,12 +1193,12 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
             bodies[app->state.selectedRigidIndex].kinematicFlag = 0;
         }
         return 0;
-    case 0x2DA:  // bone-follow radio clicked
+    case 0x2DA:  
         EnableWindow(GetDlgItem(hDlg, kBoneAlignCheckbox), FALSE);
         bodies[app->state.selectedRigidIndex].mode = 0;
         bodies[app->state.selectedRigidIndex].kinematicFlag = 0;
         return 0;
-    case 0x2DB:  // bone-alignment checkbox toggled while physical
+    case 0x2DB:  
         if (bodies[app->state.selectedRigidIndex].mode == 2) {
             bodies[app->state.selectedRigidIndex].mode = 1;
             bodies[app->state.selectedRigidIndex].kinematicFlag = 0;
@@ -1452,11 +1207,11 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
             bodies[app->state.selectedRigidIndex].kinematicFlag = 1;
         }
         return 0;
-    case 0x320:  // body page radio: collect the joint edits being left
+    case 0x320:  
         CollectJointEdits(app);
         FlipPhysicsDialogPage(hDlg, 1);
         return 0;
-    case 0x321:  // joint page radio: collect the body edits being left
+    case 0x321:  
         CollectBodyEdits(app);
         FlipPhysicsDialogPage(hDlg, 0);
         return 0;
@@ -1464,10 +1219,9 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         break;
     }
 
-    if (HIWORD(wParam) != 1 /*CBN_SELCHANGE*/) {
+    if (HIWORD(wParam) != 1  ) {
         if (LOWORD(wParam) == 1) {
-            // OK: seek, collect, commit, close, preserve-model notice
-            SeekSelectedModelToCurrentFrame(app);   // 0x4220C0 = x64 sub_7FF7CB4B3D00
+            SeekSelectedModelToCurrentFrame(app);   
             CollectBodyEdits(app);
             CollectJointEdits(app);
             CommitPhysicsEdits(hDlg);
@@ -1496,8 +1250,7 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
             return 1;
         }
         if (LOWORD(wParam) == 2) {
-            // Cancel: seek, close (the editor arrays are simply dropped)
-            SeekSelectedModelToCurrentFrame(app);   // 0x4220C0 = x64 sub_7FF7CB4B3D00
+            SeekSelectedModelToCurrentFrame(app);   
             if (app->state.rigidScratchArray != nullptr) {
                 std::free(app->state.rigidScratchArray);
                 app->state.rigidScratchArray = nullptr;
@@ -1516,7 +1269,6 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
     }
 
     if (hCtrl == GetDlgItem(hDlg, kBodyListCombo)) {
-        // body list selection
         CollectBodyEdits(app);
         const int sel = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kBodyListCombo), CB_GETCURSEL, 0, 0));
@@ -1529,7 +1281,6 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         return 0;
     }
     if (hCtrl == GetDlgItem(hDlg, kJointListCombo)) {
-        // joint list selection
         CollectJointEdits(app);
         const int sel = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kJointListCombo), CB_GETCURSEL, 0, 0));
@@ -1542,7 +1293,6 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         return 0;
     }
     if (hCtrl == GetDlgItem(hDlg, kBodyACombo)) {
-        // joint body-A pick: map the combo entry to its scratch slot
         const int sel = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kBodyACombo), CB_GETCURSEL, 0, 0));
         for (int idx = 0; idx < kMaxEditRecords; ++idx) {
@@ -1561,7 +1311,6 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
         return 0;
     }
     if (hCtrl == GetDlgItem(hDlg, kBoneCombo)) {
-        // related bone: combo index 0 is "none" -> stored index -1
         bodies[app->state.selectedRigidIndex].boneIndex = static_cast<int>(
             SendMessageA(GetDlgItem(hDlg, kBoneCombo), CB_GETCURSEL, 0, 0) &
             0xFFFF) - 1;
@@ -1579,4 +1328,4 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
     return 0;
 }
 
-}  // namespace rinmotiondance
+}  

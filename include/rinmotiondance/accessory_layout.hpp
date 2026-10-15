@@ -5,10 +5,6 @@
 
 namespace rinmotiondance::mdl {
 
-// Runtime accessory object.  Its first four fields are native pointers;
-// consequently the scalar/string tail starts 16 bytes later in the x64
-// executable.  The opaque block between the resource pointers and editable
-// transform is retained only at this ABI boundary.
 struct AccessoryTexturePaths {
     wchar_t primary[512];
     wchar_t sphere[512];
@@ -37,10 +33,6 @@ struct AccessoryRecord {
     float opacity;
     std::uint32_t materialCount;
     std::int32_t currentMaterial;
-    // +0x4AC x86 / +0x4BC x64: timeline row flag - set on the accessory's
-    // registration row (combo 0x1D7 selection, x86 0x48E2A4) and read by
-    // the pump's Enter register-frame block (x64 0x44FB0A) to decide which
-    // accessory tracks get a keyframe.
     std::uint8_t rowSelected;
     std::uint8_t reservedTail[3];
 };
@@ -87,9 +79,6 @@ inline const AccessoryRecord* Accessory(const void* object) {
     return static_cast<const AccessoryRecord*>(object);
 }
 
-// One entry in an accessory's 10000-key timeline.  Unlike model BoneKey,
-// this record stores the accessory's attachment and render state; the two
-// formats only happen to share a 60-byte size.
 struct AccessoryKey {
     std::uint32_t frame;
     std::uint32_t previous;
@@ -126,8 +115,6 @@ static_assert(offsetof(AccessoryKey, scale) == 52,
 static_assert(offsetof(AccessoryKey, opacity) == 56,
               "accessory opacity ABI");
 
-// Clipboard form used by the accessory paste command.  It omits the linked
-// list indices and selection flag, and stores a frame offset plus source slot.
 struct AccessoryClipboardKey {
     std::uint32_t frameOffset;
     std::uint8_t slot;
@@ -155,4 +142,4 @@ static_assert(offsetof(AccessoryClipboardKey, scale) == 44,
 static_assert(offsetof(AccessoryClipboardKey, opacity) == 48,
               "accessory clipboard opacity ABI");
 
-}  // namespace rinmotiondance::mdl
+}  

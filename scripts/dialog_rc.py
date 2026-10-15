@@ -36,14 +36,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "res")
 DIALOG_RC = os.path.join(RES, "templates", "dialog", "dialogs.rc")
 MENU_RC = os.path.join(RES, "templates", "menu", "menus.rc")
-ANCHOR_RES = os.path.join(RES, "gen_resources.res")  # x86; x64 shares templates
+ANCHOR_RES = os.path.join(RES, "gen_resources.res")  
 
 RT_MENU, RT_DIALOG = 4, 5
 
 
-# ---------------------------------------------------------------------------
-# rc.exe leg
-# ---------------------------------------------------------------------------
 def find_rcexe(override=None):
     """Newest SDK rc.exe; explicit override / RC_EXE env win."""
     for cand in (override, os.environ.get("RC_EXE")):
@@ -77,7 +74,7 @@ def parse_res(data):
     Type/name keys are ("ord", value) or ("str", value), mirroring the
     ordinal-or-UTF-16-string fields of the record header.
     """
-    i = 32                                          # leading zero sentinel
+    i = 32                                          
     out = {}
 
     def ordname(j):
@@ -110,9 +107,6 @@ def compile_templates(rcexe):
     return blobs
 
 
-# ---------------------------------------------------------------------------
-# verify: .rc compilation == templates embedded in the anchor .res
-# ---------------------------------------------------------------------------
 def _templates_from_res(recs):
     return {key: v[0] for key, v in recs.items()
             if key[0] in (("ord", RT_DIALOG), ("ord", RT_MENU))}

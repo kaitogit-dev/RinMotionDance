@@ -1,4 +1,3 @@
-// Exercise the production worker without exposing a test-only product API.
 #include "../src/model/model_skinning.cpp"
 #include <omp.h>
 #include <memory>
@@ -10,7 +9,7 @@
 
 int main() {
     using namespace rinmotiondance;
-    constexpr int count = 4099; // Uneven partition boundaries with four workers.
+    constexpr int count = 4099; 
     constexpr float distance = 0.125f;
     auto model = std::make_unique<mdl::ModelRecord>();
     mdl::BoneRecord bones[2]{};

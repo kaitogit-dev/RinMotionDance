@@ -1,9 +1,3 @@
-// Source-level views of the four application-wide timeline key tables.
-//
-// These records are stored by value and contain no native pointers, so their
-// ABI is identical in the 32-bit original and the 64-bit build.  Fields whose
-// meaning is not yet established remain reserved; keeping them here prevents
-// UI code from duplicating record strides and byte offsets.
 #pragma once
 
 #include <cstddef>
@@ -11,8 +5,6 @@
 
 namespace rinmotiondance::mdl {
 
-// The original allocates every global and accessory timeline table for this
-// fixed frame domain.  PMM stores sparse records indexed directly by frame.
 inline constexpr std::size_t kTimelineKeyCapacity = 10000;
 
 struct CameraKey {
@@ -109,4 +101,4 @@ static_assert(offsetof(GravityKey, noise) == 28, "gravity noise ABI");
 static_assert(offsetof(GravityKey, noiseEnabled) == 32,
               "gravity noise enabled ABI");
 
-}  // namespace rinmotiondance::mdl
+}  

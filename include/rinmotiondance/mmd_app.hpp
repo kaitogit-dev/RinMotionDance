@@ -1,21 +1,3 @@
-// ===========================================================================
-// RinMotionDance - the MikuMikuDance v932 application state object
-// ===========================================================================
-// Original form:
-//   WinMain (VA 0x004C4460) performs
-//       void* p = operator new(0xA4530);
-//       Block = p;                        // .data global @ 0x0054593C
-//       memset(p, 0, 0xA4530);
-//   The whole program is a single 0xA4530-byte object; every subsystem
-//   addresses fields through fixed byte offsets.
-//
-// Restoration strategy ("1:1"):
-//   * The class owns one MMDAppState (app_layout.hpp) whose layout is
-//     pinned to the original binary by static_asserts.
-//   * Every field is a named member.  The historical offset-keyed
-//     access layer is gone; fields the x64 blob could not host live in
-//     MMDApp mirrors behind arch-split accessors.
-// ===========================================================================
 #pragma once
 
 #include <cstddef>
@@ -100,14 +82,6 @@ struct TimelineSelectionRecord {
     std::int32_t words[4];
 };
 
-// The x86 blob packs each band's timeline-selection record pointer four
-// bytes after its count (an 8-byte grid of {4-byte count, 4-byte pointer}).
-// On x64 an eight-byte pointer stored there overruns into the NEXT band's
-// count, and the counting pass writes counts over the PREVIOUS pointer's
-// high half - dragging keyframes then read garbage counts and freed wild
-// pointers.  The counts stay at their original blob offsets; the pointers
-// live in this side table instead (defined in ui_editor_click.cpp; the
-// slots are transient drag buffers, never persisted).
 extern TimelineSelectionRecord* g_timelineSelectionRecords[8];
 
 enum class ScreenCaptureMode : std::int32_t {
@@ -174,16 +148,11 @@ enum class CameraAttachmentReference : std::uint8_t {
 
 class MMDApp {
 public:
-    MMDApp();                                // VA 0x0042AE60
-    void InitDefaults();                     // VA 0x0040A730
+    MMDApp();                                
+    void InitDefaults();                     
 
-    // The restored application state.  Public by design: the original was
-    // one giant class whose fields every subsystem touched directly; free
-    // functions taking MMDApp* read and write `app->state.<field>` exactly
-    // like the original's `this-><field>`.
     MMDAppState state;
 
-    // Frame-range output dialog HWND (x86 blob slot 0xA0B50).
     HWND& FrameRangeDialog() {
 #if defined(_M_X64)
         return m_frameRangeDialog;
@@ -192,8 +161,6 @@ public:
 #endif
     }
 
-    // Gravity-setting dialog (menu 266) HWND (x86 blob slot 0xA0CCC).
-    // Was misnamed AccessoryFrameDialog before the .rc template audit.
     HWND& GravitySettingDialog() {
 #if defined(_M_X64)
         return m_gravitySettingDialog;
@@ -202,8 +169,6 @@ public:
 #endif
     }
 
-    // Ground-shadow-color modeless dialog (menu 248; x86 blob slot
-    // 0xA0B14) and the saved wndproc of its value edit (0xA0B18).
     HWND& GroundShadowColorDialog() {
 #if defined(_M_X64)
         return m_groundShadowColorDialog;
@@ -219,11 +184,8 @@ public:
 #endif
     }
 
-    // Typed slot-index workspaces, with model and accessory ownership independent.
     DialogOrderArrays& DialogOrders() { return m_dialogOrders; }
 
-    // Morph-frame cleanup shift (menu 225) and blink-register range
-    // (menu 227); x86 blob slots 0xA08F4..0xA08FC.
     std::int32_t& MorphFrameShift() {
 #if defined(_M_X64)
         return m_morphFrameShift;
@@ -246,12 +208,7 @@ public:
 #endif
     }
 
-    // Saved wndprocs of subclassed dialog edits (x86 blob slots
-    // 0xA0B48/0xA0B54/0xA0B78/0xA0CD0) and the model-edge combo edit
-    // positions (0xA0B58..0xA0B60).
-    WNDPROC& EdgeThicknessEditProc() {  // was ModelInfoEditProc - slot
-                                        // 0xA0B48 is the edge-thickness
-                                        // dialog (253) edit 646's proc
+    WNDPROC& EdgeThicknessEditProc() {  
 #if defined(_M_X64)
         return m_edgeThicknessEditProc;
 #else
@@ -265,7 +222,7 @@ public:
         return state.modelEdgeEditProc;
 #endif
     }
-    std::int32_t& ModelEdgeComboCursor(int combo) {  // 0:669 1:673 2:677
+    std::int32_t& ModelEdgeComboCursor(int combo) {  
 #if defined(_M_X64)
         return m_modelEdgeComboCursor[combo];
 #else
@@ -287,8 +244,6 @@ public:
 #endif
     }
 
-    // Rotation-dialog working values (cases 300/302; x86 blob slots
-    // 0xA0B28..0xA0B40).
     float& RotationDialogTemp(int index) {
 #if defined(_M_X64)
         return m_rotationDialogTemp[index];
@@ -297,10 +252,6 @@ public:
 #endif
     }
 
-    // Frame-copy dialog (menu 262) staging buffers (172/140 bytes).  Note
-    // the separate physics-editor scratch arrays live in the state blob:
-    // rigidScratchArray / jointScratchArray indexed by selectedRigidIndex /
-    // selectedJointIndex (see physics_model_dialog.cpp).
     unsigned char* CameraFrameScratch() {
 #if defined(_M_X64)
         return m_cameraFrameScratch;
@@ -316,15 +267,10 @@ public:
 #endif
     }
 
-    // Ground-shadow-color RGBA (menu 248): overlays the camera staging
-    // buffer at +112..+127 - the two dialogs are never open together,
-    // mirroring the original blob reuse.
     float* GroundShadowColor() {
         return reinterpret_cast<float*>(CameraFrameScratch() + 112);
     }
 
-    // Accessory-edit dialog (menu 442) scratch buffer 2 (x86 blob slot
-    // 0xA0B24) and its close gate byte (0xA0664).
     void*& AccessoryEditArray() {
 #if defined(_M_X64)
         return m_accessoryEditArray;
@@ -340,7 +286,6 @@ public:
 #endif
     }
 
-    // Render/screenshot save path (x86 blob slot 0x9F134).
     wchar_t* CaptureSavePath() {
 #if defined(_M_X64)
         return m_captureSavePath;
@@ -377,8 +322,6 @@ public:
     mdl::AccessoryRecord* const* AccessorySlots() const {
         return reinterpret_cast<mdl::AccessoryRecord* const*>(state.objectSlots);
     }
-    // The 255-entry display-object list shares storage with accessory
-    // records, but also contains objects selected by the model timeline.
     void*& ObjectSlot(int index) {
         return reinterpret_cast<void*&>(AccessorySlots()[index]);
     }
@@ -416,10 +359,7 @@ public:
     unsigned char* SelectedModel() const {
         return ModelSlot(SelectedModelSlot());
     }
-    // Clipboard pointer family.  x86 reads the blob slots directly; on
-    // x64 only displayClipboard has a blob slot, the seven siblings live
-    // in mirrors (their x86 slots had no x64 mapping at all).
-    void*& BoneCopyRecords() { return state.boneCopyRecords; }  // +0x350
+    void*& BoneCopyRecords() { return state.boneCopyRecords; }  
     mdl::BoneClipboardRecord*& BoneClipboard() {
 #if defined(_M_X64)
         return reinterpret_cast<mdl::BoneClipboardRecord*&>(
@@ -570,42 +510,42 @@ public:
 #if defined(_M_X64)
         return m_selectionBoxAnchorX;
 #else
-        return state.selectionBoxAnchorX;  // 0xA018C
+        return state.selectionBoxAnchorX;  
 #endif
     }
     std::int32_t& SelectionBoxAnchorY() {
 #if defined(_M_X64)
         return m_selectionBoxAnchorY;
 #else
-        return state.selectionBoxAnchorY;  // 0xA0190
+        return state.selectionBoxAnchorY;  
 #endif
     }
     std::int32_t& TimelineRangeFirstOffset() {
 #if defined(_M_X64)
         return m_timelineRangeFirstOffset;
 #else
-        return state.timelineRangeFirstOffset;  // 0xA05C0
+        return state.timelineRangeFirstOffset;  
 #endif
     }
     std::int32_t& TimelineRangeFirstBase() {
 #if defined(_M_X64)
         return m_timelineRangeFirstBase;
 #else
-        return state.timelineRangeFirstBase;  // 0xA05C4
+        return state.timelineRangeFirstBase;  
 #endif
     }
     std::int32_t& TimelineRangeLastOffset() {
 #if defined(_M_X64)
         return m_timelineRangeLastOffset;
 #else
-        return state.timelineRangeLastOffset;  // 0xA05C8
+        return state.timelineRangeLastOffset;  
 #endif
     }
     std::int32_t& TimelineRangeLastBase() {
 #if defined(_M_X64)
         return m_timelineRangeLastBase;
 #else
-        return state.timelineRangeLastBase;  // 0xA05CC
+        return state.timelineRangeLastBase;  
 #endif
     }
     std::uint8_t& TimelineRangeApplyEnabled() {
@@ -618,9 +558,6 @@ public:
         TimelineRangeLastBase() = 0;
         TimelineRangeApplyEnabled() = 0;
     }
-    // Stride-8 selection slots (count at +0, pointer half mirrored in
-    // g_timelineSelectionRecords).  x86 reads the blob block directly;
-    // the x64 blob reserves only 8 bytes here, so x64 mirrors all 64.
     std::int32_t& TimelineSelectionCount(TimelineSelectionBand band) {
         const auto idx = static_cast<std::size_t>(band);
 #if defined(_M_X64)
@@ -648,9 +585,6 @@ public:
         return state.clipboardCounts;
     }
     std::int32_t& CurrentFrame() {
-        // The generated layout stores the frame counter unsigned; keep the
-        // historical signed view so signed comparisons at call sites are
-        // unchanged.
         return reinterpret_cast<std::int32_t&>(state.currentFrame);
     }
     HWND& MainWindow() {
@@ -666,10 +600,6 @@ public:
 #if defined(_M_X64)
         return m_sceneLight;
 #else
-        // The device light overlays the PMM scalars: it starts right past
-        // the lightDirection triple (0x9E180) and spans 104 bytes to
-        // cameraFov - Type/Diffuse/Specular sit in pad118, Ambient covers
-        // lightColor, and Range lands on sceneLightRange.
         return reinterpret_cast<D3DLIGHT9&>(state.lightDirection[3]);
 #endif
     }
@@ -680,9 +610,6 @@ public:
         return reinterpret_cast<const D3DLIGHT9&>(state.lightDirection[3]);
 #endif
     }
-    // The PMM light track stores only RGB and direction.  Its target is the
-    // application's directional key light, whose fixed-function fields must
-    // remain coherent whenever a key is applied or interpolated.
     void ApplyTimelineLightState() {
         D3DLIGHT9& light = SceneLight();
         light.Type = D3DLIGHT_DIRECTIONAL;
@@ -911,8 +838,6 @@ public:
         return state.wireframeRenderingEnabled;
     }
     unsigned char* PanelRowFlags() {
-        // 200-byte highlight-flag region at +0xA04F8 (x86 in-blob; the x64
-        // blob reserves only 175 bytes before timelineRangeApplyEnabled, hence a mirror).
 #if defined(_M_X64)
         return m_panelRowFlags;
 #else
@@ -920,25 +845,17 @@ public:
 #endif
     }
     std::uint32_t& GravityNoiseModeWord() {
-        // Dword view at +0xA0CD4: byte 0 is the promoted gravityNoiseEnabled noise-mode
-        // flag; the upper three bytes land in pad368 on both architectures
-        // (the original writes all four bytes from the gravity record).
         return *reinterpret_cast<std::uint32_t*>(&state.gravityNoiseEnabled);
     }
     std::uint8_t& RecordedFrameCountByte1() {
-        // Byte view of recordedFrameCount+1: the original seeks poke this byte while
-        // the recording catch-up reads the surrounding dword as a counter.
         return reinterpret_cast<std::uint8_t*>(&state.recordedFrameCount)[1];
     }
     std::int32_t& AccessoryRenderSplitOrder() {
-        // Generated field is uint32_t; preserve the signed accessor view.
         return reinterpret_cast<std::int32_t&>(state.accessoryRenderSplitOrder);
     }
     std::uint8_t& SelectedAccessorySlot() {
         return state.selectedObjectSlot;
     }
-    // The accessory and model-display lists share this historical selection
-    // byte.  Use this neutral name outside accessory-specific code.
     std::uint8_t& SelectedObjectSlot() {
         return SelectedAccessorySlot();
     }
@@ -1005,7 +922,6 @@ public:
     HBITMAP& TimelineBitmap() { return reinterpret_cast<HBITMAP&>(state.bmpTimelineStrip); }
     HBITMAP& CurveBitmap() { return reinterpret_cast<HBITMAP&>(state.bmpInterpCurve); }
     HBRUSH UiBrush(int index) const {
-        // brush handles are kept in 32-bit slots, as in the original state
         return reinterpret_cast<HBRUSH>(
             static_cast<std::uintptr_t>(state.brushes[index]));
     }
@@ -1036,7 +952,6 @@ public:
     std::uint8_t& WaveEnabled() {
         return state.waveEnabled;
     }
-    // AVI export options filled by the output dialog (0x40F2F0).
     wchar_t* AviOutputPath() {
 #if defined(_M_X64)
         return m_aviOutputPath;
@@ -1152,13 +1067,6 @@ public:
     std::int32_t& PlaybackPhysicsMode() {
         return state.playbackPhysicsMode;
     }
-    // x64 app+0xA1E18 / x86 app+0xA0D6C = state.messageSeen: ONE shared
-    // counter in both originals (refreshed from playing / idle-suppress-off
-    // / model-edge-dialog-open at the main-pump prologue, walks 1->2->3->0,
-    // reset to 1 by every window message) that gates the physics section
-    // (0x7FF7CB44B8E7 / x86 0x46EFBE), the pump regions and the Present.
-    // Use MessageSeen() directly - see PhysicsFrame and
-    // AdvanceFrameRenderGate for the full ladder.
     std::int32_t& SidebarWidth() {
         return state.sidebarWidth;
     }
@@ -1273,7 +1181,6 @@ public:
         return state.cameraPerspective;
     }
     std::int32_t& CameraParentModel() {
-        // Generated field is uint32_t; preserve the signed accessor view.
         return reinterpret_cast<std::int32_t&>(state.cameraParentModel);
     }
     std::int32_t& CameraParentBone() {
@@ -1321,46 +1228,33 @@ public:
         return state.gravityNoiseEnabled;
     }
 
-    // -- named fields (semantic names verified so far) -------------------
-    // Main loop timing cluster (WinMain 0x004C4460)
-    float& FpsLimit()               { return state.fpsLimit; }   // 657632
-    float& DeltaTime()              { return state.deltaTime; }  // 657084
+    float& FpsLimit()               { return state.fpsLimit; }   
+    float& DeltaTime()              { return state.deltaTime; }  
     std::uint32_t& TimeNowLow()     { return state.timeNowLow; }
     std::uint32_t& TimeNowHigh()    { return state.timeNowHigh; }
-    float& MilliToSec()             { return state.milliToSec; }  // 0.001
+    float& MilliToSec()             { return state.milliToSec; }  
 
-    // Environment / startup scene file (wchar_t[256] @ 657664)
     wchar_t* EnvFileName()          { return state.envFileName; }
 
-    // Locale/font subsystem pointer consumed by ConvertAnsiToWide (0x00407A70)
-    void*& LocaleTablePtr()         { return state.renderer; }    // 657092
+    void*& LocaleTablePtr()         { return state.renderer; }    
 
-    // Main window (0x0047A5B0)
-    void*& Hwnd()                   { return reinterpret_cast<void*&>(state.hwnd); }        // 657080
+    void*& Hwnd()                   { return reinterpret_cast<void*&>(state.hwnd); }        
     void*& HInstance() {
 #if defined(_M_X64)
         return m_hInstance;
 #else
-        return state.hInstance;  // this+0
+        return state.hInstance;  
 #endif
     }
     void*& OpenniTrackingCallback() {
 #if defined(_M_X64)
         return m_openniTrackingCallback;
 #else
-        return state.openniTrackingCallback;  // 0xA03D4
+        return state.openniTrackingCallback;  
 #endif
     }
-    // Kinect 捕获阶段字节（x64 0xA1E14 / x86 0xA0D68——已定谳，即
-    // state.autoRepeat 本尊：菜单 0x124/WM_COMMAND 292 置 1、WM_TIMER 0x65
-    // 每 1.5s 递增到 4 后停摆、泵块 0x7FF7CB44C560 以 ==4 判“录制中”、
-    // OpenNiInit/DisableKinect/满 12600 样本/丢失跟踪时清零）。别名访问器，
-    // 供泵块按语义取名；写读一律走同一字节。
     std::uint8_t& KinectCaptureStage() { return state.autoRepeat; }
     std::uint8_t KinectCaptureStage() const { return state.autoRepeat; }
-    // The seven DxOpenNI.dll export slots (0xA03C0..0xA03DC, one pointer
-    // each in the x86 blob).  Slots 2/4 sit in 4-byte uint32 blob members,
-    // so x64 reinterprets would clobber neighbours - mirrors there.
     void*& OniExportSlot(int index) {
         switch (index) {
         case 0: return state.oniExportSlot0;
@@ -1384,18 +1278,16 @@ public:
 #if defined(_M_X64)
         return m_frameRangeStartFrame;
 #else
-        return state.frameRangeStartFrame;  // 0xA08F0
+        return state.frameRangeStartFrame;  
 #endif
     }
     WINDOWPLACEMENT& SavedPlacement() {
 #if defined(_M_X64)
         return m_savedPlacement;
 #else
-        return state.savedPlacement;  // 0xA027C
+        return state.savedPlacement;  
 #endif
     }
-    // Render/locale subsystem ("0x1D574 object"), allocated in
-    // InitMainWindowAndD3D; layout restored in d3d_wrapper.hpp.
     D3DRenderer*& Renderer()        { return reinterpret_cast<D3DRenderer*&>(state.renderer); }
     WaveAudioContext*& Audio() {
         return reinterpret_cast<WaveAudioContext*&>(state.audioContext);
@@ -1403,16 +1295,11 @@ public:
     DShowRecorder*& Recorder() {
         return reinterpret_cast<DShowRecorder*&>(state.recorder);
     }
-    // AccessoryRecord slot that carries the coordinate-axis gizmo X-file
-    // mesh (was sub04b0 / 0x04B0(); 0x4B0 obj, freed via DisposeAccessory).
     void*& AxisMeshObject()        { return state.axisMeshObject; }
-    // Physics scene wrapper ("0x48 object"), allocated in
-    // InitMainWindowAndD3D, filled by SceneConstruct; see physics_scene.hpp.
     PhysicsScene*& Physics()        { return reinterpret_cast<PhysicsScene*&>(state.physicsScene); }
     wchar_t* ExeDir()               { return state.exeDir; }
-    unsigned char& EnglishUI()      { return state.englishUI; }  // 658252
+    unsigned char& EnglishUI()      { return state.englishUI; }  
 
-    // User directory names (wchar_t[1000] each, 0x0047A5B0)
     wchar_t* DirModel()   { return state.dirModel; }
     wchar_t* DirUser()    { return state.dirUser; }
     wchar_t* DirAccs()    { return state.dirAccs; }
@@ -1421,14 +1308,12 @@ public:
     wchar_t* DirWave()    { return state.dirWave; }
     wchar_t* DirBg()      { return state.dirBg; }
 
-    // Physics gravity (defaults 0.0 / -1.0 / 0.0, magnitude 9.8)
     float& GravityX()               { return state.gravityX; }
     float& GravityY()               { return state.gravityY; }
     float& GravityZ()               { return state.gravityZ; }
     float& GravityMagnitude()       { return state.gravityMagnitude; }
-    float& PhysicsInterval()        { return state.physicsInterval; }  // 0.01125
+    float& PhysicsInterval()        { return state.physicsInterval; }  
 
-    // Recent-file ANSI buffers (char[256] each)
     char* RecentFile(int index) {
         return index == 0 ? reinterpret_cast<char*>(state.recentFile0)
              : index == 1 ? reinterpret_cast<char*>(state.recentFile1)
@@ -1441,25 +1326,12 @@ private:
     DialogOrderArrays m_dialogOrders;
 
 #if defined(_M_X64)
-    // In the original x86 blob, 0x9E180 is a D3DLIGHT9 overlay spanning
-    // several scalar mirrors.  The provisional x64 compatibility layout
-    // represented those mirrors independently, so an in-blob D3DLIGHT9
-    // would overlap unrelated fields.  Keep this transient device object
-    // outside the serialized blob; LightDirection/LightColor remain the
-    // PMM-facing scalar state and ApplyTimelineLightState synchronizes both.
     D3DLIGHT9 m_sceneLight{};
 
-    // x86 keeps the Win32 instance handle in the state blob at +0; the x64
-    // blob slot stays reserved (RawPad) and the live handle lives here.
     void* m_hInstance = nullptr;
 
-    // x86 stores the OpenNI is-tracking callback (?OpenNIIsTracking@@YGXPA_N@Z)
-    // at state+0xA03D4; the x64 blob slot stays reserved and the pointer,
-    // which needs 8 bytes, lives here.
     void* m_openniTrackingCallback = nullptr;
 
-    // x64 mirrors for blob regions that ended short of their x86 span
-    // (see app_layout.hpp pad204/pad213/pad277/pad153 notes):
     std::int32_t m_selectionBoxAnchorX = 0;
     std::int32_t m_selectionBoxAnchorY = 0;
     std::int32_t m_timelineRangeFirstOffset = 0;
@@ -1484,28 +1356,13 @@ private:
     std::int32_t m_timelineSelectionSlots[16] = {};
     unsigned char m_panelRowFlags[204] = {};
 
-    // This scratch workspace is 3,536 bytes in the original x86 state.  The
-    // provisional x64 blob reserves only 3,240 bytes before the next live
-    // field, so retaining it in the blob lets resolvedPath overwrite the
-    // viewport vertex-buffer slots.  It is process-local path scratch data,
-    // never PMM state, and therefore belongs beside the x64 runtime objects.
     PathResolutionWorkspace m_pathWorkspace{};
 
-    // The x86 application state stores each overlay-buffer pointer in one
-    // 32-bit slot.  Its following scalar fields are adjacent in the PMM
-    // layout, so widening either slot in-place would overlap data PMM reads
-    // and writes (notably picture X offset at 0x9E434).  These are transient
-    // D3D resources, not project state; keep their x64 ownership outside the
-    // serialized compatibility blob.
     struct OverlayVertexBuffers {
         IDirect3DVertexBuffer9* avi = nullptr;
         IDirect3DVertexBuffer9* picture = nullptr;
     } m_overlayVertexBuffers;
 
-    // The x86 blob holds the AVI output path (wchar_t[256] at 0x9EE80) and
-    // the codec selection (int at 0xA0CD8) inline.  The provisional x64
-    // blob reserves less room before the next live field in both regions,
-    // so these dialog-local values live outside the compat blob on x64.
     wchar_t m_aviOutputPath[256]{};
     std::int32_t m_aviCodecSelection{};
     HWND m_gravitySettingDialog = nullptr;
@@ -1531,9 +1388,7 @@ private:
 
 static_assert(sizeof(MMDApp) >= sizeof(MMDAppState),
               "MMDApp must retain the complete compatibility state");
-// size truth (exact x86 / bounded x64) is pinned inside app_layout.hpp
 
-// The single instance - mirrors the `Block` global at VA 0x0054593C.
 extern MMDApp* g_Block;
 
-}  // namespace rinmotiondance
+}  

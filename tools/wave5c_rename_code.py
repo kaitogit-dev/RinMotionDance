@@ -55,7 +55,6 @@ def code_mask(text):
                 mask[i] = False
             i += 1
             continue
-        # str / chr
         if c == '\\':
             mask[i] = mask[i+1] if i+1 < n else False
             i += 2
@@ -70,12 +69,8 @@ def rename_code(path, mapping):
     text = open(path, encoding='utf-8', newline='').read()
     changed = 0
     for old, new in mapping:
-        # recompute the mask per mapping: earlier replacements change the
-        # text length, which would misalign a stale mask and let comment
-        # text be renamed (the Wave5-C incident on the pmm v1/v2 comments).
         mask = code_mask(text)
         pat = re.compile(r'(?<![\w])' + re.escape(old) + r'(?![\w])')
-        # collect code-only matches right-to-left
         spots = [m for m in pat.finditer(text) if all(mask[m.start():m.end()])]
         for m in reversed(spots):
             text = text[:m.start()] + new + text[m.end():]

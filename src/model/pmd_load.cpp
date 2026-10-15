@@ -1,30 +1,3 @@
-// ===========================================================================
-// VA 0x004BF3E0 - ModelLoadPMD  (original: sub_4BF3E0, 0x2C95 bytes)
-// ===========================================================================
-// The PMD binary parser, __thiscall on the freshly initialised 0x4CCF4
-// model block.  Signature (verified against the 0x46050F push sequence):
-//
-//   model->LoadPMD(a2 hwnd, a3 widePath, a4 sub1d574, a5 app+0xA06CE,
-//                  a6 = 1, a7 englishUI, a8 sub048ptr, a9 appPathBuf)
-//
-// a7 (EnglishUI, *(app+0xA0B4C)) is stored to m+12740 and gates all
-// English-vs-Japanese message paths; a8 (*(app+0x9EDB0), the 0x48-byte
-// subsystem object) is stored to m+60 and doubles as the physics scene
-// wrapper (gizmo buffers +4..44, constraint-id counter +56,
-// btDiscreteDynamicsWorld* +64).  The loader's physics section passes
-// m+60 to 0x4064F0/0x406010.
-//
-// The file is opened with the wide CRT entry (0x50747B - actually
-// _wsopen_s; the FLIRT name __sopen_s is a mislabel, see
-// docs/ARCHITECTURE.md).  Material/texture names are narrow Shift-JIS
-// and converted via 0x407DA0; file opens probe through 0x4089F0 and the
-// shared texture cache 0x407490.
-//
-// Physics (rigid bodies + joints) is parsed and its transform chains
-// computed with the same D3DX calls as the original; body/constraint
-// creation goes through the ported 0x4064F0/0x406010 (null-world
-// guarded until the 0x4032B0 scene constructor lands).
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -51,14 +24,12 @@
 namespace rinmotiondance {
 namespace {
 
-// Shared Shift-JIS byte literals, maintained in model_labels.inc.
-// Preserve the original encoded bytes when editing; no generator is shipped.
 #include "model_labels.inc"
 
 using mdl::At;
 
 IDirect3DDevice9* DevOf(D3DRenderer* sub) {
-    return sub->device;                       // wrapper + 120032
+    return sub->device;                       
 }
 
 bool FailBox(HWND hwnd, bool en, bool enData, const char* enMsg,
@@ -74,9 +45,6 @@ bool FailBox(HWND hwnd, bool en, bool enData, const char* enMsg,
     return false;
 }
 
-// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call site
-// valid and inlines away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void LogPmdRigid(const wchar_t* path, std::uint32_t rigidIndex,
                  std::int32_t boneIndex, std::uint32_t boneCount,
@@ -102,30 +70,22 @@ inline void LogPmdRigid(const wchar_t*, std::uint32_t, std::int32_t,
 #endif
 
 
-}  // namespace
+}  
 
 bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                   D3DRenderer* sub, int unusedA06CE, std::uint8_t boxGate,
                   std::uint8_t englishUi, PhysicsScene* sub048,
-                  PathResolutionWorkspace& paths) {          // 0x4BF3E0
-    // Arg map (original 0x46050F call site, pushes -0x20..-0x4; the
-    // trailing (aN) tags are the original decompiler parameter names):
-    //   a2 hwnd, a3 path, a4 sub1d574 (device), unusedA06CE (a5) app+0xA06CE
-    //   (unused), boxGate (a6) constant 1 (message-box gate), englishUi
-    //   (a7) EnglishUI *(app+0xA0B4C) (stored to m+12740), sub048 (a8) the
-    //   0x048 pointer *(app+0x9EDB0), typed as PhysicsScene* (stored to
-    //   m+60 - the physics scene wrapper: gizmos +4..44, constraint-id
-    //   counter +56, btDiscreteDynamicsWorld* +64), a9 appPathBuf.
+                  PathResolutionWorkspace& paths) {          
     const bool enData = englishUi != 0;
     mdl::ModelRecord& model = *mdl::Mdl(m);
     char text[256];
     wchar_t wide1[256], wide2[384], wide3[384];
 
     model.hwnd = hwnd;
-    model.scenePtr = sub048;               // 0x4BF42B
-    model.physicsFlags = englishUi;           // 0x4BF431: English-data byte
+    model.scenePtr = sub048;               
+    model.physicsFlags = englishUi;           
 
-    ResolveUserFilePath(paths, path);                         // 0x4089F0
+    ResolveUserFilePath(paths, path);                         
     wcscpy_s(model.path, 0x100, paths.resolvedPath);
 
     int fh = -1;
@@ -149,7 +109,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         return false;
     }
 
-    // directory of the model file -> current directory
     wcscpy_s(model.modelDirectory, 0x100, model.path);
     {
         wchar_t* p = model.modelDirectory;
@@ -163,12 +122,11 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         SetCurrentDirectoryW(model.modelDirectory);
     }
 
-    // ---- header -----------------------------------------------------------
     _read(fh, text, 3);
     if (text[0] != 'P' || text[1] != 'm' || text[2] != 'd') {
         if (text[0] == 'P' && text[1] == 'M' && text[2] == 'X')
             return LoadPMX(m, sub, boxGate, englishUi, paths,
-                           fh);                              // 0x4B77E0
+                           fh);                              
     _close(fh);
         if (enData) {
             sprintf_s(text, 0x100, "This file is not for Ploygon Movie Maker !!");
@@ -179,7 +137,7 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
         return false;
     }
-    _read(fh, text, 4);                                   // version
+    _read(fh, text, 4);                                   
     _read(fh, model.name, mdl::kPmdModelNameBytes);
     _read(fh, model.comment, sizeof(model.comment));
     if (!enData && boxGate &&
@@ -192,14 +150,13 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
     IDirect3DDevice9* dev = DevOf(sub);
     auto* d3dx = &d3dx::Get();
 
-    // ---- vertices ---------------------------------------------------------
     _read(fh, &model.vertexCount, sizeof(model.vertexCount));
     const std::uint32_t vertCount = model.vertexCount;
     if (vertCount != 0) {
         if (dev == nullptr) {
             return false;
         }
-        if (FAILED(dev->CreateVertexBuffer(32 * vertCount, 8, 274 /*FVF*/,
+        if (FAILED(dev->CreateVertexBuffer(32 * vertCount, 8, 274  ,
                                           D3DPOOL_MANAGED,
                                           &mdl::ResourceAs<IDirect3DVertexBuffer9>(
                                               mdl::Mdl(m)->vertexBuffer),
@@ -210,7 +167,7 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
             _close(fh);
             return false;
         }
-        if (FAILED(dev->CreateVertexBuffer(16 * vertCount, 8, 66 /*FVF*/,
+        if (FAILED(dev->CreateVertexBuffer(16 * vertCount, 8, 66  ,
                                           D3DPOOL_MANAGED,
                                           &mdl::ResourceAs<IDirect3DVertexBuffer9>(
                                               mdl::Mdl(m)->vertexBuffer2),
@@ -257,7 +214,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
 
-    // ---- indices ----------------------------------------------------------
     _read(fh, &model.indexCount, sizeof(model.indexCount));
     const std::uint32_t idxCount = model.indexCount;
     if (idxCount != 0) {
@@ -295,7 +251,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
             mdl::Mdl(m)->indexBuffer)->Unlock();
     }
 
-    // ---- materials --------------------------------------------------------
     _read(fh, &mdl::Mdl(m)->materialCount,
           sizeof mdl::Mdl(m)->materialCount);
     const std::uint32_t matCount = mdl::Mdl(m)->materialCount;
@@ -329,7 +284,7 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                     ConvertMaterialName(subBytes, texName, wide1, 0x100,
                                         dirW);
                     swprintf_s(wide2, 0x180, L"%s%s", dirW, wide1);
-                    LoadTextureShared(subBytes, wide2);      // 0x407490
+                    LoadTextureShared(subBytes, wide2);      
                     ConvertMaterialName(subBytes, star + 1, wide1, 0x100,
                                         dirW);
                     swprintf_s(wide3, 0x180, L"%s%s", dirW, wide1);
@@ -349,7 +304,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
 
-    // ---- bones ------------------------------------------------------------
     _read(fh, &model.boneCount, 2);
     const std::uint32_t boneCount = model.boneCount;
     rinmotiondance::mdl::BoneRecord* bones = static_cast<rinmotiondance::mdl::BoneRecord*>(
@@ -387,21 +341,20 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         std::int16_t tail = 0;
         _read(fh, &tail, 2);
         bone->tailBone = tail;
-        _read(fh, &bone->type, 1);       // type
+        _read(fh, &bone->type, 1);       
         std::int16_t tailIdx = 0;
         _read(fh, &tailIdx, 2);
         bone->tailIdx = tailIdx;
         _read(fh, bone->position, sizeof(bone->position));
-        bone->rotQuat[3] = 1.0f;    // scale x/y
+        bone->rotQuat[3] = 1.0f;    
         bone->rotQuat2[3] = 1.0f;
-        for (int f = 0; f < 16; ++f)  // +180 identity (x64 0x7FF7CB4D34B0)
+        for (int f = 0; f < 16; ++f)  
             bone->matWorld[f] = (f % 5 == 0) ? 1.0f : 0.0f;
         bone->slotIndex = -1;
         bone->rigidIdx = -296;
         bone->flags |= rinmotiondance::mdl::kBoneFlagVisible;
     }
 
-    // ---- IK chains --------------------------------------------------------
     _read(fh, &model.ikChainCount, 2);
     const std::uint32_t ikCount = model.ikChainCount;
     if (ikCount > 0) {
@@ -425,9 +378,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
 
-    // physics-driven bone sweep (0x4C0258, C precedence kept verbatim:
-    // (parent flagged) || ((RotateGrant || (inherit-flags && physMode==2))
-    // && tail is Ik/UnderIk) - RotateGrant is NOT gated by physMode)
     for (std::uint32_t i = 0; i < boneCount; ++i) {
         rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         bone->hasFlag = 0;
@@ -445,15 +395,8 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
              tailType == rinmotiondance::mdl::BoneType::UnderIk);
         bone->hasFlag = (arm1 || arm2) ? 1 : 0;
     }
-    InitBoneSortOrder(m);                                    // x86 0x490070; bone_sort.cpp
+    InitBoneSortOrder(m);                                    
 
-    // ---- morphs -----------------------------------------------------------
-    // (original 0x4C0330..0x4C0613: per-morph offset table of 16-byte
-    //  entries is allocated at +92 and read from the file - four separate
-    //  4-byte reads.  No group byte and no bone-style init; the earlier
-    //  port invented both, writing past the 136-byte records and
-    //  desynchronising the stream - heap corruption with real models,
-    //  docs/ARCHITECTURE.md §8.)
     _read(fh, &model.morphCount, 2);
     const std::uint32_t morphCount = model.morphCount;
     if (morphCount > 0) {
@@ -483,9 +426,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
             }
         }
     }
-    // first-morph table shared copy (this[2171] count / this[2181] table),
-    // then remap every later morph's entry index through morph 0's table
-    // (0x4C05EB: entry[0] = firstTable[16 * entry[0]]).
     {
         mdl::MorphRecord* morphs = mdl::Morphs(m);
         if (morphs != nullptr) {
@@ -509,7 +449,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
 
-    // ---- display frames / face groups -------------------------------------
     _read(fh, &model.facialFrameCount, sizeof(model.facialFrameCount));
     if (model.facialFrameCount != 0) {
         model.displayFrames = static_cast<mdl::FrameGroup*>(
@@ -547,7 +486,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
             _read(fh, groups[i].name, sizeof(groups[i].name));
     }
 
-    // ---- rigid-body group list --------------------------------------------
     _read(fh, &model.rigidBodyCount, sizeof(model.rigidBodyCount));
     const std::uint32_t rbGroupCount = model.rigidBodyCount;
     mdl::FrameGroup*& rbGroups = mdl::RigidGroups(m);
@@ -565,7 +503,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         strcpy_s(rb.name, sizeof(rb.name), bones[rb.targetIndex].name);
     }
 
-    // ---- English names section --------------------------------------------
     std::int8_t hasEn = 0;
     const int enRead = _read(fh, &hasEn, 1);
     if (hasEn == 0 || enRead == 0) {
@@ -634,7 +571,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         strcpy_s(rbGroups[i].nameEn, sizeof(rbGroups[i].nameEn),
                  bones[rbGroups[i].targetIndex].nameEn);
 
-    // ---- toon references --------------------------------------------------
     if (enRead != 0) {
         auto* toon = model.pmdToonFileNames;
         for (int i = 0; i < 10; ++i) {
@@ -664,13 +600,11 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
 
-    // ---- rigid bodies + joints (physics) ----------------------------------
-    // gated on the rigid-count read itself (original: _read(...) != -1)
     const int rbRead = _read(fh, &model.rigidCount, sizeof(model.rigidCount));
     const std::uint32_t rigidCount = model.rigidCount;
     if (rbRead != -1) {
         PhysicsScene* physScene = mdl::Mdl(m)->scenePtr;
-        SetPhysicsMode(m, 0, nullptr, 0);                    // 0x4A9220
+        SetPhysicsMode(m, 0, nullptr, 0);                    
         SetPhysicsMode(m, 1, nullptr, 0);
         mdl::RigidRecord* rigids = static_cast<mdl::RigidRecord*>(
             operator new(sizeof(mdl::RigidRecord) *
@@ -719,7 +653,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                     bp = reinterpret_cast<const float*>(&bones[boneIdx].position[0]);
                 d3dx->translation(&tmp, bp[0], bp[1], bp[2]);
                 d3dx->multiply(&mat, &mat, &tmp);
-                // create the Bullet body (shape + limits + world add)
                 void* bodyOut[2] = {nullptr, nullptr};
                 CreateRigidBody(physScene, bodyOut, rigid.shape, rigid.size[0],
                                 rigid.size[1], rigid.size[2],
@@ -727,19 +660,13 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                                 rigid.mode, rigid.mass, rigid.linearDamping,
                                 rigid.angularDamping, rigid.restitution,
                                 rigid.friction, static_cast<char>(rigid.group),
-                                rigid.noCollapse); // 0x4064F0
+                                rigid.noCollapse); 
                 rigid.keyData = bodyOut[0];
                 rigid.body = bodyOut[1];
                 const std::int32_t bi = rigid.boneIndex;
                 if (rigid.mode > 0 && bi >= 0)
                     bones[bi].hasRigidBody = 1;
                 D3DXMATRIXF inv, t2;
-                // The original indexes the x86 bone record as float[77..79]
-                // (its `position` member).  That indexing crosses the two
-                // widened text pointers on x64, so it reads the tail of
-                // matExtra instead of the rest position.  The inverse rigid
-                // transform is also the basis for every joint anchor and for
-                // physics readback; use the ABI-independent member here.
                 const mdl::BoneRecord& linkedBone =
                     bones[boneIdx < 0 ? 0 : boneIdx];
                 const float* bonePosition = linkedBone.position;
@@ -768,12 +695,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         for (std::uint32_t i = 0; i < jointCount; ++i) {
             mdl::JointRecord& joint = joints[i];
             _read(fh, joint.name, sizeof(joint.name));
-            // 26 four-byte fields in the original's shuffled order
-            // (0x4C14FB..0x4C1749).  The leading 0 entry in an earlier
-            // port silently replaced this name read, shorting each record
-            // by 16 bytes and desynchronising the stream - wild rigid
-            // indices, AV in memcpy; found by desktop testing with
-            // Luka_Megurine.pmd, docs/ARCHITECTURE.md §8.
             _read(fh, &joint.rigidA, sizeof(joint.rigidA));
             _read(fh, &joint.rigidB, sizeof(joint.rigidB));
             _read(fh, joint.position, sizeof(joint.position));
@@ -793,7 +714,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                 D3DXMATRIXF ma, mb, rot;
                 std::memcpy(&ma, rigidA.invTransform, sizeof(ma));
                 std::memcpy(&mb, rigidB.invTransform, sizeof(mb));
-                // pivot A
                 const float* point = joint.position;
                 float pivotA[3], pivotB[3];
                 TransformJointPointOriginal(pivotA, point, &ma.m[0][0]);
@@ -804,8 +724,6 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                     std::sqrt(ax * ax + ay * ay + az * az);
                 const float distB =
                     std::sqrt(bx * bx + by * by + bz * bz);
-                // 过拉伸限位半径：限位范数叠加两锚点距离
-                // （x64 @0x7FF7CB4D51B0..0x4D526D，见 JointRadiusBound）
                 joint.radiusBound = JointRadiusBound(joint.limits, distA, distB);
                 d3dx->rotZ(&rot, joint.rotation[2]);
                 D3DXMATRIXF t2;
@@ -845,14 +763,13 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
                     joint.limits[9], joint.limits[10], joint.limits[11],
                     joint.springs[0], joint.springs[1], joint.springs[2],
                     joint.springs[3], joint.springs[4],
-                    joint.springs[5]);  // 0x406010
+                    joint.springs[5]);  
             }
         }
     }
 
     _close(fh);
 
-    // ---- animation pools --------------------------------------------------
     {
         mdl::BoneKeys(m) = static_cast<mdl::BoneKey*>(
             operator new(sizeof(mdl::BoneKey) * mdl::kBoneKeyCapacity));
@@ -904,8 +821,8 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
         }
     }
     model.loadComplete = 1;
-    PostLoadInit(m);                                          // 0x49C850
+    PostLoadInit(m);                                          
     return true;
 }
 
-}  // namespace rinmotiondance
+}  

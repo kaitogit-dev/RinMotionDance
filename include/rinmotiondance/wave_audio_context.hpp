@@ -28,9 +28,6 @@ struct WaveAudioContext {
     std::int32_t readCursor;
     std::int32_t dataOffset;
     HANDLE fileHandle;
-    // Shared 0=running, 1=stop requested, 2=worker completed protocol.
-    // Interlocked access preserves the original state machine while making
-    // publication of streamingBuffer=nullptr safe across the two threads.
     LONG stopFlag;
     std::int32_t failureCount;
     std::int32_t waveformColumns;
@@ -53,4 +50,4 @@ static_assert(offsetof(WaveAudioContext, path) == 0x30, "x86 wave path");
 static_assert(offsetof(WaveAudioContext, volume) == 0x258, "x86 wave volume");
 #endif
 
-}  // namespace rinmotiondance
+}  

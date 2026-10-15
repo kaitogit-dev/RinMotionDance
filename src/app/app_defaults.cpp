@@ -1,11 +1,3 @@
-// ===========================================================================
-// VA 0x0040A730 - MMDApp::InitDefaults  (original: sub_40A730)
-// ===========================================================================
-// Field-by-field port of the post-construction default initializer called
-// from WinMain right after the object is zeroed.  Write order follows the
-// decompilation exactly; fields whose semantics are still unrecovered keep
-// their layout placeholder names (vNNN / aNNNN).
-// ===========================================================================
 #include <cstdio>
 #include <cstring>
 
@@ -59,7 +51,6 @@ void MMDApp::InitDefaults() {
     s.CurrentFrame() = 0;
     s.PendingTimelineSelectionRow() = TimelineSelectionRow::None;
 
-    // 6-iteration light-default loop
     for (int i = 0; i < 6; ++i) {
         state.lightA[i] = static_cast<unsigned char>(-64);
         state.lightB[i] = 0;
@@ -114,16 +105,6 @@ void MMDApp::InitDefaults() {
     s.EnhancedModelDirty() = 0;
     state.frameCopyDialog = nullptr;
     state.rigidScratchArray = nullptr;
-    // Frame-config trio 0xA0B00/0xA0B04/0xA0B08 (start frame / end frame /
-    // fps).  Original InitDefaults leaves these alone - the ONLY writer in
-    // the whole binary is the frame-range dialog OK handler (0x40F3C4:
-    // atol/atol/atof of edits 609/610/611, whose fps edit the dialog init
-    // fills with "30").  A fresh app therefore runs with 0/0/0.0f: the
-    // frame-step target formula is gated behind 0x9ED90, which only that
-    // dialog arms, and the fps-caption display divides by zero exactly
-    // like the original's __ftol2_sse (-> INT_MIN) into the still-null
-    // HWND 0xA0D24 (a no-op SetWindowTextW).  The phase-15 30.0f seed
-    // was reclaimed in phase 19.
     s.PlaybackPhysicsMode() = 2;
     state.rigidBodyDisplayEnabled = 0;
     s.PhysicsResetPending() = 0;
@@ -141,21 +122,18 @@ void MMDApp::InitDefaults() {
     state.recordPlaybackStartPending = 0;
     state.groundGridIndices = nullptr;
     state.spriteOverlayPrimitiveCount = 0;
-    // fcn_0040a730 lines 161-182: six dwords zeroed in two blocks of three
-    // around the RecentFile sprintf calls - 0x9EE20/0x9EE1C/0x9EE18 first,
-    // then 0x9EE14/0x9EE10/0x9EE0C.
-    state.sceneFontTexture = nullptr;      // 0x9EE20
-    state.textOverlayPrimitiveCount = 0;   // 0x9EE1C
-    state.overlayVertices = nullptr;       // 0x9EE18
+    state.sceneFontTexture = nullptr;      
+    state.textOverlayPrimitiveCount = 0;   
+    state.overlayVertices = nullptr;       
     sprintf_s(RecentFile(0), 0x100, "%s", g_Locale);
     sprintf_s(RecentFile(1), 0x100, "%s", g_Locale);
     sprintf_s(RecentFile(2), 0x100, "%s", g_Locale);
-    state.overlayTexture = nullptr;        // 0x9EE14
-    state.spriteOverlayPrimitiveCount = 0; // 0x9EE10
-    state.spriteOverlayVertices = nullptr;        // 0x9EE0C
+    state.overlayTexture = nullptr;        
+    state.spriteOverlayPrimitiveCount = 0; 
+    state.spriteOverlayVertices = nullptr;        
     state.lineOverlayPrimitiveCount = 0;
     state.groundPlaneVertices = nullptr;
-    s.AviBackgroundTexture() = nullptr;                    // original writes twice
+    s.AviBackgroundTexture() = nullptr;                    
     s.PictureOverlayVertices() = nullptr;
     state.separateWindowMouseSeen = 0;
     s.RecordingWindow() = nullptr;
@@ -180,7 +158,7 @@ void MMDApp::InitDefaults() {
     state.activeRenderPass = 0;
     state.renderPassCount = 0;
     s.FullscreenMode() = 0;
-    s.SavedPlacement().length = sizeof(WINDOWPLACEMENT);  // 44
+    s.SavedPlacement().length = sizeof(WINDOWPLACEMENT);  
     state.fullscreenFlagsSaved = 0;
     state.stereoActivated = 0;
     state.recordFullscreenActive = 0;
@@ -204,7 +182,7 @@ void MMDApp::InitDefaults() {
     state.globalTrackSelected[1] = 0;
     state.globalTrackSelected[2] = 0;
     state.globalTrackSelected[3] = 0;
-    state.selectionActiveLatch = 0;   // x64 0x7FF7CB42CA4C: `mov [app+0xA137C], di`
+    state.selectionActiveLatch = 0;   
     state.automaticFrameAdvanceEnabled = 0;
     state.messageSeen = 1;
     s.TimelineSelectionChanged() = 0;
@@ -216,8 +194,6 @@ void MMDApp::InitDefaults() {
     s.FrameNormalization() = 100;
     state.axisMeshObject = nullptr;
 
-    // 16-float colour cluster: zero all, then identity diagonals at
-    // rows 0/2/4/6 (original writes 1.0 at +0/+20/+40/+60).
     for (float& v : state.cameraAttachmentBasis)
         v = 0.0f;
     state.cameraAttachmentBasis[15] = 1.0f;
@@ -242,4 +218,4 @@ void MMDApp::InitDefaults() {
     state.a06B6 = 0;
 }
 
-}  // namespace rinmotiondance
+}  

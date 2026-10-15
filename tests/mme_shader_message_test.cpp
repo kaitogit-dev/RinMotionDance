@@ -1,5 +1,3 @@
-// Run the production technique/pass scanner with real D3DX effects. Only the
-// modal Win32 boundary is replaced; logging and phase suppression stay real.
 #include <windows.h>
 #include <cstdio>
 #include <string>
@@ -101,8 +99,6 @@ int main() {
     while ((pos=history.find("Error: vs_3_0",pos)) != std::string::npos) { ++count; ++pos; }
     Check(count==8, "suppressed dialogs still log every error");
 
-    // Exercise the public loader and selector after the diagnostic. A mixed
-    // pass can be D3DX-invalid while both versions fit the hardware caps.
     std::string failureLog;
     mme::SasEffect* parsed = mme::SasParse(effect, "load.fx", device, &failureLog);
     Check(parsed != nullptr, "pure shader mixing does not reject the effect");
@@ -138,8 +134,6 @@ int main() {
             Check(mme::SasSelectTechnique(parsed, 0, 0, false, false, false, &valid)==expected &&
                 valid==expectedValid, "selector uses D3DX validation or caps, not mixing");
         }
-        // An invalid caps result must still make the selector try the next
-        // candidate, even though mixing is no longer a fatal parse error.
         if (parsed->techniques.size()>1) {
             parsed->techniques[0].shaderCapsOk = false;
             parsed->techniques[1].shaderCapsOk = true;

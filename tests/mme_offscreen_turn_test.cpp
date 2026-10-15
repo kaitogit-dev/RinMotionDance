@@ -41,7 +41,6 @@ struct Runtime {
 };
 }
 
-// Production repeat-boundary and first-draw regression for a real Ray MaterialMap turn.
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::fprintf(stderr, "Usage: mme_offscreen_turn_test.exe <absolute ray.fx path>\n");
@@ -113,9 +112,6 @@ int main(int argc, char** argv) {
     ctx->lastRepeatCount = 1;
     REQUIRE_HR(device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE));
     REQUIRE_HR(device->BeginScene());
-    // Exercise the actual repeat boundary; its private ApplyPassRecord stages
-    // MaterialMap, depth and its DefaultEffect rows. With one selected turn,
-    // lastRepeatCount == size avoids unrelated prior-turn resume work.
     mme::MmePassBookkeeping(ctx);
     Com<IDirect3DSurface9> before;
     REQUIRE_HR(device->GetRenderTarget(0, &before.p));
@@ -123,7 +119,6 @@ int main(int argc, char** argv) {
     std::printf("After repeat boundary: MaterialMap RT=%d, MaterialMap rows=%d\n",
         before.p == material->surface, rowsBefore);
     if (before.p != material->surface || !rowsBefore) return 1;
-    // A declared resource must not bypass its explicit self=hide row.
     if (!mme::MmeOffscreenDefaultEffectHides(carrier) ||
         mme::MmeFindMaterialBinding(0, carrier, -1, true) != nullptr) {
         std::fprintf(stderr, "Carrier incorrectly inherited root binding despite self=hide\n");
@@ -145,7 +140,6 @@ int main(int argc, char** argv) {
     }
     std::printf("Sky child effects loaded: %s; %s\n",
         skyBinding->effectPath.c_str(), namedSkyboxBinding->effectPath.c_str());
-    // main_default resolves the base assignment into a separate turn instance.
     const auto savedRows = material->defaultEffectMap;
     sky->setEffectFile(path);
     sky->setSubsetEffect(3, path);
@@ -172,17 +166,11 @@ int main(int argc, char** argv) {
     std::fputs(mme::SasGetLog(sas), stdout);
     REQUIRE_HR(device->EndScene());
     if (sas->runFailed) return 1;
-    // This is the intended invariant, so the current bug produces a failing
-    // regression rather than a test that blesses the broken implementation.
     if (after.p != material->surface || !rowsAfter) {
         std::fprintf(stderr, "Offscreen turn lost its render target or DefaultEffect rows before object drawing\n");
         return 1;
     }
 
-    // The next repeat boundary finishes the preceding offscreen texture with
-    // GenerateMipSubLevels. It must not execute ray's scene preamble again.
-    // A sentinel in ScnMap makes that erroneous Clear=Color observable even
-    // when ApplyPassRecord subsequently rebinds MaterialMap and hides it.
     Com<IDirect3DSurface9> sentinelReadback;
     D3DSURFACE_DESC sceneDesc = {};
     REQUIRE_HR(scene->surface->GetDesc(&sceneDesc));
@@ -199,7 +187,7 @@ int main(int argc, char** argv) {
     REQUIRE_HR(device->SetRenderTarget(0, material->surface));
     ctx->renderPassList.emplace_back(carrier, material, 1);
     ctx->lastRepeatCount = 1;
-    ctx->backgroundDrawnFlag = 1; // Previous turn's post-effects are complete.
+    ctx->backgroundDrawnFlag = 1; 
     REQUIRE_HR(device->BeginScene());
     mme::MmePassBookkeeping(ctx);
     REQUIRE_HR(device->EndScene());

@@ -13,7 +13,6 @@ def main():
     parser.add_argument("fixture", type=Path)
     parser.add_argument("runtime", choices=("d3dx9_32", "d3dx9_43"))
     args = parser.parse_args()
-    # Child inherits the error mode: a loader error must not open a modal UI.
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     previous = kernel32.SetErrorMode(0x0001 | 0x0002 | 0x8000)
     try:

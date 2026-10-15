@@ -1,10 +1,3 @@
-// ===========================================================================
-// Porting-era diagnostics: vertex-batch capture under
-// RINMOTIONDANCE_VB_DUMP_DIR for A/B comparison against the original
-// renderers.  Compiled only with -DRINMOTIONDANCE_DIAG (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub below keeps the call
-// sites valid and inlines away to nothing.
-// ===========================================================================
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
@@ -46,9 +39,6 @@ inline void DumpVertexBatch(const char* name, const void* bytes,
             return;
     }
 
-    // IDA removes each original breakpoint after its first hit. Mirror that
-    // capture point so a six-second UI wait cannot replace the first-frame
-    // batch with a later FPS/timeline frame.
     static LONG spriteDumped = 0;
     static LONG textDumped = 0;
     static LONG lineDumped = 0;
@@ -93,11 +83,11 @@ inline void DumpVertexBatch(const char* name, const void* bytes,
     }
 }
 
-#else  // !RINMOTIONDANCE_DIAG
+#else  
 
 inline void DumpVertexBatch(const char*, const void*, std::uint32_t,
                             std::size_t) {}
 
-#endif  // RINMOTIONDANCE_DIAG
+#endif  
 
-}  // namespace rinmotiondance
+}  

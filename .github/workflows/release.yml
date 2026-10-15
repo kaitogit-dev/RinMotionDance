@@ -65,7 +65,6 @@ jobs:
           $archive = Join-Path $env:RUNNER_TEMP 'directx_Jun2010_redist.exe'
           $unpack = Join-Path $env:RUNNER_TEMP 'directx-june2010'
           New-Item -ItemType Directory -Force $unpack | Out-Null
-          # Microsoft Download Center, id=8109. Keep the exact tested payload.
           Invoke-WebRequest 'https://download.microsoft.com/download/8/4/a/84a35bf1-dafe-4ae8-82af-ad2ae20b6b14/directx_Jun2010_redist.exe' -OutFile $archive
           if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '053F76DCBB28802E23341B6A787E3B0791C0FA5C8D4D011B1044172DBF89C73B') {
             throw 'Unexpected DirectX redistributable payload'

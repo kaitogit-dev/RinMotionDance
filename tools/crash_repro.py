@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-# Drag-drop crash reproducer with built-in debugger.
-#   python crash_repro.py --exe <path> [--cwd <dir>] [--label name]
-#        --drop <file> --wait <sec>   (repeatable pairs, in order)
-#        --final <sec>  (how long to survive after last drop)
-# Runs the exe under DEBUG_ONLY_THIS_PROCESS, finds its main window,
-# posts WM_DROPFILES for each --drop after --wait seconds, and records
-# first-chance + second-chance exceptions with CONTEXT/stack/module map.
-# Exit code: 0 = survived, 2 = crashed (see crashdump/<label>.txt), 3 = no window.
 import ctypes, ctypes.wintypes as wt, struct, sys, time, os, argparse
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -23,7 +15,7 @@ OUTPUT_DEBUG_STRING_EVENT = 8
 WM_DROPFILES = 0x0233
 GMEM_MOVEABLE = 0x0002
 GMEM_ZEROINIT = 0x0040
-CONTEXT_FULL_AMD64 = 0x100003  # CONTROL|INTEGER (avoid 16-alignment-sensitive FltSave)
+CONTEXT_FULL_AMD64 = 0x100003  
 TH32CS_SNAPMODULE = 0x0008
 LIST_MODULES_ALL = 0x03
 
@@ -142,7 +134,7 @@ def post_drop(hwnd, paths):
 
 def module_map(hproc):
     snap = k32.CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0)
-    k32.CloseHandle(snap)  # not used; psapi below
+    k32.CloseHandle(snap)  
     arr_type = ctypes.c_void_p * 1024
     arr = arr_type()
     needed = wt.DWORD()
@@ -266,10 +258,8 @@ def main():
             path, w = schedule[drop_idx]
             if now >= (sum(x[1] for x in schedule[:drop_idx]) + 12) if drop_idx == 0 else False:
                 pass
-        # schedule: first drop after 12s from window found, subsequent after their wait
         if hwnd is None and now > 40:
             print("no window found"); k32.TerminateProcess(pi.hProcess, 0); sys.exit(3)
-        # arm the hardware write watchpoint on the UI thread
         if (args.watch_off >= 0 and not watch_armed and main_tid
                 and now >= args.arm_at):
             mods = module_map(pi.hProcess)
@@ -345,11 +335,10 @@ def main():
                 main_tid = ev.dwThreadId
                 cont = DBG_CONTINUE
             elif code == 0x80000004 and watch_armed:
-                # hardware watchpoint hit: log the writer and resume
                 hth = k32.OpenThread(0x1FFFFF, False, ev.dwThreadId)
                 cb = ctypes.create_string_buffer(4096)
                 ctx = CONTEXT.from_buffer(cb)
-                ctx.ContextFlags = 0x100017  # CONTROL|INTEGER|DEBUG_REGISTERS
+                ctx.ContextFlags = 0x100017  
                 k32.GetThreadContext(hth, ctypes.byref(ctx))
                 if ctx.Dr6 & 1:
                     val = rpm(pi.hProcess, watch_addr, 4)
@@ -363,14 +352,13 @@ def main():
                         first_chances.append("watch rip=%s val=%d"
                                              % (resolve(ctx.Rip, mods), v))
                 ctx.Dr6 = 0
-                ctx.EFlags |= 0x10000  # RF: execute the write once more
+                ctx.EFlags |= 0x10000  
                 k32.SetThreadContext(hth, ctypes.byref(ctx))
                 k32.CloseHandle(hth)
                 cont = DBG_CONTINUE
             elif first == 0:
-                # second chance: fatal
                 hthread = None
-                snap = k32.OpenThread(0x1FFFFF, False, ev.dwThreadId)  # THREAD_ALL_ACCESS
+                snap = k32.OpenThread(0x1FFFFF, False, ev.dwThreadId)  
                 with open(outpath, "w", encoding="utf-8") as f:
                     dump_crash(f, pi.hProcess, snap, ev, args.label, first_chances)
                 print("CRASH second-chance 0x%08X at 0x%X -> %s" % (code, addr, outpath))
@@ -390,7 +378,6 @@ def main():
             cont = DBG_CONTINUE
         elif ev.dwDebugEventCode == EXIT_PROCESS_DEBUG_EVENT:
             print("process exited on its own at %.1fs" % (time.time() - t0))
-            # distinguish clean exit vs crash-exit: exit code in u
             u = bytes(ev.u)
             ec, = struct.unpack_from("<I", u, 0)
             print("exit code 0x%08X" % ec)

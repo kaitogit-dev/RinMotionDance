@@ -1,24 +1,3 @@
-// ===========================================================================
-// MikuMikuDance - per-model sub-record types (morph / rigid / joint)
-// ===========================================================================
-// Layout doctrine: source-level structs whose x86 layout is byte-pinned to
-// the x86 original (loader call sites) and whose x64 layout is the
-// compiler's natural regrowth - verified against the x64 original binary
-// (MikuMikuDance.exe x64, PMX loader sub_1400A9AC0 / PMD loader
-// sub_1400B2670, mined 2026-08-31):
-//
-//   record   x86   x64   evidence
-//   morph     136   192   stride 3*64 in UI loops (sub_14003F550),
-//                          morph+0x60 byte == panel/type field
-//   rigid     172   192   alloc `mov eax, 0C0h; mul rdx` @0x1400B0913,
-//                          table @model+0x3568, count @model+0x3578
-//   joint     140   152   alloc `imul r8, 98h` @0x1400B1335, rigidA/B
-//                          stored @+0x28/+0x2C, table @model+0x3570
-//
-// Raw PMD vertex records contain no pointers, so their stride is unchanged
-// on both architectures. PMX and PMD share the 2292-byte material work
-// record; its recovered fields are defined below.
-// =========================================================================//
 #pragma once
 
 #include <cstddef>
@@ -34,8 +13,6 @@
 
 namespace rinmotiondance::mdl {
 
-// PMD vertex and vertex-morph records contain no pointers. Their ABI is
-// therefore unchanged between the original x86 program and its x64 twin.
 struct PmdVertex {
     float position[3];
     float normal[3];
@@ -52,9 +29,6 @@ struct PmdVertexMorphEntry {
 };
 static_assert(sizeof(PmdVertexMorphEntry) == 16, "PMD vertex morph ABI");
 
-// PMX normalises variable-width file indices to int32_t in its in-memory
-// morph tables.  These records are allocation units used by the loader, not
-// direct casts of the variable-width on-disk entries.
 struct PmxGroupMorphEntry {
     std::int32_t morphIndex;
     float weight;
@@ -68,7 +42,6 @@ struct PmxBoneMorphEntry {
 };
 static_assert(sizeof(PmxBoneMorphEntry) == 32, "PMX bone morph ABI");
 
-// Per-model accumulation record used while applying PMX bone morphs.
 struct BoneMorphOffsetRecord {
     std::int32_t boneIndex;
     float translation[3];
@@ -83,8 +56,6 @@ struct PmxUvMorphEntry {
 };
 static_assert(sizeof(PmxUvMorphEntry) == 20, "PMX UV morph ABI");
 
-// The original expands PMX's contiguous 28 material-morph floats into this
-// renderer layout, leaving two words zero at the original's internal gaps.
 struct MaterialMorphChannels {
     float diffuse[4];
     float specular[3];
@@ -134,8 +105,6 @@ static_assert(sizeof(PmxMaterialMorphEntry) == 128,
 static_assert(offsetof(PmxMaterialMorphEntry, channels) == 8,
               "PmxMaterialMorphEntry.channels ABI");
 
-// Load-time base data and the additive/multiplicative material-morph pools
-// use the same channel layout but do not carry a material index or operation.
 struct MaterialMorphPool {
     unsigned char prefix[8];
     MaterialMorphChannels channels;
@@ -152,13 +121,6 @@ enum class PmxWeightType : std::uint8_t {
     qdef = 4,
 };
 
-// PMX uses a loader-local working vertex rather than retaining its variable
-// length on-disk form. Additional UVs are stored component first:
-// additionalUvByComponent[c][uv] is written as dst[8 + 4 * uv + c].
-// PMX stores SDEF as C, R0, R1.  The loader keeps C unchanged and replaces
-// R0/R1 with offsets from the weighted SDEF pivot, exactly as consumed by the
-// x64 vertex worker.  This makes the persistent representation explicit
-// without exposing its byte layout to skinning code.
 struct PmxSdefData {
     float center[3];
     float r0Offset[3];
@@ -177,12 +139,8 @@ struct PmxVertex {
     float weight[4];
     PmxSdefData sdef;
     float edgeScale;
-    // Set after PMX vertex input is complete. The x64 common skinning tail
-    // tests this marker to choose the PMX material-driven outline expansion.
     std::uint8_t hasPmxEdgeData;
     unsigned char workPadding[3];
-    // These supply Z/W in a UV-morph base record. Their producer is pending
-    // recovery, so the name deliberately makes no stronger claim.
     float uvMorphBaseZW[2];
     std::int32_t materialIndex;
 };
@@ -200,20 +158,13 @@ static_assert(offsetof(PmxVertex, hasPmxEdgeData) == 172,
 static_assert(offsetof(PmxVertex, uvMorphBaseZW) == 176, "PMX UV base ZW");
 static_assert(offsetof(PmxVertex, materialIndex) == 184, "PMX material");
 
-// GPU-facing vertex records. The main record has zero to four extra UV
-// vectors appended after base; the x64 worker selection fixes its stride.
 struct SkinnedVertexBase {
     float position[3];
     float normal[3];
-    // Initially filled by the PMX loader, then refreshed from PmxVertex by
-    // the common tail shared by all no-additional-UV skinning branches.
     float uv[2];
 };
 static_assert(sizeof(SkinnedVertexBase) == 32, "base GPU vertex ABI");
 
-// The five PMX workers select one of these concrete records by additional UV
-// count. Source storage is component-first for loader convenience, whereas
-// the GPU record keeps each additional UV as its contiguous float4.
 template <std::size_t AdditionalUvCount>
 struct SkinnedVertex {
     SkinnedVertexBase base;
@@ -230,9 +181,6 @@ struct EdgeVertex {
 };
 static_assert(sizeof(EdgeVertex) == 16, "edge GPU vertex ABI");
 
-// Renderer material working record. It is deliberately not a PMX on-disk
-// material: the loader mirrors and rearranges file data and caches texture
-// paths here. The padding preserves the original 2292-byte allocation ABI.
 struct ModelMaterialRecord {
     float diffuse[4];
     float diffuseMirror[4];
@@ -268,7 +216,6 @@ static_assert(offsetof(ModelMaterialRecord, toonPath) == 1216,
 static_assert(offsetof(ModelMaterialRecord, flags) == 2240,
               "ModelMaterialRecord.flags ABI");
 
-// ---- morph records --------------------------------------------------------
 enum class MorphPanel : std::uint8_t {
     system = 0,
     eyebrow = 1,
@@ -278,77 +225,70 @@ enum class MorphPanel : std::uint8_t {
 };
 
 struct MorphRecord {
-    char name[20];              // 0    SJIS
-    char nameEn[20];            // 20
-    wchar_t* jpText;            // 40   read-text buffer (PMX)
-    wchar_t* enText;            // 44
-    float value;                // 48   current morph value (keyframes)
-    std::int32_t offsetCount;   // 52   generic count / cleared per type
-    std::int32_t uvCounts[5];   // 56   uv1..uv5 entry counts
-    std::int32_t boneCount;     // 76
-    std::int32_t groupCount;    // 80
-    std::int32_t materialCount; // 84
-    MorphPanel panel;           // 88
-    std::uint8_t type;          // 89   0 group 1 vertex 2 bone 3-7 uv 8 mat
-    PmdVertexMorphEntry* vertexEntries;  // 92   16-byte entries
-    PmxBoneMorphEntry* boneEntries;     // 96   32-byte entries
-    PmxGroupMorphEntry* groupEntries;   // 100  8-byte entries
-    PmxUvMorphEntry* uvEntries[5];      // 104  20-byte entries per family
-    PmxMaterialMorphEntry* materialEntries; // 124  128-byte entries
-    unsigned char* impulseEntries;  // 128  188-byte entries (type 9)
-    unsigned char* impulse2Entries; // 132  (type 10, unused by v9.32)
+    char name[20];              
+    char nameEn[20];            
+    wchar_t* jpText;            
+    wchar_t* enText;            
+    float value;                
+    std::int32_t offsetCount;   
+    std::int32_t uvCounts[5];   
+    std::int32_t boneCount;     
+    std::int32_t groupCount;    
+    std::int32_t materialCount; 
+    MorphPanel panel;           
+    std::uint8_t type;          
+    PmdVertexMorphEntry* vertexEntries;  
+    PmxBoneMorphEntry* boneEntries;     
+    PmxGroupMorphEntry* groupEntries;   
+    PmxUvMorphEntry* uvEntries[5];      
+    PmxMaterialMorphEntry* materialEntries; 
+    unsigned char* impulseEntries;  
+    unsigned char* impulse2Entries; 
 };
 
-// ---- rigid body records ---------------------------------------------------
 struct RigidRecord {
-    char name[20];              // 0    SJIS
-    wchar_t* jpText;            // 20   read-text buffer (PMX)
-    wchar_t* enText;            // 24
-    std::int32_t boneIndex;     // 28
-    std::uint8_t group;         // 32
+    char name[20];              
+    wchar_t* jpText;            
+    wchar_t* enText;            
+    std::int32_t boneIndex;     
+    std::uint8_t group;         
     std::uint8_t padGroup;
-    std::uint16_t noCollapse;   // 34
-    std::uint8_t shape;         // 36   0 sphere 1 box 2 capsule
+    std::uint16_t noCollapse;   
+    std::uint8_t shape;         
     unsigned char padShape[3];
-    float size[3];              // 40
-    float position[3];          // 52
-    float rotation[3];          // 64
-    float mass;                 // 76
-    std::uint8_t mode;          // 80   0 static 1 dynamic 2 dynamic-bone
-    std::uint8_t kinematicFlag; // 81   set when mode == 2
-    std::uint8_t staticFlag;    // 82   set when mode == 0
+    float size[3];              
+    float position[3];          
+    float rotation[3];          
+    float mass;                 
+    std::uint8_t mode;          
+    std::uint8_t kinematicFlag; 
+    std::uint8_t staticFlag;    
     unsigned char padMode;
-    void* keyData;              // 84   CreateRigidBody out[0]
-    float linearDamping;        // 88
-    float angularDamping;       // 92
-    float restitution;          // 96
-    float friction;             // 100
-    void* body;                 // 104  CreateRigidBody out[1] (btRigidBody*)
-    float invTransform[16];     // 108  0x40 inverse bone-relative matrix
+    void* keyData;              
+    float linearDamping;        
+    float angularDamping;       
+    float restitution;          
+    float friction;             
+    void* body;                 
+    float invTransform[16];     
 };
 
-// ---- joint records --------------------------------------------------------
 struct JointRecord {
-    char name[20];              // 0    SJIS
-    wchar_t* jpText;            // 20   read-text buffer (PMX)
-    wchar_t* enText;            // 24
-    std::int32_t rigidA;        // 28
-    std::int32_t rigidB;        // 32
-    float position[3];          // 36
-    float rotation[3];          // 48
-    // The original stores the four limit vectors in a shuffled order
-    // (see the PMX loader reads: 72,76,80 then 60,64,68 then 96,100,104
-    // then 84,88,92 on x86).
-    float limits[12];           // 60
-    float springs[6];           // 108
-    std::int32_t constraint;    // 132  CreatePhysJoint UID (int, NOT a
-                                //      pointer - x64 stores edx @+0x90)
-    float radiusBound;          // 136  distA + distB + limit radius
+    char name[20];              
+    wchar_t* jpText;            
+    wchar_t* enText;            
+    std::int32_t rigidA;        
+    std::int32_t rigidB;        
+    float position[3];          
+    float rotation[3];          
+    float limits[12];           
+    float springs[6];           
+    std::int32_t constraint;    
+    float radiusBound;          
 };
 
-}  // namespace rinmotiondance::mdl
+}  
 
-// ---- x86 pins (byte-exact against the ported loader call sites) -----------
 #if !RINMOTIONDANCE_X64
 static_assert(sizeof(rinmotiondance::mdl::MorphRecord) == 136, "morph x86 size");
 static_assert(offsetof(rinmotiondance::mdl::MorphRecord, jpText) == 40,
@@ -438,7 +378,6 @@ static_assert(offsetof(rinmotiondance::mdl::JointRecord, constraint) == 132,
 static_assert(offsetof(rinmotiondance::mdl::JointRecord, radiusBound) == 136,
           "JointRecord.radiusBound x86 ABI");
 #else
-// ---- x64 anchors (natural regrowth, mined from the original binary) -------
 static_assert(sizeof(rinmotiondance::mdl::MorphRecord) == 192, "morph x64 size");
 static_assert(offsetof(rinmotiondance::mdl::MorphRecord, panel) == 0x60,
           "MorphRecord.panel x64 ABI");

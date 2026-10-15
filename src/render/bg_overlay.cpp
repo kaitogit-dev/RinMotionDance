@@ -1,24 +1,3 @@
-// ===========================================================================
-// Render-output background overlay pair.
-//
-//   VA 0x004168D0 - AVI background frame -> display texture + overlay quad
-//   VA 0x00417130 - picture background overlay quad refresh
-//
-// Both functions are app methods (thiscall, this = Block) reached from the
-// canvas-size dialog (menu 0xD4), the picture renderer (0x114 / case 276),
-// the AVI record starters (0x45E820/0x464760 via the 9E428 gate) and the
-// per-frame render chain.  The former 0x4168D0/0x417130 forwarding twins
-// that used to live at the bottom of this file were removed; every call
-// site in this tree now uses the semantic names directly.
-//
-// 0x4168D0 decodes the current AVI background frame with the VFW chain
-// (AVIStreamTimeToSample / AVIStreamGetFrame / DrawDibDraw) into an
-// offscreen surface, stretches it into level 0 of the 1024x1024 display
-// texture (D3DUSAGE_RENDERTARGET, X8R8G8B8) and refills the 6-vertex
-// (28-byte, XYZRHW|DIFFUSE|TEX1) overlay quad in the vertex buffer at
-// app+0x9E3F8.  0x417130 refreshes the identical quad in the buffer at
-// app+0x9E430 from the picture-background placement fields.
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -36,28 +15,22 @@
 namespace rinmotiondance {
 namespace {
 
-// .rdata 0x52BA20 - double 1.2000000476837158, overlay scale divisor used by
-// both quad builders (x87 divide runs in double precision, result stored
-// as float - reproduced by keeping the arithmetic in double).
 constexpr double kOverlayScale = 1.2000000476837158;
 
-// 0x529688 - L"%s%s"; the original calls it with no varargs (VC9 stack
-// garbage).  The port passes two empty strings (same idiom as the file
-// dialogs) which yields the empty-string write the original produced.
 void ClearAviPathEcho(MMDApp* app) {
     swprintf_s(app->AviBackgroundPath(), 0x100, L"%s%s", L"", L"");
 }
 
 void ReleaseAviBackgroundHandles(MMDApp* app) {
-    if (app->AviFrameReader() != nullptr) {                       // 0x416927
+    if (app->AviFrameReader() != nullptr) {                       
         AVIStreamGetFrameClose(static_cast<PGETFRAME>(app->AviFrameReader()));
         app->AviFrameReader() = nullptr;
     }
-    if (app->AviStream() != nullptr) {                            // 0x41693D
+    if (app->AviStream() != nullptr) {                            
         AVIStreamRelease(static_cast<PAVISTREAM>(app->AviStream()));
         app->AviStream() = nullptr;
     }
-    if (app->AviFile() != nullptr) {                              // 0x416953
+    if (app->AviFile() != nullptr) {                              
         AVIFileRelease(static_cast<PAVIFILE>(app->AviFile()));
         app->AviFile() = nullptr;
     }
@@ -67,27 +40,21 @@ HWND OverlayHwnd(MMDApp* app) {
     return static_cast<HWND>(app->state.hwnd);
 }
 
-// Locked-buffer quad writer.  Byte offsets and float stores follow the
-// original instruction order exactly (vertices: v0=(r,t) v1=(r,b) v2/v3=(l,t)
-// v4=(r,b) v5=(l,b); fixed color 0xFFFFFFFF and 0..1 UVs).
 void WriteOverlayQuad(void* locked, double left, double top, double right,
                       double bottom) {
     auto* v = static_cast<float*>(locked);
-    // x: v5/v3/v2 = left (0x8C/0x54/0x38), v4/v1/v0 = right
     v[0x8C / 4] = static_cast<float>(left);
     v[0x54 / 4] = v[0x8C / 4];
     v[0x38 / 4] = v[0x54 / 4];
     v[0x70 / 4] = static_cast<float>(right);
     v[0x1C / 4] = v[0x70 / 4];
     v[0x00 / 4] = v[0x1C / 4];
-    // y: v3/v2/v0 = top (0x58/0x3C/0x04), v5/v4/v1 = bottom
     v[0x58 / 4] = static_cast<float>(top);
     v[0x3C / 4] = v[0x58 / 4];
     v[0x04 / 4] = v[0x3C / 4];
     v[0x90 / 4] = static_cast<float>(bottom);
     v[0x74 / 4] = v[0x90 / 4];
     v[0x20 / 4] = v[0x74 / 4];
-    // z = 0, rhw = 1
     v[0x08 / 4] = 0.0f;
     v[0x24 / 4] = 0.0f;
     v[0x40 / 4] = 0.0f;
@@ -99,21 +66,18 @@ void WriteOverlayQuad(void* locked, double left, double top, double right,
     v[0x60 / 4] = 1.0f;
     v[0x7C / 4] = 1.0f;
     v[0x98 / 4] = 1.0f;
-    // diffuse = white
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x10, 0xFF, 4);
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x2C, 0xFF, 4);
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x48, 0xFF, 4);
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x64, 0xFF, 4);
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x80, 0xFF, 4);
     std::memset(reinterpret_cast<unsigned char*>(locked) + 0x9C, 0xFF, 4);
-    // u: 1 for right vertices (v0/v1/v4), 0 for left vertices (v2/v3/v5)
     v[0x14 / 4] = 1.0f;
     v[0x30 / 4] = 1.0f;
     v[0x84 / 4] = 1.0f;
     v[0x4C / 4] = 0.0f;
     v[0x68 / 4] = 0.0f;
     v[0xA0 / 4] = 0.0f;
-    // v: 1 for bottom vertices (v1/v4/v5), 0 for top vertices (v0/v2/v3)
     v[0x18 / 4] = 0.0f;
     v[0x50 / 4] = 0.0f;
     v[0x6C / 4] = 0.0f;
@@ -122,8 +86,6 @@ void WriteOverlayQuad(void* locked, double left, double top, double right,
     v[0xA4 / 4] = 1.0f;
 }
 
-// Shared geometry tail of 0x4168D0 (fields 9E414/418/41C/420/424) and
-// 0x417130 (fields 9E434/438/43C/440/444): offX, offY, zoom, w, h.
 struct OverlayPlacement {
     std::int32_t x;
     std::int32_t y;
@@ -136,7 +98,7 @@ void ComputeOverlayRect(MMDApp* app, const OverlayPlacement& placement,
                         double* leftOut, double* topOut,
                         double* rightOut, double* bottomOut) {
     auto& s = *app;
-    D3DRenderer* wrapper = s.Renderer();  // viewScale (0x1D4F0)
+    D3DRenderer* wrapper = s.Renderer();  
     const double ratio = wrapper->viewScale;
     const double k = kOverlayScale;
     const double offXv = static_cast<double>(placement.x);
@@ -150,8 +112,7 @@ void ComputeOverlayRect(MMDApp* app, const OverlayPlacement& placement,
     const std::int32_t rectR = viewport.right;
     const std::int32_t rectB = viewport.bottom;
 
-    if (s.RecordingWindow() == nullptr) {                       // 0xA0D24
-        // 0x416F13: full-window placement against the A0D40 rect.
+    if (s.RecordingWindow() == nullptr) {                       
         const double left = rectL + offXv * ratio / k - 1.0;
         const double top = offYv * ratio / k + rectT - 1.0;
         *leftOut = left;
@@ -161,10 +122,7 @@ void ComputeOverlayRect(MMDApp* app, const OverlayPlacement& placement,
         return;
     }
 
-    if (wrapper->multisampleAvailable != 0) {  // 0x1D4F8
-        // 0x416E23: separate render window - uniform scale.  The x87 pair
-        // (fildl + fidivl + fstps) divides in double precision and stores
-        // the factor as float; reproduced explicitly.
+    if (wrapper->multisampleAvailable != 0) {  
         const float scale = static_cast<float>(
             static_cast<double>(s.state.renderW) /
             static_cast<double>(rectR - rectL));
@@ -174,19 +132,15 @@ void ComputeOverlayRect(MMDApp* app, const OverlayPlacement& placement,
         *leftOut = left;
         *topOut = top;
         *rightOut = wv * zoomV * ratio * sc / k + left + 1.0;
-        // This branch pre-divides by k at 0x416FE0 and jumps past the
-        // shared divide - a single /k total.
         *bottomOut = hv * zoomV * ratio * sc / k + top + 1.0;
         return;
     }
 
-    // 0x416D0B: per-axis float scales against the separate-window rect
-    // (again fildl/fidivl/fstps, not integer division).
     const float sxF = static_cast<float>(
-        static_cast<double>(wrapper->screenWidth) /   // 0x1D4E4
+        static_cast<double>(wrapper->screenWidth) /   
         static_cast<double>(rectR - rectL));
     const float syF = static_cast<float>(
-        static_cast<double>(wrapper->screenHeight) /  // 0x1D4E8
+        static_cast<double>(wrapper->screenHeight) /  
         static_cast<double>(rectB - rectT));
     const double left = static_cast<double>(sxF) * offXv * ratio / k - 1.0;
     const double top = static_cast<double>(syF) * offYv * ratio / k - 1.0;
@@ -200,40 +154,37 @@ void ComputeOverlayRect(MMDApp* app, const OverlayPlacement& placement,
 
 void RefreshOverlayVertexBuffer(MMDApp* app, IDirect3DVertexBuffer9* vb,
                                 const OverlayPlacement& placement) {
-    // Port-side guard: the 168-byte overlay vertex buffers are created by the
-    // D3D init chain; the original walks them unconditionally.
     if (vb == nullptr)
         return;
     void* locked = nullptr;
-    if (FAILED(vb->Lock(0, 0xA8, &locked, 0)) || locked == nullptr)  // 0x416CE9
+    if (FAILED(vb->Lock(0, 0xA8, &locked, 0)) || locked == nullptr)  
         return;
     double left, top, right, bottom;
     ComputeOverlayRect(app, placement, &left, &top, &right, &bottom);
     WriteOverlayQuad(locked, left, top, right, bottom);
-    vb->Unlock();                                                // 0x417123
+    vb->Unlock();                                                
 }
 
-}  // namespace
+}  
 
-// VA 0x004168D0 - AVI background frame -> texture + overlay quad.
 void AviBgOverlayRefresh(MMDApp* app) {
     auto& s = *app;
     D3DRenderer* wrapper = s.Renderer();
     if (wrapper == nullptr)
         return;
-    IDirect3DDevice9* device = wrapper->device;  // 0x1D4E0
+    IDirect3DDevice9* device = wrapper->device;  
     if (device == nullptr)
         return;
 
-    if (s.AviBackgroundTexture() == nullptr) {                    // 0x4168F5
+    if (s.AviBackgroundTexture() == nullptr) {                    
         IDirect3DTexture9* tex = nullptr;
-        const HRESULT hr = device->CreateTexture(                 // 0x41690F
+        const HRESULT hr = device->CreateTexture(                 
             0x400, 0x400, 1, D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8,
             D3DPOOL_DEFAULT, &tex, nullptr);
         s.AviBackgroundTexture() = tex;
         if (hr != 0) {
             ReleaseAviBackgroundHandles(app);
-            MessageBoxA(OverlayHwnd(app),                         // 0x416988
+            MessageBoxA(OverlayHwnd(app),                         
                         app->EnglishUI() != 0
                             ? "cannot make AVIdispTxtr"
                             : "\x41\x56\x49\x95\x5C\x8E\xA6\x97\x70\x83\x65"
@@ -241,11 +192,11 @@ void AviBgOverlayRefresh(MMDApp* app) {
                               "\xAC\x82\xC5\x82\xAB\x82\xDC\x82\xB9\x82\xF1",
                         "InitFont", 0);
             s.AviBackgroundEnabled() = 0;
-            ClearAviPathEcho(app);                                // 0x4169A4
+            ClearAviPathEcho(app);                                
             return;
         }
     }
-    if (s.AviBackgroundSurface() == nullptr) {                    // 0x4169EB
+    if (s.AviBackgroundSurface() == nullptr) {                    
         IDirect3DSurface9* surf = nullptr;
         const HRESULT hr = device->CreateOffscreenPlainSurface(
             s.AviFrameWidth(), s.AviFrameHeight(), D3DFMT_X8R8G8B8,
@@ -253,7 +204,7 @@ void AviBgOverlayRefresh(MMDApp* app) {
         s.AviBackgroundSurface() = surf;
         if (hr != 0) {
             ReleaseAviBackgroundHandles(app);
-            MessageBoxA(OverlayHwnd(app),                         // 0x416A78
+            MessageBoxA(OverlayHwnd(app),                         
                         app->EnglishUI() != 0
                             ? "Cannot make Surface for AVI file"
                             : "\x41\x56\x49\x97\x70\x83\x54\x81\x5B\x83\x74"
@@ -265,13 +216,11 @@ void AviBgOverlayRefresh(MMDApp* app) {
                               "\x8D\x9E",
                         0);
             s.AviBackgroundEnabled() = 0;
-            ClearAviPathEcho(app);                                // 0x416BF8
+            ClearAviPathEcho(app);                                
             return;
         }
     }
 
-    // Frame selection (0x416A83..0x416B27).  9E404/9E400 are owned by
-    // LoadAviFile (0x433250, ported in src/media/media_load.cpp).
     PAVISTREAM stream = static_cast<PAVISTREAM>(s.AviStream());
     PGETFRAME getFrame = static_cast<PGETFRAME>(s.AviFrameReader());
     LONG sample;
@@ -280,7 +229,7 @@ void AviBgOverlayRefresh(MMDApp* app) {
             sample = stream != nullptr
                 ? AVIStreamTimeToSample(
                       stream, s.state.currentFrame *
-                                   1000 / 30)                       // 0x416B27
+                                   1000 / 30)                       
                 : 0;
         } else {
             sample = s.state.currentFrame;
@@ -288,8 +237,6 @@ void AviBgOverlayRefresh(MMDApp* app) {
     } else if (s.FrameStepPlayback() == 0 ||
                s.AviUsesThirtyFpsTiming() == 0 ||
                s.state.aviRecordFps != g_FrameScale) {
-        // 0x416ADE: wall-clock driven sample from the seconds field
-        // (9E64C is the frameB float copy; 0x52BA60 = double 1000.0).
         float secondsF;
         std::memcpy(&secondsF, &s.state.playbackCursorSeconds, sizeof secondsF);
         const LONG t = static_cast<LONG>(
@@ -298,7 +245,7 @@ void AviBgOverlayRefresh(MMDApp* app) {
                                     : 0) +
                  static_cast<std::int32_t>(s.state.a0B10);
     } else {
-        sample = s.state.aviBackgroundSample;      // 0x416ABC
+        sample = s.state.aviBackgroundSample;      
         s.state.aviBackgroundSample = sample + 1;
     }
     if (sample < s.AviStreamStartFrame())
@@ -308,10 +255,10 @@ void AviBgOverlayRefresh(MMDApp* app) {
         sample = last;
 
     void* bits = getFrame != nullptr ? AVIStreamGetFrame(getFrame, sample)
-                                     : nullptr;                   // 0x416B4F
+                                     : nullptr;                   
     if (bits == nullptr) {
         ReleaseAviBackgroundHandles(app);
-        MessageBoxA(OverlayHwnd(app),                             // 0x416BD8
+        MessageBoxA(OverlayHwnd(app),                             
                     app->EnglishUI() != 0
                         ? "Cannot open AVI file"
                         : "\x41\x56\x49\x83\x74\x83\x40\x83\x43\x83\x8B\x82"
@@ -323,34 +270,33 @@ void AviBgOverlayRefresh(MMDApp* app) {
                           "\x9E",
                     0);
         s.AviBackgroundEnabled() = 0;
-        ClearAviPathEcho(app);                                    // 0x416BF8
+        ClearAviPathEcho(app);                                    
         return;
     }
 
     IDirect3DSurface9* surface = s.AviBackgroundSurface();
     HDC hdc = nullptr;
-    if (FAILED(surface->GetDC(&hdc)))                             // 0x416C13
+    if (FAILED(surface->GetDC(&hdc)))                             
         return;
     DrawDibDraw(static_cast<HDRAWDIB>(s.AviDrawDib()), hdc, 0, 0, -1, -1,
                 static_cast<LPBITMAPINFOHEADER>(bits),
                 static_cast<LPVOID>(
-                    static_cast<unsigned char*>(bits) + 0x28),    // 0x416C3B
+                    static_cast<unsigned char*>(bits) + 0x28),    
                 0, 0, -1, -1, 0);
-    surface->ReleaseDC(hdc);                                      // 0x416C4B
-    DeleteDC(hdc);  // original quirk: DeleteDC on a GetDC handle (0x416C56)
+    surface->ReleaseDC(hdc);                                      
+    DeleteDC(hdc);  
 
     IDirect3DTexture9* texture = s.AviBackgroundTexture();
     IDirect3DSurface9* texSurface = nullptr;
-    if (FAILED(texture->GetSurfaceLevel(0, &texSurface)) ||       // 0x416C67
+    if (FAILED(texture->GetSurfaceLevel(0, &texSurface)) ||       
         texSurface == nullptr)
         return;
     if (FAILED(device->StretchRect(surface, nullptr, texSurface, nullptr,
-                                   D3DTEXF_LINEAR))) {            // 0x416C8D
+                                   D3DTEXF_LINEAR))) {            
         device->StretchRect(surface, nullptr, texSurface, nullptr,
-                            D3DTEXF_NONE);                        // 0x416CB7
+                            D3DTEXF_NONE);                        
     }
     texSurface->Release();
-    // (the original clears its stack slot after the release - 0x416CC7)
 
     RefreshOverlayVertexBuffer(
         app, s.AviOverlayVertices(),
@@ -358,7 +304,6 @@ void AviBgOverlayRefresh(MMDApp* app) {
          s.AviFrameWidth(), s.AviFrameHeight()});
 }
 
-// VA 0x00417130 - picture background overlay quad refresh.
 void PicBgOverlayRefresh(MMDApp* app) {
     auto& s = *app;
     RefreshOverlayVertexBuffer(
@@ -367,9 +312,5 @@ void PicBgOverlayRefresh(MMDApp* app) {
          s.PictureWidth(), s.PictureHeight()});
 }
 
-// (The former 0x4168D0/0x417130 forwarding twins were removed; every
-//  call site now uses AviBgOverlayRefresh/PicBgOverlayRefresh directly.
-//  The real bodies above are the parallel-port winner - full VFW decode
-//  chain; the background_plane.cpp twin was removed.)
 
-}  // namespace rinmotiondance
+}  

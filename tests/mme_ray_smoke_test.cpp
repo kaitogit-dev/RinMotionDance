@@ -57,9 +57,6 @@ long DrawPass(void* opaque, mme::SasEffect* sas, int kind, int index) {
 }
 }
 
-// Runs the actual loader, SAS resource creation, step/resume interpreter and
-// production fullscreen draw on a HAL device. It deliberately has no model,
-// controller binding or DefaultEffect child scene; this is not an image A/B test.
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::fprintf(stderr, "Usage: mme_ray_smoke_test.exe <absolute ray.fx path>\n");

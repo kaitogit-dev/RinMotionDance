@@ -1,42 +1,3 @@
-// ===========================================================================
-// VA 0x00418750 - SaveVpdFile  (0x2B2 bytes)
-// VA 0x00418A10 - LoadVpdFile  (0x95C bytes)
-// ===========================================================================
-// Both are __thiscall(app, path) on the app block; the port keeps the
-// free-function shape used by the file-dialog command layer (g_Block), the
-// same convention as LoadVmdFile (src/model/vmd_load.cpp).
-//
-// SAVE (0x418750): _wfopen(path, L"wt") then a fixed fprintf sequence with
-// byte-exact .rdata formats (0x52BBDC..0x52BC6C):
-//   "Vocaloid Pose Data file\n\n"
-//   "%s.osm;\t\t// <SJIS 親ファイル名>"   arg = model+0x2248 name
-//   "%d;\t\t\t\t// <SJIS 総ポーズボーン数>" arg = count of selected bones
-//   per selected bone i (ModelRecord selection bitmap/count/BoneRecord table):
-//     "Bone%d{%s\n"      running selected index, bone name at record +0
-//     pose source pick (0x418860): bone->hasRigidBody != 0 && bone->physicsDisabled == 0 &&
-//         physMode(app+0xA0CC4) >= 2  ->  physics pose
-//         (+0x188 trans / +0x194 quat), else raw pose
-//         (+0x140 trans / +0x14C quat)
-//     "  %f,%f,%f;\t\t\t\t// trans x,y,z\n"
-//     "  %f,%f,%f,%f;\t\t// Quaternion x,y,z,w\n"
-//     "}\n\n"
-//   fclose.  (floats are promoted to double by varargs, as in the original)
-//
-// LOAD (0x418A10): _wfopen_s(&fp, path, L"r"); 3 discarded fgets (header,
-// blank, model line); fscanf(fp, "%d;", &count); 2 more discarded fgets
-// (count-line comment tail + blank).  UI: EnableWindow(400,true)/
-// EnableWindow(401,false) like the VMD loader.  Undo ring at model+0x31B4
-// (30 slots of 0x1C at model+0x26EC; slot+0 = type 1 (pose), slot+4 = count,
-// slot+16 = new(0x24*count) snapshot {int boneIdx, float3 pos, quat, flag}).
-// Per VPD record: fgets(name line), strstr "{", sprintf_s(name),
-// strchr(name,'\n')->0, fscanf "  %f,%f,%f;" (trans), fgets (comment tail),
-// fscanf "  %f,%f,%f,%f;" (quat), then 3 discarded fgets (comment/}/blank).
-// Name matched byte-wise against every model bone; on hit: snapshot the old
-// pose into undo, twist-correct type-8 / type-4+0x400 bones exactly like the
-// key registrar 0x49D880 (axis = PMX bone->axis / PMD tail-bone rest delta),
-// write trans -> bone->trans, quat -> bone->rotQuat, and set both the
-// selection and physics-state bytes to 1.
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -55,34 +16,31 @@
 namespace rinmotiondance {
 namespace {
 
-// Active model = slot array at this+0x780 indexed by byte this+0x910.
 unsigned char* ActiveModel(MMDApp* app) {
     return app->SelectedModel();
 }
 
-// ---- byte-exact .rdata strings --------------------------------------------
-const char kHdr[] = "Vocaloid Pose Data file\n\n";               // 0x52BC6C
-const char kModelFmt[] =                                         // 0x52BC50
+const char kHdr[] = "Vocaloid Pose Data file\n\n";               
+const char kModelFmt[] =                                         
     "%s.osm;\t\t// \x90\x65\x83\x74\x83\x40\x83\x43\x83\x8b\x96\xbc\n";
-const char kCountFmt[] =                                         // 0x52BC30
+const char kCountFmt[] =                                         
     "%d;\t\t\t\t// \x91\x8d\x83\x7c\x81\x5b\x83\x59\x83\x7b\x81\x5b\x83"
     "\x93\x90\x94\n\n";
-const char kBoneFmt[] = "Bone%d{%s\n";                           // 0x52BC24
-const char kTransFmt[] =                                         // 0x52BC04
+const char kBoneFmt[] = "Bone%d{%s\n";                           
+const char kTransFmt[] =                                         
     "  %f,%f,%f;\t\t\t\t// trans x,y,z\n";
-const char kQuatFmt[] =                                          // 0x52BBDC
+const char kQuatFmt[] =                                          
     "  %f,%f,%f,%f;\t\t// Quaternion x,y,z,w\n";
-const char kCloseFmt[] = "}\n\n";                                // 0x52BBD8
-const wchar_t kModeWrite[] = L"wt";                              // 0x52BC88
-const wchar_t kModeRead[] = L"r";                                // 0x52BCB4
-const char kCountScan[] = "%d;";                                 // 0x52BCB0
-const char kBrace[] = "{";                                       // 0x52BCAC
-const char kTransScan[] = "  %f,%f,%f;";                         // 0x52BCA0
-const char kQuatScan[] = "  %f,%f,%f,%f;";                       // 0x52BC90
+const char kCloseFmt[] = "}\n\n";                                
+const wchar_t kModeWrite[] = L"wt";                              
+const wchar_t kModeRead[] = L"r";                                
+const char kCountScan[] = "%d;";                                 
+const char kBrace[] = "{";                                       
+const char kTransScan[] = "  %f,%f,%f;";                         
+const char kQuatScan[] = "  %f,%f,%f,%f;";                       
 
-}  // namespace
+}  
 
-// ---- VA 0x00418750 --------------------------------------------------------
 void SaveVpdFile(const wchar_t* path) {
     MMDApp* app = g_Block;
     if (app == nullptr) return;
@@ -90,10 +48,6 @@ void SaveVpdFile(const wchar_t* path) {
     if (model == nullptr) return;
 
     FILE* fp = nullptr;
-    // Original never checks the _wfopen_s result: on failure it runs
-    // straight into fprintf(NULL, ...) (x64 0x7FF7CB48B73C open ->
-    // 0x7FF7CB48B74E first fprintf) and crashes.  Port hardening: return
-    // silently. (documented deviation)
     if (_wfopen_s(&fp, path, kModeWrite) != 0 || fp == nullptr) return;
 
     std::fprintf(fp, "%s", kHdr);
@@ -115,8 +69,6 @@ void SaveVpdFile(const wchar_t* path) {
         rinmotiondance::mdl::BoneRecord* const bone = bones + i;
         std::fprintf(fp, kBoneFmt, running, bone->name);
         ++running;
-        // 0x418860: physics-pose source only for flagged bones with the
-        // physics mode >= 2; raw kinematic pose otherwise.
         const float* trans;
         const float* quat;
         if (bone->hasRigidBody != 0 && bone->physicsDisabled == 0 && physMode >= 2) {
@@ -133,7 +85,6 @@ void SaveVpdFile(const wchar_t* path) {
     std::fclose(fp);
 }
 
-// ---- VA 0x00418A10 --------------------------------------------------------
 void LoadVpdFile(const wchar_t* path) {
     MMDApp* app = g_Block;
     if (app == nullptr) return;
@@ -144,22 +95,21 @@ void LoadVpdFile(const wchar_t* path) {
     if (_wfopen_s(&fp, path, kModeRead) != 0 || fp == nullptr) return;
 
     char line[256], name[256], tail[256];
-    std::fgets(line, 0x100, fp);   // "Vocaloid Pose Data file"
-    std::fgets(line, 0x100, fp);   // blank
-    std::fgets(line, 0x100, fp);   // "<model>.osm;..."
+    std::fgets(line, 0x100, fp);   
+    std::fgets(line, 0x100, fp);   
+    std::fgets(line, 0x100, fp);   
     int count = 0;
     std::fscanf(fp, kCountScan, &count);
-    std::fgets(tail, 0x100, fp);   // count-line comment tail
-    std::fgets(tail, 0x100, fp);   // blank
+    std::fgets(tail, 0x100, fp);   
+    std::fgets(tail, 0x100, fp);   
 
     const HWND hwnd = static_cast<HWND>(app->Hwnd());
     EnableWindow(GetDlgItem(hwnd, panel::kUndoButton), TRUE);
     EnableWindow(GetDlgItem(hwnd, panel::kRedoButton), FALSE);
 
-    // ---- undo ring (model+0x31B4 wraps at 30; slots at model+0x26EC) ---
     mdl::ModelRecord& modelRecord = *mdl::Mdl(model);
-    modelRecord.undoDirty = 1;                          // 0x418AE9
-    modelRecord.redoDirty = 0;                          // 0x418AF0
+    modelRecord.undoDirty = 1;                          
+    modelRecord.redoDirty = 0;                          
     int ring = ++mdl::Mdl(model)->undoState[0];
     if (ring >= 30) mdl::Mdl(model)->undoState[0] = 0;
     ring = mdl::Mdl(model)->undoState[0];
@@ -183,27 +133,23 @@ void LoadVpdFile(const wchar_t* path) {
     rinmotiondance::mdl::BoneRecord* const bones = rinmotiondance::mdl::Bones(model);
     unsigned char* const selBits = modelRecord.boneSelection;
     unsigned char* const regBits = modelRecord.bonePhysicsState;
-    const bool pmx = modelRecord.physicsMode == 2;              // 0x418FC4
+    const bool pmx = modelRecord.physicsMode == 2;              
 
     for (int k = 0; k < count; ++k) {
         float trans[3] = {0, 0, 0};
         float quat[4] = {0, 0, 0, 1.0f};
 
-        std::fgets(line, 0x100, fp);                    // "BoneN{name"
+        std::fgets(line, 0x100, fp);                    
         const char* brace = std::strstr(line, kBrace);
-        // Original has no NULL check here: it calls
-        // sprintf_s(name, 0x100, v18 + 1) (x64 0x7FF7CB48BDC5) with the
-        // format pointer at (char*)1 and crashes when the brace is missing.
-        // Port hardening: skip the record. (documented deviation)
         if (brace == nullptr) continue;
         sprintf_s(name, 0x100, "%s", brace + 1);
-        if (char* nl = strchr(name, 10)) *nl = 0;  // 0x507670 strchr
+        if (char* nl = strchr(name, 10)) *nl = 0;  
 
         std::fscanf(fp, kTransScan, &trans[0], &trans[1], &trans[2]);
-        std::fgets(tail, 0x100, fp);                    // comment tail
+        std::fgets(tail, 0x100, fp);                    
         std::fscanf(fp, kQuatScan, &quat[0], &quat[1], &quat[2], &quat[3]);
-        std::fgets(tail, 0x100, fp);                    // "}\n"
-        std::fgets(tail, 0x100, fp);                    // "\n"
+        std::fgets(tail, 0x100, fp);                    
+        std::fgets(tail, 0x100, fp);                    
         std::fgets(tail, 0x100, fp);
 
         for (int i = 0; i < boneCnt; ++i) {
@@ -211,15 +157,12 @@ void LoadVpdFile(const wchar_t* path) {
             if (std::strcmp(name, bone->name) != 0)
                 continue;
 
-            // snapshot the pre-load pose into the undo record (0x418E2D..)
             mdl::BonePoseSnapshot& rec = snap[k];
             rec.boneIndex = i;
             std::memcpy(rec.position, bone->trans, sizeof rec.position);
             std::memcpy(rec.rotation, bone->rotQuat, sizeof rec.rotation);
             rec.physicsDisabled = regBits[i];
 
-            // twist correction - same algorithm as registrar 0x49D880
-            // (0x418F5C): ((u16@&bone->flags & 0x400) && type==4) || type==8
             const mdl::BoneType btype = bone->type;
             if (btype == mdl::BoneType::FixedAxis ||
                 (btype == mdl::BoneType::UnderIk &&
@@ -239,11 +182,11 @@ void LoadVpdFile(const wchar_t* path) {
                 if (d3->quatToAxisAngle != nullptr) {
                     float axisOut[3], angle;
                     d3->quatToAxisAngle(quat, axisOut, &angle);
-                    if (!_finite(quat[3])) quat[3] = 1.0f;   // w (0x4190C4)
+                    if (!_finite(quat[3])) quat[3] = 1.0f;   
                     float sinHalf;
                     const float ww = quat[3] * quat[3];
                     if (ww <= 1.0f) {
-                        sinHalf = sqrtf(1.0f - ww);     // 0x4190FD sqrt
+                        sinHalf = sqrtf(1.0f - ww);     
                     } else {
                         quat[3] = 1.0f;
                         sinHalf = 0.0f;
@@ -258,7 +201,7 @@ void LoadVpdFile(const wchar_t* path) {
                                            axisOut[1] * axisOut[1] +
                                            axisOut[2] * axisOut[2]);
                     const float cosT = dot / (nA * nB);
-                    if (cosT < 0.0f) sinHalf = -sinHalf;    // 0x4191E2
+                    if (cosT < 0.0f) sinHalf = -sinHalf;    
                     quat[0] = sinHalf * axisOut[0];
                     quat[1] = sinHalf * axisOut[1];
                     quat[2] = sinHalf * axisOut[2];
@@ -267,15 +210,13 @@ void LoadVpdFile(const wchar_t* path) {
                 }
             }
 
-            selBits[i] = 1;                              // 0x419226
+            selBits[i] = 1;                              
             regBits[i] = 1;
-            std::memcpy(bone->trans, trans, 12);        // 0x419256
+            std::memcpy(bone->trans, trans, 12);        
             std::memcpy(bone->rotQuat, quat, 16);
-            // No break: 0x419240's bone loop keeps scanning after a match,
-            // so EVERY bone whose name equals the VPD bone gets the pose.
         }
     }
     std::fclose(fp);
 }
 
-}  // namespace rinmotiondance
+}  

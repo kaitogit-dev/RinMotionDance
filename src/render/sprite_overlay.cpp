@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x0046BD79..0x0046DB3D - dynamic HUD sprite producer (camera path)
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -80,8 +77,6 @@ ClipPoint TransformPoint(const ClipPoint& p, const D3DMATRIX& m) {
     };
 }
 
-// pointOffset is a byte offset into the bone record (x64 original 0x7FF7CB4E4980:
-// [index*0x270 + boneTable + 0x13C] - record-scaled index, raw byte field offset).
 bool ProjectBonePoint(rinmotiondance::mdl::BoneRecord* bone, std::size_t pointOffset,
                       const D3DMATRIX& world, const D3DMATRIX& view,
                       const D3DMATRIX& projection, const RECT& viewport,
@@ -114,8 +109,6 @@ __declspec(noinline) float BoneVCoordinate(int numerator, int origin,
 #if defined(_M_IX86)
     static const double kEight = 8.0;
     float result = 0.0f;
-    // 0x49A541..0x49A58E and 0x49A60E..0x49A654 retain every
-    // intermediate on the x87 stack before the final float store.
     __asm {
         fild dword ptr numerator
         fdiv dword ptr lengthValue
@@ -138,8 +131,6 @@ __declspec(noinline) void BoneMarkerBounds(int x, int y, float scale,
     float t = 0.0f;
     float r = 0.0f;
     float b = 0.0f;
-    // 0x49AFBD onward keeps the half extent on the x87 stack, stores the
-    // leading edge as float, reloads it, then adds the full extent.
 #if defined(_M_IX86)
     static const double kHalf = 9.5;
     static const double kSize = 18.0;
@@ -229,7 +220,7 @@ void AppendLine(LineVertex*& out, int startX, int startY,
               0.0f, 1.0f, color};
 }
 
-}  // namespace
+}  
 
 void PrepareFrameSpriteOverlay(MMDApp* app) {
     if (app->RecordingWindow() != nullptr)
@@ -259,9 +250,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
     const float right = static_cast<float>(view.right);
     const float bottom = static_cast<float>(view.bottom);
 
-    // 0x499BD0: bone projection plus the bone-line and bone-icon producers.
-    // The original runs this after WORLD/VIEW/PROJECTION are installed and
-    // appends to the line batch built by 0x4757C3 on the previous frame.
     if (app->state.optflag[0] == 0 &&
         app->PlaybackActive() == 0 && sub != nullptr) {
         auto* model = app->SelectedModel();
@@ -280,7 +268,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
             const int relationshipCount =
                 static_cast<int>(mdl::Mdl(model)->ikChainCount);
             const int cursorKind = static_cast<int>(app->EditMode());
-            // 658628 = playbackPhysicsMode（原 boneFilter 误名）
             const int physMode = app->PlaybackPhysicsMode();
             D3DMATRIX world{};
             D3DMATRIX viewMatrix{};
@@ -312,12 +299,7 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                 }
             }
 
-            // 0x49A1DC..0x49AE48: cursor modes 0/1 draw each bone as a
-            // two-primitive V. Active relationship records may deliberately
-            // emit the same V more than once with the relationship color.
             if (bones != nullptr) {
-                // The renderer's line buffer is shared by bone indicators and
-                // the final guide-line overlay pass.
                 auto* lineVb = sub->lineVertexBuffer;
                 const std::uint32_t incomingLineCount =
                     boneResult.linePrimitiveCount;
@@ -344,10 +326,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                         const int linked = bone->tailBone;
                         if (linked <= 0 || linked >= boneCount)
                             return false;
-                        // 尾骨骼的已投影屏幕坐标（原版 x64 0x7FF7CB4E56xx 读
-                        // [linked]+460/+464 = selState/selState2）；结构体成员
-                        // 访问双架构取对偏移——此前裸写 x86 字节偏移 452/456，
-                        // x64 上会读到 ikWorkingQuat 浮点位模式，连线飞散。
                         *x = bones[linked].selState;
                         *y = bones[linked].selState2;
                         return true;
@@ -422,8 +400,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                             }
                         }
 
-                        // 0x49A9F9..0x49AB2B: one black centre line per
-                        // active relationship record, between +0 and +4.
                         for (int relation = 0;
                              relationships != nullptr &&
                              relation < relationshipCount; ++relation) {
@@ -451,8 +427,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                         }
                     }
 
-                    // 0x49AB4A..0x49AE33: the selected bone gets a second V
-                    // in every cursor mode except 2.
                     if (cursorKind != 2 && selected >= 0 &&
                         selected < boneCount) {
                         auto* bone = &bones[selected];
@@ -480,14 +454,11 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                     DumpVertexBatch("line", lineBegin,
                         boneResult.linePrimitiveCount, 40);
                     lineVb->Unlock();
-                    // 0x46BF4D adds the returned absolute line counter to
-                    // the global count; retain that original quirk exactly.
                     app->LineOverlayPrimitiveCount() +=
                         boneResult.linePrimitiveCount;
                 }
             }
 
-            // 0x49AE4C..0x49C1E5: exact common bone-marker atlas cells.
             if (bones != nullptr) {
                 for (int index = 0; index < boneCount; ++index) {
                     auto* bone = &bones[index];
@@ -567,8 +538,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                     }
                 }
 
-                // 0x49C1ED..0x49C80C: every mode except 2 appends one final
-                // selected marker from the dedicated atlas family.
                 if (cursorKind != 2 && selected >= 0 &&
                     selected < boneCount) {
                     auto* bone = &bones[selected];
@@ -637,9 +606,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
         }
     }
 
-    // 0x46C297..0x46C6C5: with no selected model, the camera look-at point
-    // projects to the exact viewport centre. The original uses asymmetric
-    // -9.5/+8.5 extents so texels land on the same pixels.
     if (app->state.optflag[0] != 0 &&
         app->PlaybackActive() == 0 &&
         app->CameraParentModel() < 0) {
@@ -650,8 +616,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                0.46414399f, 0.35086f, 0.49874699f, 0.385463f);
     }
 
-    // 0x46C414..0x46C6C5: global/local target strip. All three variants
-    // occupy the same 120x30 rectangle and select a vertical atlas band.
     const bool playback = app->PlaybackActive() != 0;
     if (!playback) {
         float targetV0 = 0.470705f;
@@ -669,8 +633,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                0.001953f, targetV0, 0.23242199f, targetV1);
     }
 
-    // 0x46C6E2..0x46CE84: camera and bone operation rows. Playback takes
-    // LABEL_105 and deliberately emits neither rows nor highlights.
     if (!playback) {
         if (app->state.optflag[0] != 0) {
             append(right - scale * 130.0f, bottom - scale * 80.0f,
@@ -699,8 +661,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
             }
         }
 
-        // 0x46CF9B..0x46D71F: the six 40x30 operation highlights. The
-        // paired interaction modes share one atlas cell exactly as below.
         const int operation = static_cast<int>(app->ViewportToolOperation());
         const auto highlight = [&](int first, int second, int column,
                                    int row) {
@@ -722,9 +682,6 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
         highlight(13, 16, 1, 1);
         highlight(14, 17, 2, 1);
 
-        // 0x46D74D..0x46DB2A: operation cursor pictures in bone mode. These
-        // use raw projected mouse coordinates returned by 0x499BD0 and are
-        // intentionally not multiplied by the viewport scale.
         if (app->state.optflag[0] == 0) {
             const float x = static_cast<float>(app->ViewportToolCenterX());
             const float y = static_cast<float>(app->ViewportToolCenterY());
@@ -764,4 +721,4 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
     vb->Unlock();
 }
 
-}  // namespace rinmotiondance
+}  

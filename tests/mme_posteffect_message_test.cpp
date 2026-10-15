@@ -1,5 +1,3 @@
-// Exercise the production error formatter and phase gate; replace only the
-// modal Win32 boundary so the regression can run unattended.
 #include <windows.h>
 #include <cstdio>
 #include <string>
@@ -19,7 +17,6 @@ static int WINAPI CaptureMessageBox(HWND owner, LPCSTR text, LPCSTR title, UINT 
     return IDOK;
 }
 #define MessageBoxA CaptureMessageBox
-// Keep language and DXErr lookup deterministic without changing production APIs.
 #define MmeIsEnglishUiMode TestEnglishUiMode
 #define MmeDxErrDescription TestDxErrDescription
 #define g_mainWindow testMainWindow
@@ -82,8 +79,6 @@ int main()
         ++count;
     Check(count == 10, "suppressed dialogs still append every error to history");
 
-    // Byte fixture read directly from the original MMEffect.dll RVA 0xB5958.
-    // Keep the ANSI payload independent of the test machine's code page.
     const unsigned char japanesePrefix[] = {
         0x83, 0x7c, 0x83, 0x58, 0x83, 0x67, 0x83, 0x47,
         0x83, 0x74, 0x83, 0x46, 0x83, 0x4e, 0x83, 0x67,

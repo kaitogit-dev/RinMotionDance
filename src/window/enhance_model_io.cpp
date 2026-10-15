@@ -1,15 +1,3 @@
-// ===========================================================================
-// Enhance-model IO: toon collect (0x41EA20), save model (0x41EC10), model colour (0x4A4850)
-// ===========================================================================
-// Split out of src/window/command_view_menu.cpp (the menu-251..302 command
-// family) so the dialog's helper bodies can be ported independently.
-// Every function keeps its original x86 VA; behaviour notes live in the
-// per-function comments.  Ported against the x64 twin
-// (MikuMikuDanceE_v932x64, session 99824acb):
-//   0x41EA20 -> sub_7FF7CB4AD5D0   0x41EC10 -> sub_7FF7CB4D59B0
-//   0x4A4850 -> sub_7FF7CB4F2240   0x40B5A0 -> sub_7FF7CB43AB40
-//   0x4076E0 -> sub_7FF7CB428F30
-// =========================================================================//
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -40,21 +28,9 @@ namespace {
 
 constexpr UINT kD3dxDefault = 0xFFFFFFFFu;
 
-}  // namespace
+}  
 
-// ===========================================================================
-// 0x41EA20 (x64 sub_7FF7CB4AD5D0) - OK collector of the enhance-model toon
-// dialog (menu 261, edits 709..718).  For each of the ten slots:
-//   * a name equal to the default "toonNN.bmp" is accepted as-is (skip);
-//   * otherwise the name is converted to wide and probed as
-//     <model directory>\<name> through the shared texture cache
-//     (LoadTextureShared, 0x407490); on success the SJIS name is stored
-//     into the model's pmdToonFileNames slot;
-//   * on failure the EN/JP "Cannot find ..." box appears and the function
-//     will report failure.
-// Returns 1 when every non-default name resolved.
-// ===========================================================================
-int CollectToonFileNames(HWND hDlg) {  // VA 0x0041EA20
+int CollectToonFileNames(HWND hDlg) {  
     MMDApp* app = g_Block;
     mdl::ModelRecord& model = *mdl::Mdl(app->SelectedModel());
     D3DRenderer* renderer = app->Renderer();
@@ -65,7 +41,7 @@ int CollectToonFileNames(HWND hDlg) {  // VA 0x0041EA20
         char def[0x100];
         sprintf_s(def, 0x100, "toon%02d.bmp", i);
         if (std::strcmp(name, def) == 0)
-            continue;  // default toon name: no file probe, no store
+            continue;  
         wchar_t rel[0x100];
         wcscpy_s(rel, 0x100, L"");
         if (name[0] != '\0')
@@ -88,9 +64,6 @@ int CollectToonFileNames(HWND hDlg) {  // VA 0x0041EA20
                           name, name);
                 caption = "toon texture";
             } else {
-                // 0x52F0F0: "ﾂｰﾝﾃｷｽﾁｬｱ:%sが見つかりません。\n\n
-                //            %sをモデルファイル(*.pmd)と同じフォルダ内に
-                //            置いてください。"
                 sprintf_s(text, 0x100,
                           "\xc3\xb8\xbd\xc1\xac\xcc\xa7\xb2\xd9\x81\x46%s"
                           "\x82\xaa\x8c\xa9\x82\xc2\x82\xa9\x82\xe8\x82\xdc"
@@ -100,7 +73,6 @@ int CollectToonFileNames(HWND hDlg) {  // VA 0x0041EA20
                           "\x83\x8b\x83\x5f\x93\xe0\x82\xc9\x92\x75\x82\xa2"
                           "\x82\xc4\x89\xba\x82\xb3\x82\xa2\x81\x42",
                           name, name);
-                // 0x52F148: "トゥーンテクスチャ"
                 caption = "\x83\x67\x83\x44\x81\x5B\x83\x93\x83\x65\x83\x4E"
                           "\x83\x58\x83\x60\x83\x83";
             }
@@ -110,28 +82,7 @@ int CollectToonFileNames(HWND hDlg) {  // VA 0x0041EA20
     return allFound;
 }
 
-// ===========================================================================
-// 0x41EC10 (x64 sub_7FF7CB4D59B0) - "save enhanced model" writer.  The x64
-// original is a method of the model (thiscall(model, path, renderer)); the
-// dispatcher passes the selected model, so pick it from the app here.
-// Serialises the whole model as a PMD file (field order mirrors the reader
-// in src/model/pmd_load.cpp):
-//   header ("Pmd", 1.0f, name[20], comment[256]) - vertex count + 38-byte
-//   records (edge flag normalised to 0/1) - index count + u16 indices -
-//   material count + 70-byte records (texture+sphere names combined with
-//   '*' after stripping the model-directory prefix, converted to SJIS) -
-//   bone count + 39-byte records - IK count + chains - morph count +
-//   entries (indices of morph 0 written verbatim, later morphs remapped
-//   through morph 0's table) - facial display list - bone group names -
-//   rigid-body display list - English section (flag always 1; morph names
-//   skip morph 0, group names start at 2/3 like the reader) - the ten
-//   100-byte toon file names - rigid bodies (83 bytes) - joints (124
-//   bytes, limits in the reader's shuffled order).  On success the saved
-//   path becomes model->path.
-// Quirk kept verbatim: before writing vertices, every morph-0 entry
-// OVERWRITES (not adds to) the raw vertex position with its offset.
-// ===========================================================================
-void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
+void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  
     mdl::ModelRecord& model = *mdl::Mdl(app->SelectedModel());
     D3DRenderer* renderer = app->Renderer();
 
@@ -142,9 +93,9 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
                                       _SH_DENYNO, _S_IREAD);
     if (openErr != 0 || fh == -1) {
         char text[0x100];
-        if (model.physicsFlags != 0)  // English-data byte (set at load)
+        if (model.physicsFlags != 0)  
             sprintf_s(text, 0x100, "Cannot save file:%d", openErr);
-        else  // 0x54FED0: "ファイルが保存できません:%d"
+        else  
             sprintf_s(text, 0x100,
                       "\x83\x74\x83\x40\x83\x43\x83\x8B\x82\xaa\x95\xdb"
                       "\x91\xb6\x82\xc5\x82\xab\x82\xdc\x82\xb9\x82\xf1"
@@ -154,14 +105,12 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         return;
     }
 
-    // ---- header ----------------------------------------------------------
     _write(fh, "Pmd", 3);
     const float version = 1.0f;
     _write(fh, &version, 4);
     _write(fh, model.name, 0x14);
     _write(fh, model.comment, 0x100);
 
-    // ---- morph-0 pre-pass (positions overwritten, see note above) --------
     if (model.morphs != nullptr && model.morph0Count != 0) {
         for (std::uint32_t k = 0; k < model.morph0Count; ++k) {
             const mdl::PmdVertexMorphEntry& e = model.morph0Table[k];
@@ -170,7 +119,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         }
     }
 
-    // ---- vertices --------------------------------------------------------
     _write(fh, &model.vertexCount, 4);
     for (std::uint32_t i = 0; i < model.vertexCount; ++i) {
         const mdl::PmdVertex& v = model.rawVertices[i];
@@ -184,14 +132,12 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         _write(fh, &edge, 1);
     }
 
-    // ---- indices ---------------------------------------------------------
     _write(fh, &model.indexCount, 4);
     std::uint16_t* const indices =
         mdl::Indices(reinterpret_cast<unsigned char*>(&model));
     for (std::uint32_t i = 0; i < model.indexCount; ++i)
         _write(fh, &indices[i], 2);
 
-    // ---- materials -------------------------------------------------------
     _write(fh, &model.materialCount, 4);
     mdl::ModelMaterialRecord* const materials = mdl::Materials(
         reinterpret_cast<unsigned char*>(&model));
@@ -206,7 +152,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         const std::uint8_t sphereFlag = mat.doubleSided != 0 ? 1 : 0;
         _write(fh, &sphereFlag, 1);
         _write(fh, &mat.faceVertexCount, 4);
-        // combined texture[*sphere] name, stripped of the directory prefix
         wchar_t combined[20];
         const wchar_t* name;
         if (mat.spherePath[0] != L'\0') {
@@ -223,7 +168,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         _write(fh, sjis, 0x14);
     }
 
-    // ---- bones -----------------------------------------------------------
     _write(fh, &model.boneCount, 2);
     for (std::uint32_t i = 0; i < model.boneCount; ++i) {
         const mdl::BoneRecord& bone = model.boneTable[i];
@@ -241,7 +185,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         _write(fh, bone.position, 12);
     }
 
-    // ---- IK chains -------------------------------------------------------
     _write(fh, &model.ikChainCount, 2);
     for (std::uint32_t i = 0; i < model.ikChainCount; ++i) {
         const mdl::IkChain& ik = model.ikChains[i];
@@ -258,7 +201,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
             _write(fh, &ik.links[k], 2);
     }
 
-    // ---- morphs ----------------------------------------------------------
     _write(fh, &model.morphCount, 2);
     for (std::uint32_t i = 0; i < model.morphCount; ++i) {
         const mdl::MorphRecord& morph = model.morphs[i];
@@ -271,10 +213,8 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         for (std::int32_t k = 0; k < morph.offsetCount; ++k) {
             const mdl::PmdVertexMorphEntry& e = morph.vertexEntries[k];
             if (i == 0) {
-                _write(fh, &e.vertexIndex, 4);  // morph 0: raw index
+                _write(fh, &e.vertexIndex, 4);  
             } else if (baseCount != 0) {
-                // later morphs: remap through morph 0's table; an unfound
-                // index skips the dword but still writes its offsets
                 std::int32_t j = 0;
                 while (j < baseCount &&
                        base[j].vertexIndex != e.vertexIndex)
@@ -286,13 +226,10 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         }
     }
 
-    // ---- facial display list ---------------------------------------------
     _write(fh, &model.facialFrameCount, 1);
     for (int k = 0; k < model.facialFrameCount; ++k)
         _write(fh, &model.displayFrames[k].targetIndex, 2);
 
-    // ---- bone group names --------------------------------------------------
-    // reader adds 2 (+1 with the facial group) back to this byte
     const bool hasFacial = model.facialFrameCount != 0;
     const std::uint8_t groupByte = static_cast<std::uint8_t>(
         model.groupCount - (hasFacial ? 3 : 2));
@@ -302,36 +239,31 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
     for (int m = hasFacial ? 3 : 2; m < model.groupCount; ++m)
         _write(fh, groups[m].name, 0x32);
 
-    // ---- rigid-body display list -------------------------------------------
     _write(fh, &model.rigidBodyCount, 4);
     mdl::FrameGroup* const rbGroups = mdl::RigidGroups(
         reinterpret_cast<unsigned char*>(&model));
     for (std::uint32_t k = 0; k < model.rigidBodyCount; ++k) {
         const mdl::FrameGroup& rb = rbGroups[k];
         _write(fh, &rb.targetIndex, 2);
-        // reader adds 1 (+1 with the facial group) back
         const std::uint8_t groupIdx = static_cast<std::uint8_t>(
             rb.groupIndex - (hasFacial ? 2 : 1));
         _write(fh, &groupIdx, 1);
     }
 
-    // ---- English section ---------------------------------------------------
     const std::uint8_t hasEnglish = 1;
     _write(fh, &hasEnglish, 1);
     _write(fh, model.nameEn, 0x14);
     _write(fh, model.commentEn, 0x100);
     for (std::uint32_t i = 0; i < model.boneCount; ++i)
         _write(fh, model.boneTable[i].nameEn, 0x14);
-    for (std::uint32_t i = 1; i < model.morphCount; ++i)  // skips morph 0
+    for (std::uint32_t i = 1; i < model.morphCount; ++i)  
         _write(fh, model.morphs[i].nameEn, 0x14);
     for (int m = hasFacial ? 3 : 2; m < model.groupCount; ++m)
         _write(fh, groups[m].nameEn, 0x32);
 
-    // ---- toon file names ----------------------------------------------------
     for (int i = 0; i < 10; ++i)
         _write(fh, model.pmdToonFileNames[i], 0x64);
 
-    // ---- rigid bodies --------------------------------------------------------
     _write(fh, &model.rigidCount, 4);
     for (std::uint32_t i = 0; i < model.rigidCount; ++i) {
         const mdl::RigidRecord& rigid = model.rigidTable[i];
@@ -353,7 +285,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
         _write(fh, &rigid.mode, 1);
     }
 
-    // ---- joints ---------------------------------------------------------------
     _write(fh, &model.jointCount, 4);
     for (std::uint32_t i = 0; i < model.jointCount; ++i) {
         const mdl::JointRecord& joint = model.jointTable[i];
@@ -373,14 +304,6 @@ void SaveEnhancedModel(MMDApp* app, const wchar_t* path) {  // 0x41EC10
     wcscpy_s(model.path, 0x100, path);
 }
 
-// ===========================================================================
-// 0x4A4850 (x64 sub_7FF7CB4F2240) - SetModelColor:
-// set model colour (ground-shadow tint sweep; called from pmm_load_v1/v2
-// and the menu-286 colour picker).  Skips models whose physicsMode byte is
-// 2, then locks the 16-byte-stride secondary vertex buffer (FVF 0x42:
-// position + diffuse) and fills every vertex's colour with opaque
-// ARGB(r, g, b).
-// ===========================================================================
 void SetModelColor(MMDApp* modelPtr, int r, int g, int b) {
     mdl::ModelRecord& model =
         *mdl::Mdl(reinterpret_cast<unsigned char*>(modelPtr));
@@ -398,7 +321,6 @@ void SetModelColor(MMDApp* modelPtr, int r, int g, int b) {
         vb->Unlock();
         return;
     }
-    // the original widens r to a full register but takes g/b as bytes
     const std::uint32_t color = 0xFF000000u |
                                 (static_cast<std::uint32_t>(r) << 16) |
                                 (static_cast<std::uint32_t>(g & 0xFF) << 8) |
@@ -410,13 +332,6 @@ void SetModelColor(MMDApp* modelPtr, int r, int g, int b) {
     vb->Unlock();
 }
 
-// ===========================================================================
-// 0x40B5A0 (x64 sub_7FF7CB43AB40) - menu-bar language refresh after the
-// Japanese/English switch (menu 260).  Re-titles all eight top menus and
-// every menu item with the EN literals / JP Shift-JIS strings of the
-// original (the "full screen" item becomes "NVIDIA 3D Vision" when the
-// renderer's stereo flag is set), then redraws the menu bar.
-// ===========================================================================
 namespace {
 
 struct MenuText {
@@ -568,7 +483,7 @@ constexpr MenuText kViewMenu[] = {
     {0x1A, "wire frame(&R)",
      "\x83\x8f\x83\x43\x83\x84\x81\x5b\x83\x74\x83\x8c\x81\x5b\x83\x80"
      "\x95\x5c\x8e\xa6\x28\x26\x52\x29"},
-    {0x1C, "full screen(Alt+Enter)",  // replaced below when stereo is on
+    {0x1C, "full screen(Alt+Enter)",  
      "\x83\x74\x83\x8b\x83\x58\x83\x4e\x83\x8a\x81\x5b\x83\x93\x95\x5c"
      "\x8e\xa6\x28\x41\x6c\x74\x2b\x45\x6e\x74\x65\x72\x29"},
     {0x1E, "fps no limit", "\x66\x70\x73\x96\xb3\x90\xa7\x8c\xc0"},
@@ -679,7 +594,7 @@ constexpr MenuText kPhysicsMenu[] = {
 };
 
 constexpr MenuText kMocapMenu[] = {
-    {0, "Kinect(&K)", "Kinect(&K)"},  // one shared literal in the original
+    {0, "Kinect(&K)", "Kinect(&K)"},  
     {2, "capture(&C)", "\xb7\xac\xcc\xdf\xc1\xac\x28\x26\x43\x29"},
     {4, "L-R reversing(&R)",
      "\x8d\xb6\x89\x45\x94\xbd\x93\x5d\x28\x26\x52\x29"},
@@ -702,7 +617,6 @@ constexpr MenuText kHelpMenu[] = {
      "\xca\xde\xb0\xbc\xde\xae\xdd\x8f\xee\x95\xf1\x28\x26\x49\x29"},
 };
 
-// the "enhance model" submenu below help item 2
 constexpr MenuText kEnhanceMenu[] = {
     {0, "edit English name(&E)",
      "\x89\x70\x8c\xea\x96\xbc\x95\xd2\x8f\x57\x28\x26\x45\x29"},
@@ -752,19 +666,19 @@ constexpr MenuBlock kMenus[] = {
      static_cast<int>(sizeof(kHelpMenu) / sizeof(kHelpMenu[0]))},
 };
 
-}  // namespace
+}  
 
-void RefreshMenuLanguage(MMDApp* app) {  // VA 0x0040B5A0
+void RefreshMenuLanguage(MMDApp* app) {  
     HWND hwnd = app->state.hwnd;
     HMENU menu = GetMenu(hwnd);
     MENUITEMINFOA mii;
     std::memset(&mii, 0, sizeof(mii));
     mii.cbSize = sizeof(mii);
-    mii.fMask = 0x40 /*MIIM_STRING*/;
+    mii.fMask = 0x40  ;
     const bool english = app->state.englishUI != 0;
 
     for (const MenuBlock& block : kMenus) {
-        ModifyMenuA(menu, block.topPos, 0x400 /*MF_BYPOSITION*/, 0,
+        ModifyMenuA(menu, block.topPos, 0x400  , 0,
                     english ? block.titleEn : block.titleJp);
         HMENU sub = GetSubMenu(menu, block.topPos);
         for (int i = 0; i < block.itemCount; ++i) {
@@ -775,8 +689,6 @@ void RefreshMenuLanguage(MMDApp* app) {  // VA 0x0040B5A0
         }
     }
 
-    // the full-screen item becomes the 3D-Vision variant when the renderer
-    // has NVAPI stereo enabled
     D3DRenderer* renderer = app->Renderer();
     if (renderer != nullptr && renderer->stereoEnabled != 0) {
         HMENU sub = GetSubMenu(menu, 2);
@@ -788,7 +700,6 @@ void RefreshMenuLanguage(MMDApp* app) {  // VA 0x0040B5A0
         SetMenuItemInfoA(sub, 0x1C, TRUE, &mii);
     }
 
-    // the "enhance model" submenu hangs below help item 2
     {
         HMENU sub = GetSubMenu(GetSubMenu(menu, 7), 2);
         for (const MenuText& item : kEnhanceMenu) {
@@ -800,23 +711,13 @@ void RefreshMenuLanguage(MMDApp* app) {  // VA 0x0040B5A0
 
     DrawMenuBar(hwnd);
 }
-// VA 0x0042AE20 - path copy: real port moved to src/media/media_load.cpp.
 
-// ===========================================================================
-// 0x4076E0 (x64 sub_7FF7CB428F30) - ReloadTextureCache:
-// renderer refresh after the toon reload (menu 278, thiscall on the
-// renderer object).  Walks the shared 10000-entry texture cache and
-// reloads every named entry from disk via D3DXCreateTextureFromFileExW
-// (1024 mipmaps with the 1x1 no-mipmap retry), re-sampling the
-// bottom-left pixel colour into the entry's tag bytes; entries that fail
-// to reload keep a null texture with zeroed colour.
-// ===========================================================================
 void ReloadTextureCache(void* rendererArg) {
     D3DRenderer* renderer = static_cast<D3DRenderer*>(rendererArg);
     IDirect3DDevice9* device = renderer->device;
     auto* d3dx = &d3dx::Get();
 
-    struct ImgInfo {  // first fields of D3DXIMAGE_INFO
+    struct ImgInfo {  
         UINT Width, Height, Depth, MipLevels;
         UINT rest[16];
     };
@@ -824,7 +725,7 @@ void ReloadTextureCache(void* rendererArg) {
     for (int i = 0; i < 10000; ++i) {
         ResourcePoolEntry& entry = renderer->resourcePool[i];
         if (entry.heapBuffer == nullptr)
-            break;  // end of the used region
+            break;  
         auto* name = static_cast<wchar_t*>(entry.heapBuffer);
         auto*& texture =
             reinterpret_cast<IDirect3DTexture9*&>(entry.comObject);
@@ -864,18 +765,14 @@ void ReloadTextureCache(void* rendererArg) {
             const unsigned char* row =
                 static_cast<const unsigned char*>(rect.pBits) +
                 rect.Pitch * (info.Height ? info.Height - 1 : 0);
-            rgb[2] = row[0];  // blue
-            rgb[1] = row[1];  // green
-            rgb[0] = row[2];  // red
+            rgb[2] = row[0];  
+            rgb[1] = row[1];  
+            rgb[0] = row[2];  
             texture->UnlockRect(0);
         }
     }
 }
 
-// ---- helpers ported in other translation units (declared here with their
-//      original VAs; not yet registered in ported_funcs.hpp) --------------
 
-// VA 0x004629D0 - fullscreen enter/restore window manager; the real body
-// now lives in src/app/avi_record_start.cpp (declared in ported_funcs.hpp).
 
-}  // namespace rinmotiondance
+}  

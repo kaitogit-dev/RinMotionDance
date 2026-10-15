@@ -30,9 +30,6 @@ struct Module {
 };
 }
 
-// A real HAL test: shader compilation and successful DrawPrimitiveUP alone do
-// not prove that a pixel survived depth/stencil/scissor tests. Exercise the
-// production Draw=Buffer callback against a deliberately hostile host state.
 int main() {
     Window window;
     Module d3dx;
@@ -169,9 +166,6 @@ int main() {
     check((outsidePixel & 0x00ffffff) == 0x00ff0000,
           "Draw=Buffer changed a pixel outside the host scissor rectangle");
 
-    // Exercise the actual semantic resolver/binder, not a parallel copy of
-    // its size selection. Intermediate pass viewports must not replace the
-    // BeginScene size or the active offscreen turn's size.
     {
         const char viewportSource[] =
             "float2 ViewSize : VIEWPORTPIXELSIZE;\n"
@@ -215,7 +209,7 @@ int main() {
         check(size[0] == 1024 && size[1] == 512,
               "VIEWPORTPIXELSIZE must use BeginScene dimensions, not the 256x128 viewport");
         mme::SasResource offscreen;
-        offscreen.surface = offscreenTarget.p; // borrowed; Com owns the surface
+        offscreen.surface = offscreenTarget.p; 
         context.currentBindingOffscreen = &offscreen;
         REQUIRE_HR(device->SetRenderTarget(0, offscreenTarget.p));
         intermediate.Width = 160;

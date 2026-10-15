@@ -72,14 +72,11 @@ int main() {
     if (!child(0x198, L"BUTTON", BS_CHECKBOX)) return 1;
     edit = child(0x1DE, L"EDIT", 0);
     if (!edit) return 1;
-    // Inject a captured input context without activating or synthesizing input
-    // in the user's desktop. Dispatch still executes real product code and
-    // synchronous Win32 messages; only the window command handler is a sink.
     const KeyboardInputContext input{window, true};
     bool ok = true;
 
     reset();
-    app->state.dialogFlags[0] = 1; // X changes edit mode before Enter registers.
+    app->state.dialogFlags[0] = 1; 
     app->state.enterKeyState = 1;
     ConsumeKeyboardInput(app.get(), input);
     ok &= expect(commands.size() == 1 && commands[0].id == 0x1F4 &&
@@ -108,7 +105,7 @@ int main() {
     ::operator delete(model->undoRings[1].slots[0].auxiliaryPose);
 
     reset();
-    app->state.dialogFlags[12] = 1; // P starts playback; Enter must see it.
+    app->state.dialogFlags[12] = 1; 
     app->state.enterKeyState = 1;
     ConsumeKeyboardInput(app.get(), input);
     ok &= expect(commands.size() == 1 && commands[0].id == 0x198 &&
@@ -124,8 +121,6 @@ int main() {
         commands[0].playChecked == BST_UNCHECKED && commands[1].id == 0x1F4,
         "P failed to stop playback before the following Enter");
 
-    // Every control omitted by the old 12-item focus approximation suppresses
-    // F and model Enter, even with a stale viewport-active byte.
     for (int id : {0x199, 0x19A, 0x1A1, 0x1A8, 0x1A9, 0x1AA, 0x1CD,
                    0x1D2, 0x1DE, 0x1E5, 0x1FA, 0x1FF, 0x204, 0x209, 0x231}) {
         HWND control = GetDlgItem(window, id);

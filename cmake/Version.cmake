@@ -1,4 +1,3 @@
-# VERSION is the sole editable product version; preserve its two-digit minor.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" RMD_VERSION)
 string(STRIP "${RMD_VERSION}" RMD_VERSION)

@@ -1,11 +1,9 @@
-// Test-only forwarding device. All surfaces and GPU operations are real D3D9;
-// only the two creation HRESULTs can be injected. No vtable or DLL hooks.
 #pragma once
 #include <d3d9.h>
 #include <deque>
 
 struct SnapshotDeviceFixture : IDirect3DDevice9 {
-    IDirect3DDevice9* real; // borrowed; forwarded AddRef/Release keep it alive
+    IDirect3DDevice9* real; 
     unsigned colorCreates = 0, depthCreates = 0;
     unsigned vertexCreates = 0, indexCreates = 0;
     std::deque<HRESULT> colorResults, depthResults;

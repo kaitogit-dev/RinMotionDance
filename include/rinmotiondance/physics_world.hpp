@@ -4,8 +4,6 @@
 
 namespace rinmotiondance {
 
-// The application owns this world. Diagnostics can inspect the substep
-// accumulator without depending on Bullet's private binary layout.
 class PhysicsWorld : public btDiscreteDynamicsWorld {
 public:
     using btDiscreteDynamicsWorld::btDiscreteDynamicsWorld;
@@ -16,4 +14,4 @@ public:
 #endif
 };
 
-}  // namespace rinmotiondance
+}  

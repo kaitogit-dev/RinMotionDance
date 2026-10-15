@@ -107,4 +107,4 @@ struct GravityClipboardRecord {
 };
 static_assert(sizeof(GravityClipboardRecord) == 28, "gravity clipboard ABI");
 
-}  // namespace rinmotiondance::mdl
+}  

@@ -23,7 +23,6 @@ void ConvertAnsiToWide(const D3DRenderer* renderer, const char* source,
         wcsncpy_s(destination, destinationWords, buffer.get(), _TRUNCATE);
         return;
     }
-    // Startup can precede renderer construction. Keep its safe CRT fallback.
     if (!renderer) {
         mbstowcs_s(nullptr, destination, destinationWords, source, _TRUNCATE);
         return;
@@ -50,10 +49,9 @@ void WideToSjis(const D3DRenderer* renderer, char* destination,
         return;
     }
     for (auto locale : renderer->localeTable) {
-        // STRUNCATE is nonzero: like any other failure it advances the chain.
         if (_wcstombs_s_l(nullptr, destination, destinationBytes, source,
                          _TRUNCATE, locale) == 0)
             break;
     }
 }
-}  // namespace rinmotiondance
+}  

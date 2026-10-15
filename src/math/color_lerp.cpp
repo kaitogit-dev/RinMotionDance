@@ -1,11 +1,3 @@
-// ===========================================================================
-// VA 0x0040AD00 - ColorLerp  (original: sub_40AD00)
-// ===========================================================================
-// __stdcall ColorLerp(COLORREF a, COLORREF b, float t)
-// Per-channel `a - (a - b) * t` with double intermediate math and
-// truncation to int, matching the original x87 code exactly.
-// COLORREF layout: 0x00BBGGRR (R = byte0, G = byte1, B = byte2).
-// ===========================================================================
 #include <cstdint>
 
 #include "rinmotiondance/ported_funcs.hpp"
@@ -13,8 +5,6 @@
 namespace rinmotiondance {
 
 std::uint32_t ColorLerp(std::uint32_t a, std::uint32_t b, float t) {
-    // Original computes G and B through one 16-bit register pair; the
-    // observable result is per-channel truncation, preserved here.
     const unsigned char rA = static_cast<unsigned char>(a & 0xFF);
     const unsigned char gA = static_cast<unsigned char>((a >> 8) & 0xFF);
     const unsigned char bA = static_cast<unsigned char>((a >> 16) & 0xFF);
@@ -33,4 +23,4 @@ std::uint32_t ColorLerp(std::uint32_t a, std::uint32_t b, float t) {
                                       ((bl & 0xFF) << 16));
 }
 
-}  // namespace rinmotiondance
+}  

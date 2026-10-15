@@ -1,6 +1,3 @@
-// ===========================================================================
-// VA 0x00423420 / 0x004757C3 - text and selection-line overlay producers
-// ===========================================================================
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -51,9 +48,9 @@ float OverlayScale(MMDApp* app) {
     return sub != nullptr ? sub->viewScale : 1.0f;
 }
 
-}  // namespace
+}  
 
-void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
+void PrepareFrameTextOverlay(MMDApp* app) {  
     auto* vb = app->OverlayVertices();
     app->TextOverlayPrimitiveCount() = 0;
     if (vb == nullptr)
@@ -101,8 +98,6 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
         }
     };
 
-    // 0x423591..0x423EBF: information/FPS. All positions first truncate
-    // the scaled offset to int, matching the original x87-to-int sequence.
     if (app->FpsOverlayEnabled() != 0) {
         const int fps = app->FramesPerSecond();
         const float fpsTop = static_cast<float>(view.bottom -
@@ -117,7 +112,6 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
                 digits(value, xOffset, fpsTop, 0.375f, 0.43554688f,
                        0xFFE0E0E0u, 0xFF0000FFu);
             } else {
-                // 0x42382F: the A4420 path substitutes two fixed glyphs.
                 xOffset = 27.0f;
                 for (int glyph = 0; glyph < 2; ++glyph) {
                     const float left = static_cast<float>(view.left +
@@ -148,7 +142,6 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
         }
     }
 
-    // 0x423EC5..0x4249F7: playback frame, bar and HH:MM:SS cells.
     if (app->PlaybackActive() != 0 && app->FrameStepPlayback() == 0) {
         char frameText[256]{};
         const int frame = static_cast<int>(30.0f * app->PlaybackCursorSeconds());
@@ -172,7 +165,7 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
                       static_cast<int>(seconds / 3600.0f));
         digits(timePart, xOffset, top, 0.5f, 0.56054688f,
                0xFF000000u, 0xFFFFFFFFu);
-        xOffset += 12.5f;  // the colon itself is baked into the bar texture
+        xOffset += 12.5f;  
         std::snprintf(timePart, sizeof(timePart), "%02d",
                       static_cast<int>(seconds / 60.0f));
         digits(timePart, xOffset, top, 0.5f, 0.56054688f,
@@ -184,8 +177,6 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
                0xFF000000u, 0xFFFFFFFFu);
     }
 
-    // 0x424A1F..0x424D8F: transient renderer-state indication. These
-    // overlays are deliberately unscaled and use alpha-byte color patterns.
     const std::uint8_t status = app->state.autoRepeat;
     if (status > 0 && status < 4) {
         const float left = static_cast<float>(view.right) - 160.0f;
@@ -207,7 +198,7 @@ void PrepareFrameTextOverlay(MMDApp* app) {  // 0x423420
     vb->Unlock();
 }
 
-void PrepareFrameLineOverlay(MMDApp* app) {  // 0x4757C3..0x4759D8
+void PrepareFrameLineOverlay(MMDApp* app) {  
     app->LineOverlayPrimitiveCount() = 0;
     if (!app->LeftMouseButtonHeld() ||
         app->state.viewportInputActive == 0 ||
@@ -217,7 +208,6 @@ void PrepareFrameLineOverlay(MMDApp* app) {  // 0x4757C3..0x4759D8
     D3DRenderer* sub = app->Renderer();
     if (sub == nullptr)
         return;
-    // The renderer owns the selection and guide-line vertex buffer.
     auto* vb = sub->lineVertexBuffer;
     if (vb == nullptr)
         return;
@@ -251,4 +241,4 @@ void PrepareFrameLineOverlay(MMDApp* app) {  // 0x4757C3..0x4759D8
     vb->Unlock();
 }
 
-}  // namespace rinmotiondance
+}  

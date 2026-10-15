@@ -1,8 +1,3 @@
-; ===========================================================================
-; RinMotionDance export table - mirrors MikuMikuDance.exe RVA 0x00141328
-; (37 exports, ordinal base 1, names resolved via 0x001413BC pointer table)
-; Note: no LIBRARY directive - this decorates an EXE, not a DLL.
-; ===========================================================================
 EXPORTS
     ExpGetFrameTime            @21
     ExpGetPmdNum               @33

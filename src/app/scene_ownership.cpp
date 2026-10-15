@@ -1,6 +1,3 @@
-// ===========================================================================
-// RinMotionDance - scene-resident allocation teardown
-// ===========================================================================
 #include <cstdio>
 #include <cstdlib>
 #include <new>
@@ -13,9 +10,6 @@ namespace rinmotiondance {
 
 namespace {
 
-// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
-// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
-// valid and inlines away to nothing.
 #ifdef RINMOTIONDANCE_DIAG
 void TraceAccessoryRelease(int slot, const char* phase, const void* track) {
     const char* directory = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
@@ -34,12 +28,9 @@ void TraceAccessoryRelease(int slot, const char* phase, const void* track) {
 inline void TraceAccessoryRelease(int, const char*, const void*) {}
 #endif
 
-}  // namespace
+}  
 
 void ReleaseSceneModels(MMDApp& app) {
-    // x64 teardown sub_7FF7CB42BD40+0x42C130: 255-count do/while over the
-    // model slots (app+0xBE8), each entry through sub_7FF7CB4C8D50
-    // (ModelDispose twin) then operator delete - kModelSlotCount wide.
     for (int slot = 0; slot < kModelSlotCount; ++slot) {
         unsigned char*& model = app.ModelSlot(slot);
         if (model == nullptr)
@@ -87,4 +78,4 @@ void ReleaseAccessoriesAndTracks(MMDApp& app) {
     }
 }
 
-}  // namespace rinmotiondance
+}  

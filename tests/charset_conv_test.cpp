@@ -34,7 +34,6 @@ int main() {
         WideCharToMultiByte(932, 0, inputs[i], -1, probe, sizeof(probe),
                             nullptr, &substituted);
         check(substituted != FALSE, "sample must trigger CP932 fallback");
-        // CRT CP1250 best-fit maps G-breve to ASCII G and stops there.
         const unsigned char expected[] = {0xa3, 0x47, 0xe0, 0xda};
         WideToSjis(renderer.get(), result, inputs[i], sizeof(result));
         check(static_cast<unsigned char>(result[0]) == expected[i] && result[1] == '\0',
