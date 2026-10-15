@@ -195,6 +195,9 @@ int ViewportToolAtPoint(MMDApp* app) {
         }
     }
 
+    if (operation == 0 && app->PlaybackActive() == 0)
+        operation = PickTransformGizmo(app, x, y);
+
     if (operation != 0) {
         app->ViewportToolHovered() = 1;
         app->ViewportToolOperation() =
@@ -370,6 +373,9 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
                     ? app->state.selectedObjectSlot : -1);
                 app->state.a06B5 = 1;
             }
+        } else if (operation >= 22 && operation <= 27) {
+            app->InteractionDragMode() = static_cast<ViewportDragMode>(operation - 1);
+            directBoneUndoPending = true;
         } else if (operation == 21) {
             int& target = app->state.coordinateSystem;
             const int limit = app->state.optflag[0] != 0 ? 3 : 2;
@@ -701,6 +707,34 @@ void ModeDirectBoneTranslate(MMDApp* app) {
     const ViewportDragMode mode = app->InteractionDragMode();
     app->InteractionDragMode() = ViewportDragMode::BoneMoveScreenPlane;
     BoneEditModes(app);
+    app->InteractionDragMode() = mode;
+    ViewRefreshGate(app);
+}
+
+void ModeGizmoRotate(MMDApp* app, int axis) {
+    const int pixels = TransformGizmoDragPixels(app);
+    if (pixels == 0)
+        return;
+    const auto mode = app->InteractionDragMode();
+    const int previousY = app->PreviousMouseY();
+    app->InteractionDragMode() = static_cast<ViewportDragMode>(4 + axis);
+    app->PreviousMouseY() = app->MouseY() + pixels;
+    BoneEditModes(app);
+    app->PreviousMouseY() = previousY;
+    app->InteractionDragMode() = mode;
+    ViewRefreshGate(app);
+}
+
+void ModeGizmoMove(MMDApp* app, int axis) {
+    const int pixels = TransformGizmoDragPixels(app);
+    if (pixels == 0)
+        return;
+    const auto mode = app->InteractionDragMode();
+    const int previousY = app->PreviousMouseY();
+    app->InteractionDragMode() = static_cast<ViewportDragMode>(10 + axis);
+    app->PreviousMouseY() = app->MouseY() + (axis == 2 ? -pixels : pixels);
+    BoneEditModes(app);
+    app->PreviousMouseY() = previousY;
     app->InteractionDragMode() = mode;
     ViewRefreshGate(app);
 }

@@ -115,6 +115,12 @@ enum class ViewportDragMode : std::int32_t {
     AngleAdjustZ = 18,
     DirectBoneRotate = 19,
     DirectBoneTranslate = 20,
+    GizmoRotateX = 21,
+    GizmoRotateY = 22,
+    GizmoRotateZ = 23,
+    GizmoMoveX = 24,
+    GizmoMoveY = 25,
+    GizmoMoveZ = 26,
 };
 
 enum class ViewportToolAction : std::int32_t {
@@ -140,6 +146,12 @@ enum class ViewportToolAction : std::int32_t {
     AngleAdjustY = 19,
     AngleAdjustZ = 20,
     CycleCoordinateSystem = 21,
+    GizmoRotateX = 22,
+    GizmoRotateY = 23,
+    GizmoRotateZ = 24,
+    GizmoMoveX = 25,
+    GizmoMoveY = 26,
+    GizmoMoveZ = 27,
 };
 
 enum class CameraAttachmentReference : std::uint8_t {

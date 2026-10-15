@@ -352,6 +352,16 @@ void FrameDriver(MMDApp* app) {
         case ViewportDragMode::DirectBoneTranslate:
             ModeDirectBoneTranslate(app);
             break;
+        case ViewportDragMode::GizmoRotateX:
+        case ViewportDragMode::GizmoRotateY:
+        case ViewportDragMode::GizmoRotateZ:
+            ModeGizmoRotate(app, static_cast<int>(mode) - 21);
+            break;
+        case ViewportDragMode::GizmoMoveX:
+        case ViewportDragMode::GizmoMoveY:
+        case ViewportDragMode::GizmoMoveZ:
+            ModeGizmoMove(app, static_cast<int>(mode) - 24);
+            break;
         case ViewportDragMode::PhysicsAxisX:
         case ViewportDragMode::PhysicsAxisY:
         case ViewportDragMode::PhysicsAxisZ:

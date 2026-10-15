@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <d3d9.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -220,9 +221,260 @@ void AppendLine(LineVertex*& out, int startX, int startY,
               0.0f, 1.0f, color};
 }
 
+
+struct GizmoSegment {
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+    bool visible;
+};
+
+struct TransformGizmoCache {
+    MMDApp* app = nullptr;
+    unsigned char* model = nullptr;
+    int bone = -1;
+    bool move = false;
+    bool valid = false;
+    int count = 0;
+    float dragX = 0.0f;
+    float dragY = 0.0f;
+    GizmoSegment segments[3][64]{};
+};
+
+TransformGizmoCache gTransformGizmo;
+
+bool ProjectGizmoPoint(const ClipPoint& position,
+                       const D3DMATRIX& world, const D3DMATRIX& view,
+                       const D3DMATRIX& projection, const RECT& bounds,
+                       float* x, float* y) {
+    ClipPoint p = TransformPoint(position, world);
+    p = TransformPoint(p, view);
+    p = TransformPoint(p, projection);
+    if (p.w <= 0.001f || !std::isfinite(p.w))
+        return false;
+    const float px = p.x / p.w;
+    const float py = p.y / p.w;
+    if (!std::isfinite(px) || !std::isfinite(py))
+        return false;
+    *x = (bounds.left + bounds.right) * 0.5f +
+         px * (bounds.right - bounds.left) * 0.5f;
+    *y = (bounds.top + bounds.bottom) * 0.5f -
+         py * (bounds.bottom - bounds.top) * 0.5f;
+    return true;
+}
+
+void PrepareTransformGizmo(MMDApp* app, unsigned char* model,
+                           const mdl::BoneRecord& bone, int boneIndex,
+                           const D3DMATRIX& world, const D3DMATRIX& view,
+                           const D3DMATRIX& projection, const RECT& bounds,
+                           bool move) {
+    auto& gizmo = gTransformGizmo;
+    const auto& boneMatrix =
+        *reinterpret_cast<const D3DMATRIX*>(bone.matInit);
+    const ClipPoint origin = TransformPoint(bone.position[0],
+        bone.position[1], bone.position[2], boneMatrix);
+    float cx = 0.0f;
+    float cy = 0.0f;
+    if (!ProjectGizmoPoint(origin, world, view, projection,
+                           bounds, &cx, &cy))
+        return;
+    float basis[16]{};
+    BoneLocalAxes(app, basis);
+    ClipPoint axes[3]{};
+    for (int i = 0; i < 3; ++i) {
+        float direction[3]{};
+        if (app->state.coordinateSystem == 1) {
+            direction[i] = 1.0f;
+        } else {
+            for (int k = 0; k < 3; ++k)
+                direction[k] = basis[i * 4 + k];
+            const float transformed[3] = {
+                boneMatrix._11 * direction[0] + boneMatrix._21 * direction[1] +
+                    boneMatrix._31 * direction[2],
+                boneMatrix._12 * direction[0] + boneMatrix._22 * direction[1] +
+                    boneMatrix._32 * direction[2],
+                boneMatrix._13 * direction[0] + boneMatrix._23 * direction[1] +
+                    boneMatrix._33 * direction[2]};
+            for (int k = 0; k < 3; ++k)
+                direction[k] = transformed[k];
+        }
+        axes[i] = {direction[0], direction[1], direction[2], 0.0f};
+    }
+    float maxPixels = 0.0f;
+    for (int axis = 0; axis < 3; ++axis) {
+        ClipPoint point{origin.x + axes[axis].x, origin.y + axes[axis].y,
+                        origin.z + axes[axis].z, 1.0f};
+        float x = 0.0f;
+        float y = 0.0f;
+        if (!ProjectGizmoPoint(point, world, view, projection,
+                               bounds, &x, &y))
+            return;
+        maxPixels = std::max(maxPixels, std::hypot(x - cx, y - cy));
+    }
+    if (maxPixels < 0.0001f)
+        return;
+    const float radius = std::clamp(67.0f / maxPixels, 0.001f, 50.0f);
+    gizmo.app = app;
+    gizmo.model = model;
+    gizmo.bone = boneIndex;
+    gizmo.move = move;
+    gizmo.count = move ? 3 : 64;
+    for (int axis = 0; axis < 3; ++axis) {
+        for (int segment = 0; segment < gizmo.count; ++segment) {
+            GizmoSegment& item = gizmo.segments[axis][segment];
+            item.visible = false;
+            float x0 = 0.0f;
+            float y0 = 0.0f;
+            float x1 = 0.0f;
+            float y1 = 0.0f;
+            if (move) {
+                ClipPoint end{origin.x + axes[axis].x * radius,
+                              origin.y + axes[axis].y * radius,
+                              origin.z + axes[axis].z * radius, 1.0f};
+                if (!ProjectGizmoPoint(end, world, view, projection,
+                                       bounds, &x1, &y1))
+                    continue;
+                x0 = cx;
+                y0 = cy;
+                if (segment > 0) {
+                    const float length = std::hypot(x1 - cx, y1 - cy);
+                    if (length < 0.5f)
+                        continue;
+                    const float tx = (x1 - cx) / length;
+                    const float ty = (y1 - cy) / length;
+                    const float side = segment == 1 ? 1.0f : -1.0f;
+                    x0 = x1 - tx * 12.0f + -ty * side * 6.0f;
+                    y0 = y1 - ty * 12.0f + tx * side * 6.0f;
+                }
+            } else {
+                const int u = (axis + 1) % 3;
+                const int v = (axis + 2) % 3;
+                const float t0 = segment * 6.28318530718f / 64.0f;
+                const float t1 = (segment + 1) * 6.28318530718f / 64.0f;
+                const ClipPoint p0{
+                    origin.x + radius * (axes[u].x * std::cos(t0) +
+                                         axes[v].x * std::sin(t0)),
+                    origin.y + radius * (axes[u].y * std::cos(t0) +
+                                         axes[v].y * std::sin(t0)),
+                    origin.z + radius * (axes[u].z * std::cos(t0) +
+                                         axes[v].z * std::sin(t0)), 1.0f};
+                const ClipPoint p1{
+                    origin.x + radius * (axes[u].x * std::cos(t1) +
+                                         axes[v].x * std::sin(t1)),
+                    origin.y + radius * (axes[u].y * std::cos(t1) +
+                                         axes[v].y * std::sin(t1)),
+                    origin.z + radius * (axes[u].z * std::cos(t1) +
+                                         axes[v].z * std::sin(t1)), 1.0f};
+                if (!ProjectGizmoPoint(p0, world, view, projection,
+                                       bounds, &x0, &y0) ||
+                    !ProjectGizmoPoint(p1, world, view, projection,
+                                       bounds, &x1, &y1))
+                    continue;
+            }
+            if (x0 < bounds.left - 100 || x0 > bounds.right + 100 ||
+                x1 < bounds.left - 100 || x1 > bounds.right + 100 ||
+                y0 < bounds.top - 100 || y0 > bounds.bottom + 100 ||
+                y1 < bounds.top - 100 || y1 > bounds.bottom + 100)
+                continue;
+            item = {x0, y0, x1, y1, true};
+        }
+    }
+    gizmo.valid = true;
+}
+
+void AppendTransformGizmo(LineVertex*& lines, std::uint32_t& count) {
+    const auto& gizmo = gTransformGizmo;
+    if (!gizmo.valid)
+        return;
+    const D3DCOLOR colors[3] = {0xFFF05C61u, 0xFF58D47Au, 0xFF608BFFu};
+    const D3DCOLOR selected[3] = {0xFFFFADA9u, 0xFFB5FFC6u, 0xFFB3C7FFu};
+    const int hovered = static_cast<int>(gizmo.app->ViewportToolOperation());
+    const int active = static_cast<int>(gizmo.app->InteractionDragMode());
+    for (int axis = 0; axis < 3; ++axis) {
+        const int op = (gizmo.move ? 25 : 22) + axis;
+        const int drag = (gizmo.move ? 24 : 21) + axis;
+        const D3DCOLOR color =
+            hovered == op || active == drag ? selected[axis] : colors[axis];
+        for (int i = 0; i < gizmo.count; ++i) {
+            const auto& segment = gizmo.segments[axis][i];
+            if (!segment.visible || count >= 4998)
+                continue;
+            AppendLine(lines, static_cast<int>(segment.x0),
+                       static_cast<int>(segment.y0),
+                       static_cast<int>(segment.x1),
+                       static_cast<int>(segment.y1), color);
+            ++count;
+        }
+    }
+}
+
 }  
 
+int PickTransformGizmo(MMDApp* app, int x, int y) {
+    auto& gizmo = gTransformGizmo;
+    if (!gizmo.valid || gizmo.app != app ||
+        gizmo.model != app->SelectedModel() ||
+        app->PlaybackActive() != 0 ||
+        app->InteractionDragMode() != ViewportDragMode::None)
+        return 0;
+    auto* model = mdl::Mdl(gizmo.model);
+    if (model == nullptr || model->selectedBone != gizmo.bone)
+        return 0;
+    const int mode = static_cast<int>(app->EditMode());
+    if (!(mode == 0 || mode == 3 || mode == 4))
+        return 0;
+    const bool moving = mode == 4 || (mode == 0 &&
+        (model->boneTable[gizmo.bone].type == mdl::BoneType::Move ||
+         model->boneTable[gizmo.bone].type == mdl::BoneType::Ik));
+    if (moving != gizmo.move)
+        return 0;
+    float best = 64.0f;
+    int bestAxis = -1;
+    float bestX = 0.0f;
+    float bestY = 0.0f;
+    for (int axis = 0; axis < 3; ++axis) {
+        for (int i = 0; i < gizmo.count; ++i) {
+            const GizmoSegment& s = gizmo.segments[axis][i];
+            if (!s.visible)
+                continue;
+            const float dx = s.x1 - s.x0;
+            const float dy = s.y1 - s.y0;
+            const float len2 = dx * dx + dy * dy;
+            if (len2 < 4.0f)
+                continue;
+            const float t = std::clamp(((x - s.x0) * dx +
+                (y - s.y0) * dy) / len2, 0.0f, 1.0f);
+            const float px = s.x0 + t * dx - x;
+            const float py = s.y0 + t * dy - y;
+            const float dist2 = px * px + py * py;
+            if (dist2 < best) {
+                best = dist2;
+                bestAxis = axis;
+                const float invLen = 1.0f / std::sqrt(len2);
+                bestX = dx * invLen;
+                bestY = dy * invLen;
+            }
+        }
+    }
+    if (bestAxis < 0)
+        return 0;
+    gizmo.dragX = bestX;
+    gizmo.dragY = bestY;
+    return (gizmo.move ? 25 : 22) + bestAxis;
+}
+
+int TransformGizmoDragPixels(MMDApp* app) {
+    if (!gTransformGizmo.valid || gTransformGizmo.app != app)
+        return 0;
+    const float amount =
+        (app->MouseX() - app->PreviousMouseX()) * gTransformGizmo.dragX +
+        (app->MouseY() - app->PreviousMouseY()) * gTransformGizmo.dragY;
+    return static_cast<int>(std::round(amount));
+}
+
 void PrepareFrameSpriteOverlay(MMDApp* app) {
+    gTransformGizmo.valid = false;
     if (app->RecordingWindow() != nullptr)
         return;
 
@@ -448,6 +700,17 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                                 0xFFFF3232u)) {
                             boneResult.linePrimitiveCount += 2;
                         }
+                    }
+                    if (selected >= 0 && selected < boneCount &&
+                        app->state.frameCopyDialog == nullptr &&
+                        cursorKind != 1 && cursorKind != 2 &&
+                        !(bones[selected].type == mdl::BoneType::FixedAxis)) {
+                        const mdl::BoneType type = bones[selected].type;
+                        const bool moving = cursorKind == 4 || (cursorKind == 0 &&
+                            (type == mdl::BoneType::Move || type == mdl::BoneType::Ik));
+                        PrepareTransformGizmo(app, model, bones[selected], selected,
+                                               world, viewMatrix, projection, view, moving);
+                        AppendTransformGizmo(lines, boneResult.linePrimitiveCount);
                     }
                     LineVertex* const lineBegin = lines -
                         2 * boneResult.linePrimitiveCount;
