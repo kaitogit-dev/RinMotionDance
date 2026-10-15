@@ -153,7 +153,8 @@ int ViewportToolAtPoint(MMDApp* app) {
             }
         }
 
-        if (operation == 0 && app->EditMode() == ViewportEditMode::Camera) {
+        if (operation == 0 && app->EditMode() == ViewportEditMode::Camera &&
+            !HasTransformGizmo(app)) {
             const int cx = app->ViewportToolCenterX();
             const int cy = app->ViewportToolCenterY();
             const int px = x - cx;
@@ -174,7 +175,8 @@ int ViewportToolAtPoint(MMDApp* app) {
                     operation = 5;
             }
         } else if (operation == 0 &&
-                   app->EditMode() == ViewportEditMode::Light) {
+                   app->EditMode() == ViewportEditMode::Light &&
+                   !HasTransformGizmo(app)) {
             const int px = x - app->ViewportToolCenterX();
             const int py = y - app->ViewportToolCenterY();
             if (px > 41 && px < 61 && py > -8 && py < 8)

@@ -411,6 +411,11 @@ void AppendTransformGizmo(LineVertex*& lines, std::uint32_t& count) {
 
 }  
 
+bool HasTransformGizmo(MMDApp* app) {
+    return gTransformGizmo.valid && gTransformGizmo.app == app &&
+           gTransformGizmo.model == app->SelectedModel();
+}
+
 int PickTransformGizmo(MMDApp* app, int x, int y) {
     auto& gizmo = gTransformGizmo;
     if (!gizmo.valid || gizmo.app != app ||
@@ -945,7 +950,7 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
         highlight(13, 16, 1, 1);
         highlight(14, 17, 2, 1);
 
-        if (app->state.optflag[0] == 0) {
+        if (app->state.optflag[0] == 0 && !HasTransformGizmo(app)) {
             const float x = static_cast<float>(app->ViewportToolCenterX());
             const float y = static_cast<float>(app->ViewportToolCenterY());
             const int cursorKind = static_cast<int>(app->EditMode());

@@ -201,6 +201,7 @@ void ModeDirectBoneRotate(MMDApp*);
 void ModeDirectBoneTranslate(MMDApp*);
 void ModeGizmoRotate(MMDApp*, int axis);
 void ModeGizmoMove(MMDApp*, int axis);
+bool HasTransformGizmo(MMDApp*);
 int PickTransformGizmo(MMDApp*, int x, int y);
 int TransformGizmoDragPixels(MMDApp*);           
 void ModePhysicsBody(MMDApp*, int axis);          
