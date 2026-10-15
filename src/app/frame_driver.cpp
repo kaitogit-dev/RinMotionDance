@@ -346,6 +346,12 @@ void FrameDriver(MMDApp* app) {
         case ViewportDragMode::BoneMoveScreenPlane:
             ModeBoneRotate(app, static_cast<int>(mode) - 8);
             break;
+        case ViewportDragMode::DirectBoneRotate:
+            ModeDirectBoneRotate(app);
+            break;
+        case ViewportDragMode::DirectBoneTranslate:
+            ModeDirectBoneTranslate(app);
+            break;
         case ViewportDragMode::PhysicsAxisX:
         case ViewportDragMode::PhysicsAxisY:
         case ViewportDragMode::PhysicsAxisZ:

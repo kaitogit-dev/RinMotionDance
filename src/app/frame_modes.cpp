@@ -42,6 +42,8 @@ static void ViewRefreshGate(MMDApp* s) {
 
 namespace {
 
+bool directBoneUndoPending = false;
+
 void PollKey(MMDApp* app, std::int32_t& keyState, int virtualKey) {
     const std::int32_t oldState = keyState;
     const bool down = (GetKeyState(virtualKey) & 0x8000) != 0;
@@ -268,13 +270,32 @@ unsigned char* ActiveBoneModel(MMDApp* app) {
     return app->ModelSlot(app->state.slotIdx);
 }
 
-void PickBoneAtCursor(MMDApp* app) {
+bool PickBoneAtCursor(MMDApp* app) {
     auto* model = mdl::Mdl(ActiveBoneModel(app));
     if (model && PickBoneAtPoint(*model, app->MouseX(), app->MouseY(),
                                 app->PlaybackPhysicsMode(), app->ShiftModifierActive())) {
         PostLanguageSweep(app);
         PostLanguageSweep2(app);
+        return true;
     }
+    return false;
+}
+
+void BeginDirectBoneDrag(MMDApp* app) {
+    if (!PickBoneAtCursor(app) || app->ShiftModifierActive())
+        return;
+    auto* model = mdl::Mdl(ActiveBoneModel(app));
+    if (model == nullptr || model->boneTable == nullptr)
+        return;
+    const int selected = model->selectedBone;
+    if (selected < 0 || selected >= static_cast<int>(model->boneCount))
+        return;
+    const mdl::BoneType type = model->boneTable[selected].type;
+    const bool movable = type == mdl::BoneType::Move || type == mdl::BoneType::Ik;
+    app->InteractionDragMode() = movable
+        ? ViewportDragMode::DirectBoneTranslate
+        : ViewportDragMode::DirectBoneRotate;
+    directBoneUndoPending = true;
 }
 
 void UpdateBoneBoxSelection(MMDApp* app) {
@@ -320,6 +341,7 @@ void UpdateBoneBoxSelection(MMDApp* app) {
 void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
     const int leftState = app->LeftMouseButtonState();
     if (leftState == 1) {
+        directBoneUndoPending = false;
         if (operation == 1 || operation == 2) {
             BeginCenteredDrag(app, operation);
             return;
@@ -363,7 +385,7 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
                 y > view.top && y < view.bottom) {
                 const ViewportEditMode panelMode = app->EditMode();
                 if (panelMode == ViewportEditMode::Bone)
-                    PickBoneAtCursor(app);
+                    BeginDirectBoneDrag(app);
                 else if (panelMode == ViewportEditMode::BoneBox) {
                     app->BoneBoxStartX() = x;
                     app->BoneBoxStartY() = y;
@@ -372,18 +394,22 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
             }
         }
     } else if (leftState == 2) {
+        directBoneUndoPending = false;
         app->PendingTimelineSelectionRow() = TimelineSelectionRow::None;;
         const int viewOperation =
             static_cast<int>(app->ViewToolDragOperation());
         const int mode = static_cast<int>(app->InteractionDragMode());
+        const bool directBoneDrag =
+            mode == static_cast<int>(ViewportDragMode::DirectBoneRotate) ||
+            mode == static_cast<int>(ViewportDragMode::DirectBoneTranslate);
         if (viewOperation == 1 || viewOperation == 2) {
             RestoreViewportToolCursor(app, viewOperation);
             app->ViewToolDragOperation() = ViewportToolAction::None;
         }
         if (mode != 0) {
-            if (mode >= 1 && mode <= 3)
+            if (!directBoneDrag && mode >= 1 && mode <= 3)
                 app->EditMode() = ViewportEditMode::Camera;
-            else if (mode >= 7 && mode <= 9)
+            else if (!directBoneDrag && mode >= 7 && mode <= 9)
                 app->EditMode() = ViewportEditMode::Light;
             if (viewOperation >= 9 && viewOperation <= 20) {
                 RestoreViewportToolCursor(app, viewOperation);
@@ -498,6 +524,14 @@ void MouseInteractionBegin(MMDApp* app) {
 
     if (app->LeftMouseButtonHeld())
         UpdateBoneBoxSelection(app);
+
+    if (directBoneUndoPending && app->LeftMouseButtonHeld() &&
+        (app->MouseX() != app->PreviousMouseX() ||
+         app->MouseY() != app->PreviousMouseY())) {
+        PushBoneEditUndo(app);
+        app->SceneModified() = 1;
+        directBoneUndoPending = false;
+    }
 
     const int dx = app->MouseX() - app->PreviousMouseX();
     const int dy = app->MouseY() - app->PreviousMouseY();
@@ -646,6 +680,28 @@ void ModeScale(MMDApp* app) {
 
 void ModeBoneRotate(MMDApp* app, int) {
     BoneEditModes(app);
+    ViewRefreshGate(app);
+}
+
+void ModeDirectBoneRotate(MMDApp* app) {
+    const ViewportDragMode mode = app->InteractionDragMode();
+    if (app->MouseX() != app->PreviousMouseX()) {
+        app->InteractionDragMode() = ViewportDragMode::ViewAxisRotateX;
+        BoneEditModes(app);
+    }
+    if (app->MouseY() != app->PreviousMouseY()) {
+        app->InteractionDragMode() = ViewportDragMode::ViewAxisRotateY;
+        BoneEditModes(app);
+    }
+    app->InteractionDragMode() = mode;
+    ViewRefreshGate(app);
+}
+
+void ModeDirectBoneTranslate(MMDApp* app) {
+    const ViewportDragMode mode = app->InteractionDragMode();
+    app->InteractionDragMode() = ViewportDragMode::BoneMoveScreenPlane;
+    BoneEditModes(app);
+    app->InteractionDragMode() = mode;
     ViewRefreshGate(app);
 }
 

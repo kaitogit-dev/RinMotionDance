@@ -113,6 +113,8 @@ enum class ViewportDragMode : std::int32_t {
     AngleAdjustX = 16,
     AngleAdjustY = 17,
     AngleAdjustZ = 18,
+    DirectBoneRotate = 19,
+    DirectBoneTranslate = 20,
 };
 
 enum class ViewportToolAction : std::int32_t {
