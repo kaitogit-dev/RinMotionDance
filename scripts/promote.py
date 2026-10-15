@@ -4,7 +4,7 @@
 The port reaches the application state blob through
 ``app->raw<T>(offsets::kXxx)`` / ``app->at(offset)``.  The cleanup campaign
 promotes each byte offset to a real named member of ``MMDAppState``
-(include/mikudancestudio/app_layout.hpp) and rewrites the call sites, until
+(include/rinmotiondance/app_layout.hpp) and rewrites the call sites, until
 ``raw<`` / ``at(`` disappear entirely and offsets.hpp / offsets_xlate.hpp are
 deleted.
 
@@ -39,7 +39,7 @@ SRC = os.path.join(ROOT, "src")
 # ---------------------------------------------------------------------------
 
 def iter_sources():
-    for base in (SRC, os.path.join(INCLUDE, "mikudancestudio")):
+    for base in (SRC, os.path.join(INCLUDE, "rinmotiondance")):
         for dirpath, _, files in os.walk(base):
             for f in files:
                 if f.endswith((".cpp", ".hpp", ".inc")):
@@ -58,7 +58,7 @@ CONST_RE = re.compile(
 
 def parse_offsets():
     """[(name, decimal_value, comment)] from offsets.hpp, in file order."""
-    text = read(os.path.join(INCLUDE, "mikudancestudio", "offsets.hpp"))
+    text = read(os.path.join(INCLUDE, "rinmotiondance", "offsets.hpp"))
     return [(m.group(1), int(m.group(2)), m.group(3) or "")
             for m in CONST_RE.finditer(text)]
 
@@ -70,13 +70,13 @@ def usage_index():
     word = {}
     for name, _, _ in parse_offsets():
         word[name] = re.compile(r"\b" + re.escape(name) + r"\b")
-    skip = {"include/mikudancestudio/offsets.hpp"}
+    skip = {"include/rinmotiondance/offsets.hpp"}
     for path in iter_sources():
         text = read(path)
         rel = os.path.relpath(path, ROOT).replace("\\", "/")
         if rel in skip:
             continue  # a constant's own definition is not a usage
-        is_app = rel == "include/mikudancestudio/mmd_app.hpp"
+        is_app = rel == "include/rinmotiondance/mmd_app.hpp"
         in_src = rel.startswith("src")
         for name, rx in word.items():
             n = len(rx.findall(text))
@@ -184,7 +184,7 @@ def cmd_apply(map_path):
         for name, expr in expanded.items():
             # receiver-attached or bare call forms; exact offset only;
             # \s* lets multi-line calls (constant on the next line) match
-            ns = r'\s*(?:mikudancestudio::)?(?:offsets|off)::'
+            ns = r'\s*(?:rinmotiondance::)?(?:offsets|off)::'
             for pat, rep in (
                 (r'(?:->|\.)?raw<[^>()+]*>\(' + ns + name + r'\s*\)', expr),
                 (r'(?:->|\.)?at\(' + ns + name + r'\s*\)', expr),

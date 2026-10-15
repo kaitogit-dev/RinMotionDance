@@ -1,5 +1,5 @@
-#ifndef MIKUDANCESTUDIO_MME_RESOURCES_H
-#define MIKUDANCESTUDIO_MME_RESOURCES_H
+#ifndef RINMOTIONDANCE_MME_RESOURCES_H
+#define RINMOTIONDANCE_MME_RESOURCES_H
 
 // Private resource namespace inside the host EXE. Command IDs remain the
 // original 400xx values; only resource lookup IDs move out of MMD's range.

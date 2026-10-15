@@ -39,7 +39,7 @@
 //      list (model+0x26E4, stride 20, flag +16, links model+0x2DB8[head],
 //      count model+0x2D80) and IK list (model+0x26E0, stride 60, flags +56/
 //      +57, links model+0x2DB4[head], count model+0x2D84).  The mask byte
-//      used for the IK icon rows is *(*(model+0x26BC) + sizeof(mikudancestudio::mdl::BoneRecord) *head + 0x1EC).
+//      used for the IK icon rows is *(*(model+0x26BC) + sizeof(rinmotiondance::mdl::BoneRecord) *head + 0x1EC).
 //      The per-record "visibility" byte (+16/+56) is re-derived from the
 //      drag-rect (this+0xA05C0..0xA05CC, byte this+0xA05D0) and mode
 //      words this+0x24 / this+0xC0 whenever the shared mask
@@ -72,14 +72,14 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // --- layout / draw constants from the original instruction stream --------
@@ -658,4 +658,4 @@ void PanelPaint(MMDApp* app) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

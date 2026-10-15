@@ -1,9 +1,9 @@
 #include "d3d9_device_fixture.hpp"
 
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/path_workspace.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/path_workspace.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 #include <Windows.h>
 #include <fcntl.h>
@@ -142,21 +142,21 @@ void RunFailure(PmxDeviceFixture& device, const char* expectedCaption,
           static_cast<int>(bytes.size()), "write PMX fixture");
     _lseek(handle, 0, SEEK_SET);
 
-    auto renderer = std::make_unique<mikudancestudio::D3DRenderer>();
+    auto renderer = std::make_unique<rinmotiondance::D3DRenderer>();
     renderer->device = &device;
-    std::vector<unsigned char> storage(mikudancestudio::mdl::kSize, 0);
-    mikudancestudio::ModelInitDefaults(storage.data());
-    auto& model = *mikudancestudio::mdl::Mdl(storage.data());
+    std::vector<unsigned char> storage(rinmotiondance::mdl::kSize, 0);
+    rinmotiondance::ModelInitDefaults(storage.data());
+    auto& model = *rinmotiondance::mdl::Mdl(storage.data());
     model.physicsFlags = 1;
     model.hwnd = owner;
-    mikudancestudio::PathResolutionWorkspace paths{};
+    rinmotiondance::PathResolutionWorkspace paths{};
     caption.clear();
     message.clear();
     messageCount = 0;
     HHOOK hook = SetWindowsHookExA(WH_CBT, CloseErrorBox, nullptr,
                                   GetCurrentThreadId());
     Check(hook != nullptr, "install dialog hook");
-    const bool loaded = mikudancestudio::LoadPMX(
+    const bool loaded = rinmotiondance::LoadPMX(
         storage.data(), renderer.get(), 0, 1, paths, handle);
     UnhookWindowsHookEx(hook);
     DeleteFileW(path);
@@ -176,7 +176,7 @@ void RunFailure(PmxDeviceFixture& device, const char* expectedCaption,
     if (model.indexBuffer)
         static_cast<IDirect3DIndexBuffer9*>(model.indexBuffer)->Release();
     ::operator delete(model.pmxVertices);
-    ::operator delete(mikudancestudio::mdl::PmxIndices(storage.data()));
+    ::operator delete(rinmotiondance::mdl::PmxIndices(storage.data()));
 }
 
 }

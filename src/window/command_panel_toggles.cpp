@@ -115,13 +115,13 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 struct BoneCopyRecord {
     char name[20];
@@ -698,9 +698,9 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
             PostLanguageSweep2(app);
             break;
         }
-        auto* const modelRecord = mikudancestudio::mdl::Mdl(model);
+        auto* const modelRecord = rinmotiondance::mdl::Mdl(model);
         const std::int32_t boneCount = modelRecord->boneCount;
-        mikudancestudio::mdl::BoneRecord* const bones = modelRecord->boneTable;
+        rinmotiondance::mdl::BoneRecord* const bones = modelRecord->boneTable;
         unsigned char* const sel = modelRecord->boneSelection;
         for (std::int32_t i = 0; i < boneCount; ++i) {
             const mdl::BoneType type = bones[i].type;
@@ -737,7 +737,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
     case 495: {
         PushBoneEditUndo(app);  // prep (thiscall)
         unsigned char* model = ActiveModel(app);
-        auto* modelRecord = mikudancestudio::mdl::Mdl(model);
+        auto* modelRecord = rinmotiondance::mdl::Mdl(model);
         unsigned char* boneSel = modelRecord->boneSelection;
         if (boneSel[0] != 0) {
             // bone-0 seed: pos/rot identity (0x144, 0x14C..0x154 = 0,
@@ -754,14 +754,14 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
         unsigned char* frameFlag = modelRecord->bonePhysicsState;
         for (std::int32_t i = 1; i < boneCount; ++i) {
             model = ActiveModel(app);
-            modelRecord = mikudancestudio::mdl::Mdl(model);
+            modelRecord = rinmotiondance::mdl::Mdl(model);
             boneSel = modelRecord->boneSelection;
             frameFlag = modelRecord->bonePhysicsState;
             if (boneSel[i] == 0) {
                 continue;
             }
-            mikudancestudio::mdl::BoneRecord* const bones = modelRecord->boneTable;
-            mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+            rinmotiondance::mdl::BoneRecord* const bones = modelRecord->boneTable;
+            rinmotiondance::mdl::BoneRecord* bone = &bones[i];
             if (bone->parent == -1) {
                 // ---- no parent: bake via own quaternion ----------------
                 d3dx::D3DXMATRIXF mat{};
@@ -875,7 +875,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
     // ------------------------------------------------------------------
     case 496: {
         unsigned char* model = ActiveModel(app);
-        auto* modelRecord = mikudancestudio::mdl::Mdl(model);
+        auto* modelRecord = rinmotiondance::mdl::Mdl(model);
         const std::int32_t boneCount = modelRecord->boneCount;
         std::int32_t count = 0;
         if (boneCount > 0) {
@@ -911,9 +911,9 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
                static_cast<std::size_t>(count) * sizeof(BoneCopyRecord));
         app->state.copiedBoneCount = 0;  // fill cursor
         model = ActiveModel(app);
-        modelRecord = mikudancestudio::mdl::Mdl(model);
+        modelRecord = rinmotiondance::mdl::Mdl(model);
         const std::int32_t nBones = modelRecord->boneCount;
-        mikudancestudio::mdl::BoneRecord* const bones = modelRecord->boneTable;
+        rinmotiondance::mdl::BoneRecord* const bones = modelRecord->boneTable;
         unsigned char* sel = modelRecord->boneSelection;
         std::int32_t cursor = 0;
         for (std::int32_t i = 0; i < nBones; ++i) {
@@ -945,7 +945,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
             break;  // jz def_47E903 (no-op)
         }
         unsigned char* model = ActiveModel(app);
-        auto* modelRecord = mikudancestudio::mdl::Mdl(model);
+        auto* modelRecord = rinmotiondance::mdl::Mdl(model);
         const std::int32_t boneCount = modelRecord->boneCount;
         unsigned char* sel = modelRecord->boneSelection;
         for (std::int32_t i = 0; i < boneCount; ++i) {
@@ -980,7 +980,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
                                    static_cast<std::uint32_t>(count),
                                    &IdentityCtor);
         }
-        undo.bonePose = reinterpret_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+        undo.bonePose = reinterpret_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
             pasteBlob);
         memset(pasteBlob, 0, static_cast<std::size_t>(count) * 0x24u);
 
@@ -988,10 +988,10 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
             reinterpret_cast<BoneCopyRecord*&>(app->BoneCopyRecords());
         for (std::int32_t j = 0; j < count; ++j) {
             model = ActiveModel(app);
-            modelRecord = mikudancestudio::mdl::Mdl(model);
+            modelRecord = rinmotiondance::mdl::Mdl(model);
             const std::int32_t nBones = modelRecord->boneCount;
             sel = modelRecord->boneSelection;
-            mikudancestudio::mdl::BoneRecord* const bones = modelRecord->boneTable;
+            rinmotiondance::mdl::BoneRecord* const bones = modelRecord->boneTable;
             unsigned char* frameFlag = modelRecord->bonePhysicsState;
             const BoneCopyRecord& src = records[j];
             // exact name match (the original's inline 2-byte-step compare
@@ -1007,9 +1007,9 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
                 continue;
             }
             pasteBlob = reinterpret_cast<unsigned char*>(undo.bonePose);
-            auto& rec = reinterpret_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+            auto& rec = reinterpret_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
                 pasteBlob)[j];
-            mikudancestudio::mdl::BoneRecord* bone = &bones[found];
+            rinmotiondance::mdl::BoneRecord* bone = &bones[found];
             rec.boneIndex = found;
             sel[found] = 1;
             // old pos into the undo record
@@ -1043,7 +1043,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
             break;  // jz def_47E903 (no-op)
         }
         unsigned char* model = ActiveModel(app);
-        auto* modelRecord = mikudancestudio::mdl::Mdl(model);
+        auto* modelRecord = rinmotiondance::mdl::Mdl(model);
         const std::int32_t boneCount = modelRecord->boneCount;
         unsigned char* sel = modelRecord->boneSelection;
         for (std::int32_t i = 0; i < boneCount; ++i) {
@@ -1077,7 +1077,7 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
                                    static_cast<std::uint32_t>(count),
                                    &IdentityCtor);
         }
-        undo.bonePose = reinterpret_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+        undo.bonePose = reinterpret_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
             pasteBlob);
         memset(pasteBlob, 0, static_cast<std::size_t>(count) * 0x24u);
 
@@ -1085,10 +1085,10 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
             reinterpret_cast<BoneCopyRecord*&>(app->BoneCopyRecords());
         for (std::int32_t j = 0; j < count; ++j) {
             model = ActiveModel(app);
-            modelRecord = mikudancestudio::mdl::Mdl(model);
+            modelRecord = rinmotiondance::mdl::Mdl(model);
             const std::int32_t nBones = modelRecord->boneCount;
             sel = modelRecord->boneSelection;
-            mikudancestudio::mdl::BoneRecord* const bones = modelRecord->boneTable;
+            rinmotiondance::mdl::BoneRecord* const bones = modelRecord->boneTable;
             unsigned char* frameFlag = modelRecord->bonePhysicsState;
             const BoneCopyRecord& src = records[j];
             // step 1: exact name match -> k1
@@ -1136,9 +1136,9 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
                 target = k1;  // fallback to the exact-name match
             }
             pasteBlob = reinterpret_cast<unsigned char*>(undo.bonePose);
-            auto& rec = reinterpret_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+            auto& rec = reinterpret_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
                 pasteBlob)[j];
-            mikudancestudio::mdl::BoneRecord* bone = &bones[target];
+            rinmotiondance::mdl::BoneRecord* bone = &bones[target];
             rec.boneIndex = target;
             sel[target] = 1;
             // old pos into the undo record
@@ -1174,4 +1174,4 @@ void CmdControl450(MMDApp* app, HWND hwnd, std::uint16_t id,
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

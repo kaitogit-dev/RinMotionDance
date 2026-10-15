@@ -14,7 +14,7 @@
 //
 // Already covered elsewhere (verified this round - NOT re-ported):
 //   0x004B0C50  UpdateModelVertexBuffers - src/model/model_skinning.cpp:318,
-//               declared include/mikudancestudio/ported_funcs.hpp:133
+//               declared include/rinmotiondance/ported_funcs.hpp:133
 //   0x004912F0  absorbed into src/render/model_renderers.cpp:
 //               ConfigureMaterialStages (:430, texture cascade 0x491470..
 //               0x491B38/0x491E41..0x492163), DrawModelMaterials (:817,
@@ -46,12 +46,12 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/charset_conv.hpp"
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/charset_conv.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // VA 0x004A6520 - InitStandardSkeletonQuats: standard-pose
 // quaternion derivation from the leg/arm bone
@@ -150,8 +150,8 @@ void CopyMatrixToObject(unsigned char* self, const void* matrix16) {
 // missing before.  Callers: 0x450000 (v2 loader), 0x47E8A0 (command dispatch).
 // ---------------------------------------------------------------------------
 void ModelBonePhysicsModeApply(unsigned char* model, int mode) {
-    const int boneCount = mikudancestudio::mdl::Mdl(model)->boneCount;        // 0x4B2218
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    const int boneCount = rinmotiondance::mdl::Mdl(model)->boneCount;        // 0x4B2218
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     if (mode == 0) {
         for (int i = 0; boneCount > 0 && i < boneCount; ++i)     // 0x4B221A
             if (bones[i].hasRigidBody != 0)
@@ -162,7 +162,7 @@ void ModelBonePhysicsModeApply(unsigned char* model, int mode) {
                 NotifyBonePhysicsMode(model, i, 0);                          // 0x4B2283
     } else if (mode >= 2) {
         for (int i = 0; boneCount > 0 && i < boneCount; ++i) {   // 0x4B22A3
-            mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+            rinmotiondance::mdl::BoneRecord* bone = &bones[i];
             if (bone->hasRigidBody != 0)
                 NotifyBonePhysicsMode(model, i, bone->physicsDisabled != 0);             // 0x4B22D1
         }
@@ -221,7 +221,7 @@ int SavePmdFile(unsigned char* model, char* path, void* localeTable) {
                                      128 /*_S_IREAD*/);          // 0x49026F
     if (openErr != 0) {
         char text[256];
-        if (mikudancestudio::mdl::Mdl(model)->physicsFlags != 0)                                   // English UI
+        if (rinmotiondance::mdl::Mdl(model)->physicsFlags != 0)                                   // English UI
             sprintf_s(text, 0x100u, "Cannot save file:%d", openErr);
         else
             sprintf_s(text, 0x100u,
@@ -403,10 +403,10 @@ int SavePmdFile(unsigned char* model, char* path, void* localeTable) {
     _write(fh, &english, 1);
     _write(fh, state.nameEn, sizeof(state.nameEn));
     _write(fh, state.commentEn, sizeof(state.commentEn));
-    for (int i = 0; i < mikudancestudio::mdl::Mdl(model)->boneCount; ++i)
-        _write(fh, &mikudancestudio::mdl::Bones(model)[i].nameEn[0], 0x14);
-    if (mikudancestudio::mdl::Mdl(model)->morphCount > 1)
-        for (int i = 1; i < mikudancestudio::mdl::Mdl(model)->morphCount; ++i)
+    for (int i = 0; i < rinmotiondance::mdl::Mdl(model)->boneCount; ++i)
+        _write(fh, &rinmotiondance::mdl::Bones(model)[i].nameEn[0], 0x14);
+    if (rinmotiondance::mdl::Mdl(model)->morphCount > 1)
+        for (int i = 1; i < rinmotiondance::mdl::Mdl(model)->morphCount; ++i)
             _write(fh, mdl::Morphs(model)[i].nameEn,
                    sizeof(mdl::Morphs(model)[i].nameEn));
     if (frameCount != 0)
@@ -531,22 +531,22 @@ const unsigned char kAnkleL[7] =                                 // 0x5311D8
 // the cursor is re-read for every field.
 inline float& TraceSlot(unsigned char* model, std::size_t fieldOffset) {
     return At<float>(
-        static_cast<unsigned char*>(mikudancestudio::mdl::PoseTraceBuffer(model)),
-        308 * (std::size_t)mikudancestudio::mdl::Mdl(model)->matMisc +
+        static_cast<unsigned char*>(rinmotiondance::mdl::PoseTraceBuffer(model)),
+        308 * (std::size_t)rinmotiondance::mdl::Mdl(model)->matMisc +
             fieldOffset);
 }
 
 // Mirror of one standard-bone quat/pos group (record slot offset, source
 // quaternion/position group base in model+64..332).  sign = -1 negates the
 // middle two components (left/right mirroring).
-void WritePoseGroup(unsigned char* model, mikudancestudio::mdl::BoneRecord* bone,
+void WritePoseGroup(unsigned char* model, rinmotiondance::mdl::BoneRecord* bone,
                     std::size_t slot, int quatBase, float s1, float s2,
                     float s3, float s4) {
     bone->rotQuat[3] = s4;
     bone->rotQuat[0] = s1;
     bone->rotQuat[1] = s2;
     bone->rotQuat[2] = s3;
-    if (mikudancestudio::mdl::PoseTraceFlag(model) != 0) {
+    if (rinmotiondance::mdl::PoseTraceFlag(model) != 0) {
         TraceSlot(model, slot) = bone->rotQuat[3];
         TraceSlot(model, slot + 4) = bone->rotQuat[0];
         TraceSlot(model, slot + 8) = bone->rotQuat[1];
@@ -559,20 +559,20 @@ void WritePoseGroup(unsigned char* model, mikudancestudio::mdl::BoneRecord* bone
 char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
                             unsigned char mirrorLeftRight, unsigned char skeletonFlag) {
     char wasRecording = 0;
-    if (mikudancestudio::mdl::PoseTraceFlag(model) == 0 && recordEnable) {  // 0x4B577A
-        mikudancestudio::mdl::PoseTraceFlag(model) = 1;
-        if (mikudancestudio::mdl::PoseTraceBuffer(model) != nullptr) {
-            ::operator delete(mikudancestudio::mdl::PoseTraceBuffer(model));   // 0x4B5795
-            mikudancestudio::mdl::PoseTraceBuffer(model) = nullptr;
+    if (rinmotiondance::mdl::PoseTraceFlag(model) == 0 && recordEnable) {  // 0x4B577A
+        rinmotiondance::mdl::PoseTraceFlag(model) = 1;
+        if (rinmotiondance::mdl::PoseTraceBuffer(model) != nullptr) {
+            ::operator delete(rinmotiondance::mdl::PoseTraceBuffer(model));   // 0x4B5795
+            rinmotiondance::mdl::PoseTraceBuffer(model) = nullptr;
         }
-        mikudancestudio::mdl::PoseTraceBuffer(model) =
+        rinmotiondance::mdl::PoseTraceBuffer(model) =
             ::operator new(0x3B3760);                             // 0x4B57B0
-        mikudancestudio::mdl::Mdl(model)->matMisc = 0;
+        rinmotiondance::mdl::Mdl(model)->matMisc = 0;
     }
     if (!recordEnable) {                                         // 0x4B57BE
-        if (mikudancestudio::mdl::PoseTraceFlag(model) != 0)
+        if (rinmotiondance::mdl::PoseTraceFlag(model) != 0)
             wasRecording = 1;
-        mikudancestudio::mdl::PoseTraceFlag(model) = 0;
+        rinmotiondance::mdl::PoseTraceFlag(model) = 0;
     }
 
     // IK scan (0x4B57DA..0x4B5847): pick up the leg-IK "add" flags that the
@@ -580,11 +580,11 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
     // like the original.
     bool leftIkAdd = recordEnable;
     bool rightIkAdd = false;
-    if (mikudancestudio::mdl::Mdl(model)->ikChainCount > 0) {
-        for (std::uint16_t i = 0; i < (std::uint16_t)mikudancestudio::mdl::Mdl(model)->ikChainCount; ++i) {
-            const mikudancestudio::mdl::IkChain& ik = mikudancestudio::mdl::IkChains(model)[i];
-            const mikudancestudio::mdl::BoneRecord* bone =
-                &mikudancestudio::mdl::Bones(model)[ik.boneIndex];
+    if (rinmotiondance::mdl::Mdl(model)->ikChainCount > 0) {
+        for (std::uint16_t i = 0; i < (std::uint16_t)rinmotiondance::mdl::Mdl(model)->ikChainCount; ++i) {
+            const rinmotiondance::mdl::IkChain& ik = rinmotiondance::mdl::IkChains(model)[i];
+            const rinmotiondance::mdl::BoneRecord* bone =
+                &rinmotiondance::mdl::Bones(model)[ik.boneIndex];
             if (std::memcmp(bone, kLegIkL, 9) == 0)
                 leftIkAdd = ik.enabled != 0;                     // 0x4B5814
             if (std::memcmp(bone, kLegIkR, 9) == 0)
@@ -597,33 +597,33 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
     // Height-scale normalization (0x4B5854..0x4B5994): when the scale slot
     // still holds the 90.0 sentinel and a leg height exists, derive the
     // scale from the 左足 bind pose and the offsets from 左足首.
-    if ((double)mikudancestudio::mdl::Mdl(model)->lightDir[1] == 90.0 &&
-        (double)mikudancestudio::mdl::Mdl(model)->lightDir[0] != -1.0) {
-        const int boneCount = mikudancestudio::mdl::Mdl(model)->boneCount;
-        mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    if ((double)rinmotiondance::mdl::Mdl(model)->lightDir[1] == 90.0 &&
+        (double)rinmotiondance::mdl::Mdl(model)->lightDir[0] != -1.0) {
+        const int boneCount = rinmotiondance::mdl::Mdl(model)->boneCount;
+        rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
         const int leg = mdl::FindSkeletonBone(bones, boneCount, kLegL, sizeof kLegL);
         if (leg >= 0) {
             const float legY = bones[leg].position[1];
             if ((double)legY != -1.0) {
-                const float scale = mikudancestudio::mdl::Mdl(model)->lightDir[0] / legY;  // 0x4B5928
+                const float scale = rinmotiondance::mdl::Mdl(model)->lightDir[0] / legY;  // 0x4B5928
                 const double scaleD = scale;                     // held st(6)
-                mikudancestudio::mdl::Mdl(model)->lightDir[1] = scale;
+                rinmotiondance::mdl::Mdl(model)->lightDir[1] = scale;
                 const float offset =
                     -mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][1] / scale;                // 0x4B5954
-                mikudancestudio::mdl::Mdl(model)->lightDir[2] = offset;
+                rinmotiondance::mdl::Mdl(model)->lightDir[2] = offset;
                 const int ankle = mdl::FindSkeletonBone(
                     bones, boneCount, kAnkleL, sizeof kAnkleL);
                 if (ankle >= 0) {
                     const float ankleY = bones[ankle].position[1];
                     if ((double)ankleY == -1.0) {
-                        mikudancestudio::mdl::Mdl(model)->legIkXOffset = (float)(80.0 / scaleD);
+                        rinmotiondance::mdl::Mdl(model)->legIkXOffset = (float)(80.0 / scaleD);
                     } else {
-                        mikudancestudio::mdl::Mdl(model)->lightDir[2] =
+                        rinmotiondance::mdl::Mdl(model)->lightDir[2] =
                             (float)((double)ankleY / scaleD + (double)offset);
-                        mikudancestudio::mdl::Mdl(model)->legIkXOffset = (float)(80.0 / scaleD);    // 0x4B59B6
+                        rinmotiondance::mdl::Mdl(model)->legIkXOffset = (float)(80.0 / scaleD);    // 0x4B59B6
                     }
                 } else {
-                    mikudancestudio::mdl::Mdl(model)->legIkXOffset =
+                    rinmotiondance::mdl::Mdl(model)->legIkXOffset =
                         (float)(80.0 / scaleD);                  // 0x4B5994
                 }
             }
@@ -635,13 +635,13 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
     // the original leaves them as stale stack bytes when the model has no
     // センター - the port zero-inits them (deviation noted).
     float centerPos[3] = {0.0f, 0.0f, 0.0f};
-    const int boneCount = mikudancestudio::mdl::Mdl(model)->boneCount;
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    const int boneCount = rinmotiondance::mdl::Mdl(model)->boneCount;
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     for (int i = 0; i < boneCount; ++i) {
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         if (std::memcmp(bone, kCenter, 9) == 0) {
             if ((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::Center][1] != -999.0) {
-                const double inv = 1.0 / (double)mikudancestudio::mdl::Mdl(model)->lightDir[1];
+                const double inv = 1.0 / (double)rinmotiondance::mdl::Mdl(model)->lightDir[1];
                 bone->trans[0] =
                     (float)((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::Center][0] * inv);
                 bone->trans[1] =
@@ -757,17 +757,17 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
         } else if (std::memcmp(bone, kLegIkL, 9) == 0) {
             if (mirrorLeftRight != 0) {
                 if ((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][1] != -999.0) {
-                    const double inv = 1.0 / (double)mikudancestudio::mdl::Mdl(model)->lightDir[1];
+                    const double inv = 1.0 / (double)rinmotiondance::mdl::Mdl(model)->lightDir[1];
                     bone->trans[0] =
                         (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][0]);
                     bone->trans[1] =
                         (float)((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][1] * inv);
                     bone->trans[2] =
                         (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][2]);
-                    bone->trans[1] = mikudancestudio::mdl::Mdl(model)->lightDir[2] +
+                    bone->trans[1] = rinmotiondance::mdl::Mdl(model)->lightDir[2] +
                         bone->trans[1];
                     bone->trans[0] = bone->trans[0] -
-                        mikudancestudio::mdl::Mdl(model)->legIkXOffset;
+                        rinmotiondance::mdl::Mdl(model)->legIkXOffset;
                     bone->rotQuat[3] = mdl::Mdl(model)->standardPose.leftFoot[3];
                     bone->rotQuat[0] = mdl::Mdl(model)->standardPose.leftFoot[0];
                     bone->rotQuat[1] = mdl::Mdl(model)->standardPose.leftFoot[1];
@@ -778,16 +778,16 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
                     bone->trans[2] = centerPos[2];
                 }
             } else if ((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][1] != -999.0) {
-                const double inv = 1.0 / (double)mikudancestudio::mdl::Mdl(model)->lightDir[1];
+                const double inv = 1.0 / (double)rinmotiondance::mdl::Mdl(model)->lightDir[1];
                 bone->trans[0] =
                     (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][0]);
                 bone->trans[1] =
                     (float)((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][1] * inv);
                 bone->trans[2] =
                     (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][2]);
-                bone->trans[1] = mikudancestudio::mdl::Mdl(model)->lightDir[2] +
+                bone->trans[1] = rinmotiondance::mdl::Mdl(model)->lightDir[2] +
                     bone->trans[1];
-                bone->trans[0] = mikudancestudio::mdl::Mdl(model)->legIkXOffset +
+                bone->trans[0] = rinmotiondance::mdl::Mdl(model)->legIkXOffset +
                     bone->trans[0];
                 bone->trans[0] = -bone->trans[0];
                 bone->rotQuat[3] = mdl::Mdl(model)->standardPose.rightFoot[3];
@@ -811,16 +811,16 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
         } else if (std::memcmp(bone, kLegIkR, 9) == 0) {
             if (mirrorLeftRight != 0) {
                 if ((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][1] != -999.0) {
-                    const double inv = 1.0 / (double)mikudancestudio::mdl::Mdl(model)->lightDir[1];
+                    const double inv = 1.0 / (double)rinmotiondance::mdl::Mdl(model)->lightDir[1];
                     bone->trans[0] =
                         (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][0]);
                     bone->trans[1] =
                         (float)((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][1] * inv);
                     bone->trans[2] =
                         (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::RightAnkle][2]);
-                    bone->trans[1] = mikudancestudio::mdl::Mdl(model)->lightDir[2] +
+                    bone->trans[1] = rinmotiondance::mdl::Mdl(model)->lightDir[2] +
                         bone->trans[1];
-                bone->trans[0] = mikudancestudio::mdl::Mdl(model)->legIkXOffset +
+                bone->trans[0] = rinmotiondance::mdl::Mdl(model)->legIkXOffset +
                         bone->trans[0];
                     bone->rotQuat[3] = mdl::Mdl(model)->standardPose.rightFoot[3];
                     bone->rotQuat[0] = mdl::Mdl(model)->standardPose.rightFoot[0];
@@ -832,17 +832,17 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
                     bone->trans[2] = centerPos[2];
                 }
             } else if ((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][1] != -999.0) {
-                const double inv = 1.0 / (double)mikudancestudio::mdl::Mdl(model)->lightDir[1];
+                const double inv = 1.0 / (double)rinmotiondance::mdl::Mdl(model)->lightDir[1];
                 bone->trans[0] =
                     (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][0]);
                 bone->trans[1] =
                     (float)((double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][1] * inv);
                 bone->trans[2] =
                     (float)(inv * (double)mdl::Mdl(model)->currentJoints[mdl::TrackedJoint::LeftAnkle][2]);
-                bone->trans[1] = mikudancestudio::mdl::Mdl(model)->lightDir[2] +
+                bone->trans[1] = rinmotiondance::mdl::Mdl(model)->lightDir[2] +
                     bone->trans[1];
                 bone->trans[0] = bone->trans[0] -
-                    mikudancestudio::mdl::Mdl(model)->legIkXOffset;
+                    rinmotiondance::mdl::Mdl(model)->legIkXOffset;
                 bone->trans[0] = -bone->trans[0];
                 bone->rotQuat[3] = mdl::Mdl(model)->standardPose.leftFoot[3];
                 bone->rotQuat[0] = mdl::Mdl(model)->standardPose.leftFoot[0];
@@ -901,8 +901,8 @@ char ModelStandardPoseSetup(unsigned char* model, bool recordEnable,
         }
     }
     if (mdl::PoseTraceFlag(model) != 0)
-        ++mikudancestudio::mdl::Mdl(model)->matMisc;                        // 0x4B77C7
+        ++rinmotiondance::mdl::Mdl(model)->matMisc;                        // 0x4B77C7
     return wasRecording;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

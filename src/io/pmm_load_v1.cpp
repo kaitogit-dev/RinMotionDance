@@ -112,13 +112,13 @@
 #include <cstdlib>
 #include <io.h>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/scene_ownership.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/scene_ownership.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
 // Shared PMM record readers, the Rd helper and the byte-identical halves of
 // the loader string tables live here (see the header comment for the
@@ -127,7 +127,7 @@
 
 #pragma comment(lib, "avifil32.lib")
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 using namespace pmm_io;
 
@@ -164,13 +164,13 @@ inline unsigned char* AllocBytes(std::size_t n) {
 // .rdata mirrors and kNon moved there). ------------------------------------
 
 
-// Porting-era trace under MIKUDANCESTUDIO_PMM_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void LogV1Stage(const char* stage, long pos, std::int32_t a = 0,
                 std::int32_t b = 0) {
-    const char* dir = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* dir = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (dir == nullptr || dir[0] == '\0')
         return;
     char p[MAX_PATH];
@@ -582,7 +582,7 @@ static bool LoadSceneV1_ModelBlock(PmmV1LoadContext& ctx, int fd) {
             {
                 unsigned char b = 0;
                 Rd(fd, &b, 1);                                   // 0x459C2D
-                mikudancestudio::mdl::Mdl(model)->loadComplete = (b == 1) ? 1 : 0;
+                rinmotiondance::mdl::Mdl(model)->loadComplete = (b == 1) ? 1 : 0;
             }
             Rd(fd, &record->selectedBone, sizeof(record->selectedBone));
             for (std::int32_t& selectedMorph :
@@ -608,8 +608,8 @@ static bool LoadSceneV1_ModelBlock(PmmV1LoadContext& ctx, int fd) {
                     displayGroups[g].flags = (b == 1) ? 1 : 0;
             }
             LogV1Stage("misc-done", _tell(fd),
-                        static_cast<int>(mikudancestudio::mdl::Mdl(model)->boneCount),
-                        static_cast<int>(mikudancestudio::mdl::Mdl(model)->morphCount));
+                        static_cast<int>(rinmotiondance::mdl::Mdl(model)->boneCount),
+                        static_cast<int>(rinmotiondance::mdl::Mdl(model)->morphCount));
             Rd(fd, &record->boneListPos, sizeof(record->boneListPos));
             Rd(fd, &record->maxFrame, sizeof(record->maxFrame));
 
@@ -773,7 +773,7 @@ static void LoadSceneV1_RegisterCombo(PmmV1LoadContext& ctx) {
                          reinterpret_cast<LPARAM>("all"));        // 0x52D594
         }
         SendMessageA(GetDlgItem(main, panel::kMainComboModel), CB_SETCURSEL,       // 0x45AA59
-                     mikudancestudio::mdl::Mdl(
+                     rinmotiondance::mdl::Mdl(
                          slots[s->SelectedModelSlot()])->comboSelIndex,
                      0);
         PostLoadInit(slots[s->SelectedModelSlot()]);                 // 0x45AA6F
@@ -1146,15 +1146,15 @@ static bool LoadSceneV1_AccessoryBlock(PmmV1LoadContext& ctx, int fd) {
             unsigned char* pm = slots[parentSlot];
             if (pm != nullptr &&
                 static_cast<std::int32_t>(
-                    mikudancestudio::mdl::Mdl(pm)->boneCount) > 0) {
+                    rinmotiondance::mdl::Mdl(pm)->boneCount) > 0) {
                 for (std::int32_t b = 0;
                      b < static_cast<std::int32_t>(
-                             mikudancestudio::mdl::Mdl(pm)->boneCount);
+                             rinmotiondance::mdl::Mdl(pm)->boneCount);
                      ++b) {
-                    const mikudancestudio::mdl::BoneRecord& entry =
-                        mikudancestudio::mdl::Bones(pm)[b];
-                    if (entry.type < mikudancestudio::mdl::BoneType::InertTip ||
-                        entry.type == mikudancestudio::mdl::BoneType::FixedAxis)
+                    const rinmotiondance::mdl::BoneRecord& entry =
+                        rinmotiondance::mdl::Bones(pm)[b];
+                    if (entry.type < rinmotiondance::mdl::BoneType::InertTip ||
+                        entry.type == rinmotiondance::mdl::BoneType::FixedAxis)
                         SendMessageA(GetDlgItem(main, panel::kAttachBoneCombo),
                                      CB_ADDSTRING, 0,
                                      reinterpret_cast<LPARAM>(entry.name));
@@ -1458,12 +1458,12 @@ static void LoadSceneV1_ReadGatedTail(PmmV1LoadContext& ctx, int fd) {
             if (slots[i] != nullptr) {
                 unsigned char b = 0;
                 Rd(fd, &b, 1);                                   // 0x45D2EA
-                mikudancestudio::mdl::Mdl(slots[i])->postLoadFlag2 =
+                rinmotiondance::mdl::Mdl(slots[i])->postLoadFlag2 =
                     (b == 1) ? 1 : 0;
             }
         }
         if (slots[s->SelectedModelSlot()] != nullptr &&
-            mikudancestudio::mdl::Mdl(
+            rinmotiondance::mdl::Mdl(
                 slots[s->SelectedModelSlot()])->postLoadFlag2 != 0 &&
             s->state.optflag[0] == 0)
             SendMessageA(GetDlgItem(main, panel::kAddBlendCheckbox), BM_SETCHECK, 1,
@@ -1489,7 +1489,7 @@ static void LoadSceneV1_ReadGatedTail(PmmV1LoadContext& ctx, int fd) {
             std::memcpy(&edgeScaleBits, &v31C0, sizeof edgeScaleBits);
             for (int i = 0; i < kModelSlotCount; ++i)
                 if (slots[i] != nullptr)
-                    mikudancestudio::mdl::Mdl(slots[i])->edgeScale =
+                    rinmotiondance::mdl::Mdl(slots[i])->edgeScale =
                         edgeScaleBits;
             unsigned char b = 0;
             Rd(fd, &b, 1);                                       // 0x45D44E
@@ -1509,7 +1509,7 @@ static void LoadSceneV1_ReadGatedTail(PmmV1LoadContext& ctx, int fd) {
                     if (slots[i] != nullptr) {
                         std::int32_t edge = 0;
                         Rd(fd, &edge, 4);                        // 0x45D4D3
-                        std::memcpy(&mikudancestudio::mdl::Mdl(slots[i])->edgeScale,
+                        std::memcpy(&rinmotiondance::mdl::Mdl(slots[i])->edgeScale,
                                     &edge, sizeof edge);
                     }
                 }
@@ -1576,7 +1576,7 @@ static void LoadSceneV1_ReadGatedTail(PmmV1LoadContext& ctx, int fd) {
                             if (slots[i] != nullptr) {
                                 unsigned char b = 0;
                                 Rd(fd, &b, 1);                   // 0x45D7BB
-                                mikudancestudio::mdl::Mdl(slots[i])->toonFlag =
+                                rinmotiondance::mdl::Mdl(slots[i])->toonFlag =
                                     (b == 1) ? 1 : 0;
                             }
                         }
@@ -1668,7 +1668,7 @@ static void LoadSceneV1_ReadGatedTail(PmmV1LoadContext& ctx, int fd) {
                                                     GetDlgItem(main,
                                                                panel::kMainComboNormal),
                                                     CB_SETCURSEL,
-                                                    mikudancestudio::mdl::Mdl(
+                                                    rinmotiondance::mdl::Mdl(
                                                         slots[sel0])->comboSelIndex,
                                                     0);        // 0x45DC9D
                                             }
@@ -1822,7 +1822,7 @@ static void LoadSceneV1_SuccessTail(PmmV1LoadContext& ctx) {
     CheckMenuItem(GetMenu(main), 0x117,
                   s->state.selfShadowEnabled != 0 ? 8 : 0);
     if (slots[s->SelectedModelSlot()] != nullptr &&
-        mikudancestudio::mdl::Mdl(
+        rinmotiondance::mdl::Mdl(
             slots[s->SelectedModelSlot()])->toonFlag != 0 &&
         s->state.optflag[0] == 0)
         SendMessageA(GetDlgItem(main, panel::kShadowCheckbox), BM_SETCHECK, 1, 0); // 0x45E1C1
@@ -1846,7 +1846,7 @@ static void LoadSceneV1_SuccessTail(PmmV1LoadContext& ctx) {
                           dir[2] * mag * 10.0f));
         }
     }
-    // Title brand: the port ships as MikuDanceStudio (About-box rename);
+    // Title brand: the port ships as RinMotionDance (About-box rename);
     // the same kAppTitleFormat constant serves the v2 load and pmm_save.cpp.
     swprintf_s(wndText, 0x100, kAppTitleFormat,                   // 0x45E2A4
                reinterpret_cast<const wchar_t*>(s->state.envFileName));
@@ -1887,11 +1887,11 @@ static void LoadSceneV1_SuccessTail(PmmV1LoadContext& ctx) {
     for (int mi = 0; mi < kModelSlotCount; ++mi) {
         unsigned char* m = slots[mi];
         if (m == nullptr) continue;
-        if (static_cast<std::int32_t>(mikudancestudio::mdl::Mdl(m)->boneCount) <= 0)
+        if (static_cast<std::int32_t>(rinmotiondance::mdl::Mdl(m)->boneCount) <= 0)
             continue;
         mdl::BoneKey* keys = mdl::BoneKeys(m);
         for (std::int32_t b = 0;
-             b < static_cast<std::int32_t>(mikudancestudio::mdl::Mdl(m)->boneCount);
+             b < static_cast<std::int32_t>(rinmotiondance::mdl::Mdl(m)->boneCount);
              ++b) {
             keys[b].previous = 0;
             std::int32_t cur = keys[b].next;
@@ -1957,7 +1957,7 @@ static void LoadSceneV1_SuccessTail(PmmV1LoadContext& ctx) {
             int found = 0;                                       // 0x45E794
             while (found < kModelSlotCount &&
                    (slots[found] == nullptr ||
-                    mikudancestudio::mdl::Mdl(slots[found])->comboSelIndex !=
+                    rinmotiondance::mdl::Mdl(slots[found])->comboSelIndex !=
                         static_cast<unsigned char>(sel)))
                 ++found;
             if (found < kModelSlotCount) {
@@ -2019,4 +2019,4 @@ void LoadSceneV1(MMDApp* app, int fd) {
     LoadSceneV1_SuccessTail(ctx);                     // 0x45E149..0x45E7F7
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

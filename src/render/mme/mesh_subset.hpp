@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace mikudancestudio::mme {
+namespace rinmotiondance::mme {
 
 // D3DX's 32-bit mesh Resize selects its UP fallback using buffer capacity,
 // not the current subset or live vertex/face count. Keep that path inside
@@ -135,4 +135,4 @@ HRESULT DrawMeshSubsetPlan(const MeshSubsetPlan& plan, DWORD totalFaces,
     return hr;
 }
 
-} // namespace mikudancestudio::mme
+} // namespace rinmotiondance::mme

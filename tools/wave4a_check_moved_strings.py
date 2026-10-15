@@ -76,13 +76,13 @@ for name in sorted(hdr):
             print(f'note   {name} not in HEAD-{tag} (fine)')
 
 # title: header constant vs the three removed literals
-title = 'MikuDanceStudio [%s]'.encode('utf-16-le')
+title = 'RinMotionDance [%s]'.encode('utf-16-le')
 for tag, src, pat in (('v1-load', git_show('src/io/pmm_load_v1.cpp'),
-                       'L"MikuDanceStudio [%s]"'),
+                       'L"RinMotionDance [%s]"'),
                       ('v2-load', git_show('src/io/pmm_load_v2.cpp'),
-                       'L"MikuDanceStudio [%s]"'),
+                       'L"RinMotionDance [%s]"'),
                       ('save', git_show('src/io/pmm_save.cpp'),
-                       'L"MikuDanceStudio [%s]"')):
+                       'L"RinMotionDance [%s]"')):
     present = pat in src
     removed_now = pat not in {
         'v1-load': open(os.path.join(ROOT, 'src/io/pmm_load_v1.cpp'),

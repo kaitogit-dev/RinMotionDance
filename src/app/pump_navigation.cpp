@@ -72,13 +72,13 @@
 #include <cmath>
 #include <cstdint>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 #include "pump_input.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Sibling-TU bodies, declared locally the key_ladder.cpp way (kept out of
 // ported_funcs.hpp).
@@ -500,4 +500,4 @@ void ConsumeNumpadViewPresets(MMDApp* app, const KeyboardInputContext& input) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -22,12 +22,12 @@
 #include <cwchar>
 #include <locale.h>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Full-port callees defined in other TUs (local declarations).
 void TeardownDShowGraph(DShowRecorder* rec);   // VA 0x409320 (shutdown_cleanup.cpp)
@@ -331,4 +331,4 @@ INT_PTR CALLBACK DialogFuncStub(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
     }
     return 0;                                                      // 0x410038
 }
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

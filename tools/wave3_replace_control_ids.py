@@ -4,7 +4,7 @@
 Rewrites only the ID (2nd) argument of GetDlgItem / SendDlgItemMessage /
 CheckDlgButton / IsDlgButtonChecked calls when it is exactly a decimal or
 hexadecimal literal whose value is in the map from
-include/mikudancestudio/panel_controls.hpp.  Arithmetic forms
+include/rinmotiondance/panel_controls.hpp.  Arithmetic forms
 (GetDlgItem(h, 0x1C7 + ch)) are left alone.  Call sites inside comments are
 skipped.  Existing local constants/tables are never touched (only bare
 literals are rewritten).  Adds the panel_controls.hpp include where needed.
@@ -248,13 +248,13 @@ def process(path):
         return stats
     if not edits:
         return stats
-    in_ns = 'namespace mikudancestudio' in text
-    qual = 'panel::' if in_ns else 'mikudancestudio::panel::'
+    in_ns = 'namespace rinmotiondance' in text
+    qual = 'panel::' if in_ns else 'rinmotiondance::panel::'
     for s, e, rep in sorted(edits, key=lambda t: -t[0]):
         text = text[:s] + qual + rep + text[e:]
-    if '#include "mikudancestudio/panel_controls.hpp"' not in text:
-        inc = '#include "mikudancestudio/panel_controls.hpp"\n'
-        m = list(re.finditer(r'#include "mikudancestudio/[^"]+"\n', text))
+    if '#include "rinmotiondance/panel_controls.hpp"' not in text:
+        inc = '#include "rinmotiondance/panel_controls.hpp"\n'
+        m = list(re.finditer(r'#include "rinmotiondance/[^"]+"\n', text))
         if m:
             text = text[:m[-1].end()] + inc + text[m[-1].end():]
         else:

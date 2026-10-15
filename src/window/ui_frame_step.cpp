@@ -14,12 +14,12 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void SnapshotPoseBeforeFrameChange(unsigned char* model, int frame);  // VA 0x004A0080
 void SyncModelEditControls(unsigned char* model);                     // VA 0x004A02C0
@@ -222,4 +222,4 @@ void RefreshAfterFrameApply(MMDApp* app) {
     app->PhysicsResetPending() = 1;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

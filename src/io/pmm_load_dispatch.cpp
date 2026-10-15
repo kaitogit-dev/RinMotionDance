@@ -41,10 +41,10 @@
 #include <io.h>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -161,4 +161,4 @@ void LoadSceneFile() {
     _close(fd);                                                 // 0x459149
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

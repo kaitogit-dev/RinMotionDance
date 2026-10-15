@@ -64,12 +64,12 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 constexpr double kPiOver180 = 0.01745329238474369;   // dbl_52BB20 region
@@ -636,4 +636,4 @@ void PlaybackPoseAdvance(MMDApp* app, int advance) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

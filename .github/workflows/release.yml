@@ -57,7 +57,7 @@ jobs:
         run: >-
           cmake -S . -B out/ci/build -G "Visual Studio 17 2022" -A ${{ matrix.platform }}
           -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/out/ci/build/generators/conan_toolchain.cmake"
-          -DBUILD_TESTING=ON -DMIKUDANCESTUDIO_DIAG=OFF
+          -DBUILD_TESTING=ON -DRINMOTIONDANCE_DIAG=OFF
       - name: Build Release
         run: cmake --build out/ci/build --config Release --parallel 4
       - name: Install legacy DirectX test runtime
@@ -120,5 +120,5 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" assets/* --clobber
           else
-            gh release create "$RELEASE_TAG" assets/* --verify-tag --title "MikuDanceStudio $RELEASE_TAG" --generate-notes
+            gh release create "$RELEASE_TAG" assets/* --verify-tag --title "RinMotionDance $RELEASE_TAG" --generate-notes
           fi

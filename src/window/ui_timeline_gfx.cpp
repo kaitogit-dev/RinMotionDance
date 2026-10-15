@@ -46,10 +46,10 @@
 #include <cmath>
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void TimelineDrawTicks(int frameOffset, int width) {
     // param mapping (original __thiscall sub_4C2A00(HDC* this, int x, char* ho)):
@@ -181,4 +181,4 @@ void SetFrameNormalized(int frame) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

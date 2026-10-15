@@ -40,9 +40,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // JP wide labels (.rdata 0x531090/0x53107C/0x53106C/0x531048/0x531038/
@@ -142,7 +142,7 @@ void PostLoadInit(unsigned char* m) {
     HWND boneCombo = Dlg(m, 443);
     SendMessage(boneCombo, CB_RESETCONTENT, 0, 0);
     mdl::ModelRecord* model = mdl::Mdl(m);
-    mikudancestudio::mdl::BoneRecord* bones = model->boneTable;
+    rinmotiondance::mdl::BoneRecord* bones = model->boneTable;
     const bool useEnglishNames = model->physicsFlags != 0;
     const int chainCount = static_cast<int>(model->ikChainCount);
     if (chainCount > 0) {
@@ -262,4 +262,4 @@ void PostLoadInit(unsigned char* m) {
                  model->frameRegistrationSelection, 0);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -75,14 +75,14 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Forward declarations (twins of the block in command_view_menu.cpp - the
 // helpers are defined in this file).
@@ -1579,4 +1579,4 @@ INT_PTR CALLBACK PhysicsModelDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
     return 0;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

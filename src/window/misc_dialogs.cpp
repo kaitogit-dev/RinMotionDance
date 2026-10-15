@@ -33,14 +33,14 @@
 #include <cwchar>
 #include <new>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---- interpolation-curve panel helpers ------------------------------------
 // The two GDI helpers are twins of the ones ported in
@@ -912,4 +912,4 @@ void ApplyPhysicsOnOff(int on) {  // VA 0x004403C0
               app->state.playbackPhysicsMode);  // 0x4B4260 (x64 0x4EBD90)
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

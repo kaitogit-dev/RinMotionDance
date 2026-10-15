@@ -12,13 +12,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void SelectionReeval(MMDApp* app);  // 0x430510
 void ApplyGravityTrack(MMDApp* app);        // 0x412330
@@ -67,11 +67,11 @@ void SetPhysicsMenuState(HWND hwnd, UINT state) {
     DrawMenuBar(hwnd);
 }
 
-mikudancestudio::mdl::BoneRecord* BoneAt(unsigned char* model, int boneIndex) {
-    return mikudancestudio::mdl::Bones(model) + boneIndex;
+rinmotiondance::mdl::BoneRecord* BoneAt(unsigned char* model, int boneIndex) {
+    return rinmotiondance::mdl::Bones(model) + boneIndex;
 }
 
-void BonePoint(mikudancestudio::mdl::BoneRecord* bone, float out[3]) {
+void BonePoint(rinmotiondance::mdl::BoneRecord* bone, float out[3]) {
     const float* matrix = reinterpret_cast<const float*>(bone->matInit);
     const float* point = reinterpret_cast<const float*>(bone->position);
     out[0] = matrix[0] * point[0] + matrix[4] * point[1] +
@@ -85,9 +85,9 @@ void BonePoint(mikudancestudio::mdl::BoneRecord* bone, float out[3]) {
 }  // namespace
 
 void PostModelReload(MMDApp* app) {  // 0x41A650
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (getenv("MIKUDANCESTUDIO_TRACE_REC")) {
-        FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a");
+#ifdef RINMOTIONDANCE_DIAG
+    if (getenv("RINMOTIONDANCE_TRACE_REC")) {
+        FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
         if (tf) { fprintf(tf, "PostModelReload targetSlot=%d\n",
                           app->CameraParentModel()); fclose(tf); }
     }
@@ -106,7 +106,7 @@ void PostModelReload(MMDApp* app) {  // 0x41A650
     const int targetSlot = app->CameraParentModel();
     if (targetSlot >= 0) {
         unsigned char* targetModel = ModelAt(app, targetSlot);
-        mikudancestudio::mdl::BoneRecord* targetBone = BoneAt(
+        rinmotiondance::mdl::BoneRecord* targetBone = BoneAt(
             targetModel, app->CameraParentBone());
         auto& targetBasis = reinterpret_cast<d3dx::D3DXMATRIXF&>(
             app->CameraAttachmentBasis());
@@ -135,15 +135,15 @@ void PostModelReload(MMDApp* app) {  // 0x41A650
         const auto referenceMode = app->CameraReferenceMode();
         if (referenceMode == CameraAttachmentReference::ModelRoot) {
             unsigned char* model = app->SelectedModel();
-            mikudancestudio::mdl::BoneRecord* bone = BoneAt(
-                model, mikudancestudio::mdl::Mdl(model)->centerBone);
+            rinmotiondance::mdl::BoneRecord* bone = BoneAt(
+                model, rinmotiondance::mdl::Mdl(model)->centerBone);
             const float* matrix = reinterpret_cast<const float*>(bone->matInit);
             referencePoint[0] = matrix[12];
             referencePoint[1] = matrix[13];
             referencePoint[2] = matrix[14];
         } else if (referenceMode == CameraAttachmentReference::SelectedBone) {
             unsigned char* model = app->SelectedModel();
-            int selected = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            int selected = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (selected < 0)
                 selected = 0;
             BonePoint(BoneAt(model, selected), referencePoint);
@@ -173,15 +173,15 @@ void PostModelReload(MMDApp* app) {  // 0x41A650
     const auto referenceMode = app->CameraReferenceMode();
     if (referenceMode == CameraAttachmentReference::ModelRoot) {
         unsigned char* model = app->SelectedModel();
-        mikudancestudio::mdl::BoneRecord* bone = BoneAt(
-            model, mikudancestudio::mdl::Mdl(model)->centerBone);
+        rinmotiondance::mdl::BoneRecord* bone = BoneAt(
+            model, rinmotiondance::mdl::Mdl(model)->centerBone);
         const float* matrix = reinterpret_cast<const float*>(bone->matInit);
         referencePoint[0] = -matrix[12];
         referencePoint[1] = -matrix[13];
         referencePoint[2] = -matrix[14];
     } else if (referenceMode == CameraAttachmentReference::SelectedBone) {
         unsigned char* model = app->SelectedModel();
-        const int selected = mikudancestudio::mdl::Mdl(model)->selectedBone;
+        const int selected = rinmotiondance::mdl::Mdl(model)->selectedBone;
         if (selected >= 0) {
             BonePoint(BoneAt(model, selected), referencePoint);
             referencePoint[0] = -referencePoint[0];
@@ -569,14 +569,14 @@ void ApplyModelComboSelection(MMDApp* app) {  // 0x44D940
         HWND optionWindow = app->state.edgeThicknessDialog;
         if (optionWindow != nullptr && model != nullptr) {
             char text[256]{};
-            sprintf_s(text, "%3.2f", mikudancestudio::mdl::Mdl(model)->edgeScale);
+            sprintf_s(text, "%3.2f", rinmotiondance::mdl::Mdl(model)->edgeScale);
             HWND edit = GetDlgItem(optionWindow, panel::kEdgeThicknessEdit);
             SendMessageA(edit, EM_SETSEL, 0, GetWindowTextLengthA(edit));
             SendMessageA(edit, EM_REPLACESEL, 0,
                          reinterpret_cast<LPARAM>(text));
             SendMessageA(GetDlgItem(optionWindow, panel::kEdgeThicknessSlider), TBM_SETPOS, TRUE,
                          static_cast<LPARAM>(
-                             mikudancestudio::mdl::Mdl(model)->edgeScale *
+                             rinmotiondance::mdl::Mdl(model)->edgeScale *
                              100.0f));
         }
         SetPhysicsMenuState(
@@ -601,4 +601,4 @@ void ApplyModelComboSelection(MMDApp* app) {  // 0x44D940
     PostLanguageSweep2(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

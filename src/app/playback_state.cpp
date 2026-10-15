@@ -13,14 +13,14 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void SyncModelEditControls(unsigned char* model);  // VA 0x004A02C0
 void ApplyAccessoryTrack(MMDApp* app, int index);  // VA 0x00413120
@@ -58,7 +58,7 @@ void SetPhysicsMenuState(HWND hwnd, UINT state) {
 
 }  // namespace
 
-// Exported at mikudancestudio scope for the fullscreen record restore path
+// Exported at rinmotiondance scope for the fullscreen record restore path
 // (0x4629D0 in src/app/avi_record_start.cpp); the bodies were
 // originally file-local here.
 // VA 0x00429790.  UINT 1 is MF_GRAYED, matching the immediate operands in
@@ -107,7 +107,7 @@ void RestorePlaybackMenus(MMDApp* app) {
         EnableWindow(GetDlgItem(hwnd, panel::kExpandShrinkButton), TRUE);
 
         unsigned char* model = app->SelectedModel();
-        const UINT state = model != nullptr && mikudancestudio::mdl::Mdl(model)->physicsMode == 2
+        const UINT state = model != nullptr && rinmotiondance::mdl::Mdl(model)->physicsMode == 2
                                ? MFS_DISABLED | MFS_GRAYED
                                : MFS_ENABLED;
         SetPhysicsMenuState(hwnd, state);
@@ -283,14 +283,14 @@ void SavePlaybackUndoSnapshot(MMDApp* app, unsigned char* model) {
     undo.frame = app->state.currentFrame;
     auto*& buffer = undo.bonePose;
     ::operator delete(buffer);
-    buffer = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+    buffer = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
         ::operator new(sizeof(*buffer) * boneCount));
     std::memset(buffer, 0, static_cast<std::size_t>(36) * boneCount);
     auto* records = buffer;
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     for (int i = 0; i < boneCount; ++i) {
         auto& dst = records[i];
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         dst.boneIndex = i;
         std::memcpy(dst.position, bone->trans, sizeof(dst.position));
         std::memcpy(dst.rotation, bone->rotQuat, sizeof(dst.rotation));
@@ -340,9 +340,9 @@ void UpdateBoneFrames(MMDApp* app) {
 }
 
 void StopPlayback(MMDApp* app) {
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (getenv("MIKUDANCESTUDIO_TRACE_REC")) {
-        FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a");
+#ifdef RINMOTIONDANCE_DIAG
+    if (getenv("RINMOTIONDANCE_TRACE_REC")) {
+        FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
         if (tf) { fputs("StopPlayback stop-playback enter\n", tf); fclose(tf); }
     }
 #endif
@@ -458,4 +458,4 @@ void StopPlayback(MMDApp* app) {
     PostLanguageSweep2(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -30,11 +30,11 @@
 #include <cstdint>
 #include <io.h>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio::pmm_io {
+namespace rinmotiondance::pmm_io {
 
 // Stream dialect selector for the two parameterized readers.
 enum class PmmStream { V1, V2 };
@@ -248,6 +248,6 @@ inline const char kJpOpenCaption[] =
 
 // Main-window title format set after every successful load/save (v1 load
 // tail 0x45E2A4 / v2 load tail 0x4582C2 / save tail 0x41E747).
-inline const wchar_t kAppTitleFormat[] = L"MikuDanceStudio [%s]";
+inline const wchar_t kAppTitleFormat[] = L"RinMotionDance [%s]";
 
-}  // namespace mikudancestudio::pmm_io
+}  // namespace rinmotiondance::pmm_io

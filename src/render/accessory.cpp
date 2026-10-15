@@ -20,15 +20,15 @@
 #include <new>
 
 #include "fx_slots.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 void RefreshRequest(int area);
 void PostLanguageSweep2(MMDApp* app);  // VA 0x0040D070, was declared here as
                                        // 0x40D070 (real body: ui_view_refresh.cpp)
@@ -53,12 +53,12 @@ void ReleaseCom(void* object) {
     reinterpret_cast<IUnknown*>(object)->Release();  // vtable slot 2
 }
 
-// Porting-era trace under MIKUDANCESTUDIO_PMM_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void TraceAccessoryLoadStage(const char* stage, const void* value) {
-    const char* directory = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* directory = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (directory == nullptr || directory[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -111,7 +111,7 @@ void AccessoryPlacement(MMDApp* app, void* accessory, Matrix* world) {
     auto* model = app->ModelSlot(modelSlot);
     if (model == nullptr)
         return;
-    auto* bones = mikudancestudio::mdl::Bones(model);
+    auto* bones = rinmotiondance::mdl::Bones(model);
     const int boneIndex = std::max(mdl::Accessory(accessory)->parentBone, 0);
     auto* bone = &bones[boneIndex];
     api.translation(&part, bone->position[0], bone->position[1],
@@ -978,4 +978,4 @@ void RenderAccessoriesEffectRange(MMDApp* app, int firstOrder,
     SetAccessoryLight(app, device, false);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

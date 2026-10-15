@@ -81,8 +81,8 @@
 #define NOMINMAX
 #include <Windows.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/physics_world.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/physics_world.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -92,13 +92,13 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include "../app/frame_state_dump.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 using d3dx::D3DXMATRIXF;
 
@@ -229,8 +229,8 @@ void StopBodyAt(btRigidBody* body, const btTransform& transform) {
     body->setAngularVelocity(zero);
 }
 
-#ifdef MIKUDANCESTUDIO_DIAG
-// ---- rigid-body state dumps under MIKUDANCESTUDIO_STATE_DUMP_DIR ---------
+#ifdef RINMOTIONDANCE_DIAG
+// ---- rigid-body state dumps under RINMOTIONDANCE_STATE_DUMP_DIR ---------
 // (porting-era A/B tooling; see frame_state_dump.hpp for the gate)
 
 template <typename T>
@@ -253,7 +253,7 @@ void WriteEmptyStateField(std::FILE* stream, const char* name) {
 void DumpRigidBodyState(MMDApp* app, const char* fileName) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
 
@@ -337,7 +337,7 @@ void DumpRigidBodyState(MMDApp* app, const char* fileName) {
 void DumpWorldSolverInfo(btDiscreteDynamicsWorld* world) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH || world == nullptr)
         return;
 
@@ -367,7 +367,7 @@ void DumpWorldSolverInfo(btDiscreteDynamicsWorld* world) {
     std::fclose(stream);
 }
 
-#endif  // MIKUDANCESTUDIO_DIAG
+#endif  // RINMOTIONDANCE_DIAG
 
 }  // namespace
 
@@ -407,9 +407,9 @@ void ModelDynamicReseat(unsigned char* m) {
         return;
     mdl::RigidRecord* rigids = mdl::Rigids(m);
     const int centerBone = mdl::Mdl(m)->centerBone;   // 0x4B3460
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     static int reseatCalls = 0;
-    const bool traceReseat = getenv("MIKUDANCESTUDIO_TRACE_RESEAT") != nullptr;
+    const bool traceReseat = getenv("RINMOTIONDANCE_TRACE_RESEAT") != nullptr;
     if (traceReseat && reseatCalls < 12) {
         int active = 0;
         for (int i = 0; i < count; ++i)
@@ -428,7 +428,7 @@ void ModelDynamicReseat(unsigned char* m) {
         btRigidBody* body = BodyOf(rec);
         if (body == nullptr)
             continue;                                       // port guard
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (traceReseat && reseatCalls <= 3) {
             const int id = body->m_debugBodyId;
             if (id == 3) {
@@ -835,15 +835,15 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
     // AllStar physics-off A/B: orig F-pose = identity, port F-pose =
     // the physics-source quaternion).
     unsigned char** models = s.ModelSlots();
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     char stageCaptureValue[2]{};
     static LONG stagesCaptured = 0;
     // Arm on the first executable physics pass, including the synchronous
     // PMM-load pass.  Waiting for optflag[0] to clear observes a world that has
-    // already been stepped and makes the original/MikuDanceStudio solver inputs
+    // already been stepped and makes the original/RinMotionDance solver inputs
     // incomparable.
     const bool captureStages =
-        GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_PHYSICS_STAGES",
+        GetEnvironmentVariableA("RINMOTIONDANCE_AB_PHYSICS_STAGES",
                                 stageCaptureValue,
                                 sizeof(stageCaptureValue)) == 1 &&
         stageCaptureValue[0] == '1' &&
@@ -895,10 +895,10 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
     if (s.state.accessoryEditDialogOpen != 0)
         return;                       // 0x7FF7CB44C65B -> 0x7FF7CB44C8D6
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     int stepCount = 0;
     const char* stepLabels[16]{};
-    const bool traceSteps = getenv("MIKUDANCESTUDIO_TRACE_STEPS") != nullptr;
+    const bool traceSteps = getenv("RINMOTIONDANCE_TRACE_STEPS") != nullptr;
     if (traceSteps) {
         // m_localTime = the stepSimulation substep accumulator (protected
         // member of btDiscreteDynamicsWorld); use the owned world interface.
@@ -933,16 +933,16 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
     // The extra step (0x46FD7F) and the settle steps (0x46FE0C) push
     // flt_52EA00 for BOTH timeStep and fixedTimeStep - they stay 1/60.
     float mainTimeStep = g_CatchupDtBudget;
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     // DIAGNOSTIC ONLY: force the main step's timeStep to probe which
     // per-pass dt the original effectively runs at in real time.
-    if (const char* forced = getenv("MIKUDANCESTUDIO_FORCE_MAINDT"))
+    if (const char* forced = getenv("RINMOTIONDANCE_FORCE_MAINDT"))
         mainTimeStep = static_cast<float>(atof(forced));
     // DIAGNOSTIC ONLY: zero the substep accumulator after the first
     // (load) physics pass, isolating the load-pass main substep from the
     // idle evolution.
     static bool zeroLocalTimeAfterLoad =
-        getenv("MIKUDANCESTUDIO_ZERO_LT_AFTER_LOAD") != nullptr;
+        getenv("RINMOTIONDANCE_ZERO_LT_AFTER_LOAD") != nullptr;
 #endif
 
     // Per-model morph application + pose source selection, ordered by the
@@ -962,7 +962,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
             }
         }
     }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (captureStages)
         DumpFrameEntryState(app, "physics_pose0.json", false);
 #endif
@@ -977,13 +977,13 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
     const bool frameAdv = s.PlaybackActive() != 0;           // 0x330
     const bool runWorldPass = count == 1 || count == 2 ||
         (count == 3 && (moved || settle || frameAdv));
-#ifdef MIKUDANCESTUDIO_DIAG
-    // DIAGNOSTIC ONLY (never set in production): MIKUDANCESTUDIO_IDLE_NO_STEP=1
+#ifdef RINMOTIONDANCE_DIAG
+    // DIAGNOSTIC ONLY (never set in production): RINMOTIONDANCE_IDLE_NO_STEP=1
     // skips the world pass entirely on passes with no settle/moved/frame
     // activity, freezing the post-seek state so a capture can tell whether
     // a rendering divergence originates in the seek pass itself or in the
     // idle substep evolution that follows it.
-    const bool idleNoStep = getenv("MIKUDANCESTUDIO_IDLE_NO_STEP") != nullptr &&
+    const bool idleNoStep = getenv("RINMOTIONDANCE_IDLE_NO_STEP") != nullptr &&
         !(moved || settle || frameAdv);
 #else
     constexpr bool idleNoStep = false;
@@ -998,7 +998,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
         for (int j = 0; j < kModelSlotCount; ++j)
             if (models[j] != nullptr)
                 ModelKinematicSync(models[j]);              // 0x46FD4D
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (captureStages)
             DumpRigidBodyState(app, "physics_sync.rigids.json");
         if (captureStages)
@@ -1011,14 +1011,14 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
         // steps push flt_52EA00 - var_14C8 is skipped entirely there.
         const float mainDt =
             (moved && count == 3) ? (1.0f / 60.0f) : mainTimeStep;
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (stepCount < 16) stepLabels[stepCount] = "main";
         ++stepCount;
 #endif
         world->stepSimulation(mainDt, 10, 1.0f / 60.0f);
         if (moved && count == 3)
             stepWorld("extra");                              // 0x46FD97
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (captureStages)
             DumpRigidBodyState(app, "physics_step.rigids.json");
         if (captureStages)
@@ -1031,7 +1031,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
                 for (int j = 0; j < kModelSlotCount; ++j)
                     if (models[j] != nullptr)
                         ModelDynamicReseat(models[j]);      // 0x46FDF7
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
                 if (captureStages) {
                     char name[64]{};
                     std::snprintf(name, sizeof(name),
@@ -1040,7 +1040,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
                 }
 #endif
                 stepWorld("settle");
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
                 if (captureStages) {
                     char name[64]{};
                     std::snprintf(name, sizeof(name),
@@ -1051,7 +1051,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
             }
             s.PhysicsResetPending() = 0;
         }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (captureStages)
             DumpRigidBodyState(app, "physics_settle.rigids.json");
         if (captureStages)
@@ -1074,7 +1074,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
         for (int j = 0; j < kModelSlotCount; ++j)
             if (models[j] != nullptr)
                 ModelPhysicsReadback(models[j]);            // 0x46FE49
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
         if (captureStages)
             DumpRigidBodyState(app, "physics_readback.rigids.json");
         if (captureStages)
@@ -1083,7 +1083,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
         s.state.physicsBodiesMoved = 0;                       // 0x7FF7CB44C857
     }
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (traceSteps && stepCount > 0) {
         fprintf(stderr, "PHYSFRAME steps=%d settle=%d moved=%d count=%d labels=",
                 stepCount, (int)settle, (int)moved, count);
@@ -1108,7 +1108,7 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
             }
         }
     }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (zeroLocalTimeAfterLoad) {
         static_cast<PhysicsWorld*>(world)->ClearSubstepRemainder();
         zeroLocalTimeAfterLoad = false;
@@ -1118,4 +1118,4 @@ void PhysicsFrame(MMDApp* app, unsigned char selActive) {
 #endif
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

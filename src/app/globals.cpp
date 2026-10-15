@@ -1,9 +1,9 @@
 // ===========================================================================
 // Standalone globals (definitions)
 // ===========================================================================
-#include "mikudancestudio/globals.hpp"
+#include "rinmotiondance/globals.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // VA 0x00529688 - L"%s%s"
 const wchar_t g_SourceFormat[] = L"%s%s";
@@ -21,4 +21,4 @@ const float g_FrameScale = 30.0f;
 // run yet (matches the original's 0x46EFDE initialisation order).
 float g_CatchupDtBudget = 0.0f;
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

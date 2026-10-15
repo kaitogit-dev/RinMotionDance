@@ -40,13 +40,13 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/bottom_panel_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/bottom_panel_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Shift-JIS (cp932) label bytes from .rdata, used by the Japanese-UI branch
@@ -226,7 +226,7 @@ void HandlePaletteChanged(HDC hdc) {
 //       / %s" / "ｶﾒﾗ･照明･ｱｸｾｻﾘ / %s" into the 256-byte Buffer.
 //     - bone: model slots this+0x780 [byte this+0x910]; name at model+0x227A
 //       (EN) / model+0x2248 (JP); bone index model+0x2D90; bone record =
-//       (model+0x26BC) + sizeof(mikudancestudio::mdl::BoneRecord) *index, name at +0x14 (EN, "%s : %s").  The JP
+//       (model+0x26BC) + sizeof(rinmotiondance::mdl::BoneRecord) *index, name at +0x14 (EN, "%s : %s").  The JP
 //       branch keeps the original quirk: sprintf_s with a "%s" format and
 //       TWO extra arguments, the second (bone record, no +0x14) is ignored.
 //     - trace-mode line pair when
@@ -337,8 +337,8 @@ void HandlePaletteChanged2(HDC hdc) {
             } else {
                 unsigned char* model = app->SelectedModel();
                 if (model != nullptr) {                          // 0x42C4AD
-                    const mikudancestudio::mdl::ModelRecord& record =
-                        *mikudancestudio::mdl::Mdl(model);
+                    const rinmotiondance::mdl::ModelRecord& record =
+                        *rinmotiondance::mdl::Mdl(model);
                     const std::int32_t boneIdx = record.selectedBone;
                     if (boneIdx < 0) {
                         sprintf_s(buffer, 0x100, "%s", record.nameEn);
@@ -386,8 +386,8 @@ void HandlePaletteChanged2(HDC hdc) {
         } else {
             unsigned char* model = app->SelectedModel();
             if (model != nullptr) {                              // 0x42C660
-                const mikudancestudio::mdl::ModelRecord& record =
-                    *mikudancestudio::mdl::Mdl(model);
+                const rinmotiondance::mdl::ModelRecord& record =
+                    *rinmotiondance::mdl::Mdl(model);
                 sprintf_s(buffer, 0x100, "%s", record.name);
                 const int width = DrawGlyph(app, buffer, hdc, 16,
                                             xBase + 10, hideTop - 20,
@@ -419,4 +419,4 @@ void HandlePaletteChanged2(HDC hdc) {
               0, 0, 0, 1);                                       // 0x42C7E3
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

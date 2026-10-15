@@ -53,12 +53,12 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Forward declarations for functions ported in this wave whose bodies live
 // in other translation units (not yet registered in ported_funcs.hpp;
@@ -380,4 +380,4 @@ void HandleMouseActivate(MMDApp* app) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

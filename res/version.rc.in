@@ -1,8 +1,8 @@
 #include <winver.h>
 
 1 VERSIONINFO
-FILEVERSION @MDS_VERSION_MAJOR@,@MDS_VERSION_MINOR@,0,0
-PRODUCTVERSION @MDS_VERSION_MAJOR@,@MDS_VERSION_MINOR@,0,0
+FILEVERSION @RMD_VERSION_MAJOR@,@RMD_VERSION_MINOR@,0,0
+PRODUCTVERSION @RMD_VERSION_MAJOR@,@RMD_VERSION_MINOR@,0,0
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEFLAGS 0
 FILEOS VOS_NT_WINDOWS32
@@ -13,12 +13,12 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "MikuDanceStudio\0"
-            VALUE "FileVersion", "@MDS_VERSION@\0"
-            VALUE "InternalName", "MikuDanceStudio\0"
-            VALUE "OriginalFilename", "MikuDanceStudio.exe\0"
-            VALUE "ProductName", "MikuDanceStudio\0"
-            VALUE "ProductVersion", "@MDS_VERSION@\0"
+            VALUE "FileDescription", "RinMotionDance\0"
+            VALUE "FileVersion", "@RMD_VERSION@\0"
+            VALUE "InternalName", "RinMotionDance\0"
+            VALUE "OriginalFilename", "RinMotionDance.exe\0"
+            VALUE "ProductName", "RinMotionDance\0"
+            VALUE "ProductVersion", "@RMD_VERSION@\0"
         END
     END
     BLOCK "VarFileInfo"

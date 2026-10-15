@@ -27,11 +27,11 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 template <typename T>
@@ -275,4 +275,4 @@ int PasteAccessoryKeyRecord(MMDApp* app, void* recData, int useSelectedSlot) {
     return 1;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

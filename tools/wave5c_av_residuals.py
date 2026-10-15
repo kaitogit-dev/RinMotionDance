@@ -1,6 +1,6 @@
 import re, os, sys
 
-ROOT = r'C:\Users\jstzw\Documents\github\MikuDanceStudio\src'
+ROOT = r'C:\Users\jstzw\Documents\github\RinMotionDance\src'
 ID = re.compile(r'\b(?:a[1-9]|v[0-9]+)\b')
 
 def strip_comments_strings(text):

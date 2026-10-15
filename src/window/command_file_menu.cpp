@@ -117,15 +117,15 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
 #include "dialog_scaffold.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---------------------------------------------------------------------------
 // No offset-style app-state accesses remain in this file.  The one
@@ -1196,15 +1196,15 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
         for (std::uint16_t b = 0;
              static_cast<std::int32_t>(b) < boneCount; ++b) {
             model = ActiveModel(app);
-            mikudancestudio::mdl::BoneRecord* boneFrames =
-                mikudancestudio::mdl::Bones(model);
+            rinmotiondance::mdl::BoneRecord* boneFrames =
+                rinmotiondance::mdl::Bones(model);
             const mdl::BoneType type = boneFrames[b].type;
             if (type == mdl::BoneType::InertTip ||
                 type == mdl::BoneType::Effector) {
                 continue;
             }
             unsigned char* frames = reinterpret_cast<unsigned char*>(
-                mikudancestudio::mdl::BoneKeys(model));
+                rinmotiondance::mdl::BoneKeys(model));
             std::int32_t cur = *reinterpret_cast<std::int32_t*>(
                 frames + 0x3C * b + 8);           // chain head
             if (cur == 0) {
@@ -1254,7 +1254,7 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
                 // advance the chain
                 model = ActiveModel(app);
                 frames = reinterpret_cast<unsigned char*>(
-                    mikudancestudio::mdl::BoneKeys(model));
+                    rinmotiondance::mdl::BoneKeys(model));
                 cur = *reinterpret_cast<std::int32_t*>(frames + 0x3C * cur + 8);
                 next = *reinterpret_cast<std::int32_t*>(frames + 0x3C * cur + 8);
                 if (next == 0) {
@@ -2464,4 +2464,4 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

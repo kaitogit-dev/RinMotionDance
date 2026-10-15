@@ -46,13 +46,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Active model = slot array at this+0x780 indexed by byte this+0x910.
@@ -107,12 +107,12 @@ void SaveVpdFile(const wchar_t* path) {
         if (selBits[i] != 0) ++selected;
     std::fprintf(fp, kCountFmt, selected);
 
-    mikudancestudio::mdl::BoneRecord* const bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* const bones = rinmotiondance::mdl::Bones(model);
     const int physMode = app->PlaybackPhysicsMode();
     int running = 0;
     for (int i = 0; i < boneCnt; ++i) {
         if (selBits[i] == 0) continue;
-        mikudancestudio::mdl::BoneRecord* const bone = bones + i;
+        rinmotiondance::mdl::BoneRecord* const bone = bones + i;
         std::fprintf(fp, kBoneFmt, running, bone->name);
         ++running;
         // 0x418860: physics-pose source only for flagged bones with the
@@ -180,7 +180,7 @@ void LoadVpdFile(const wchar_t* path) {
     undo.dirty = count;
 
     const int boneCnt = modelRecord.boneCount;
-    mikudancestudio::mdl::BoneRecord* const bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* const bones = rinmotiondance::mdl::Bones(model);
     unsigned char* const selBits = modelRecord.boneSelection;
     unsigned char* const regBits = modelRecord.bonePhysicsState;
     const bool pmx = modelRecord.physicsMode == 2;              // 0x418FC4
@@ -207,7 +207,7 @@ void LoadVpdFile(const wchar_t* path) {
         std::fgets(tail, 0x100, fp);
 
         for (int i = 0; i < boneCnt; ++i) {
-            mikudancestudio::mdl::BoneRecord* const bone = bones + i;
+            rinmotiondance::mdl::BoneRecord* const bone = bones + i;
             if (std::strcmp(name, bone->name) != 0)
                 continue;
 
@@ -278,4 +278,4 @@ void LoadVpdFile(const wchar_t* path) {
     std::fclose(fp);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

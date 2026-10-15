@@ -1,9 +1,9 @@
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 #include "../src/app/bone_selection.hpp"
 #include <cstdio>
 #include <memory>
 
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 int main() {
     auto model = std::make_unique<mdl::ModelRecord>();
     mdl::BoneRecord bones[3]{};

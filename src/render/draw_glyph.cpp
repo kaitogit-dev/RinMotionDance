@@ -16,10 +16,10 @@
 
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 int DrawGlyph(MMDApp* app, const char* text, HDC hdc, int size, int x, int y,
               unsigned char r, unsigned char g, unsigned char b, int bold) {
@@ -52,4 +52,4 @@ int DrawGlyph(MMDApp* app, const char* text, HDC hdc, int size, int x, int y,
     return extent.cx;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

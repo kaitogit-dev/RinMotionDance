@@ -38,13 +38,13 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void PostLanguageSweep2(MMDApp* app) {
     // Target window: this+0xA0D38 doubles as an HWND when non-zero.
@@ -102,7 +102,7 @@ void PostLanguageSweep2(MMDApp* app) {
 //
 // Bone mode (this+0x2F8 == 0): current model = slot array this+0x780
 // [byte this+0x910]; selected bone index = model+0x2D90; if < 0, all seven
-// controls get "-----".  Otherwise bone record = (model+0x26BC) + sizeof(mikudancestudio::mdl::BoneRecord) *idx
+// controls get "-----".  Otherwise bone record = (model+0x26BC) + sizeof(rinmotiondance::mdl::BoneRecord) *idx
 // (604 = 0x25C stride) and the layout is picked by
 //     (this+0xA0CC4 == 3) & &bone->hasRigidBody:
 //   rotation layout  : "%1.2f" of bone->ikBackup/0x18C/0x190, quat at +0x194
@@ -185,14 +185,14 @@ void PostViewRefresh(MMDApp* app) {
 
     // ---- bone readout ------------------------------------------------------
     unsigned char* model = app->SelectedModel();
-    const std::int32_t boneIdx = mikudancestudio::mdl::Mdl(model)->selectedBone;
+    const std::int32_t boneIdx = rinmotiondance::mdl::Mdl(model)->selectedBone;
     if (boneIdx < 0) {                                     // 0x40D401 jl
         for (int id = 0x220; id <= 0x226; ++id)
             SetWindowTextA(GetDlgItem(hwnd, id), "-----");
         return;
     }
-    mikudancestudio::mdl::BoneRecord* bone =
-        &mikudancestudio::mdl::Bones(model)[boneIdx];
+    rinmotiondance::mdl::BoneRecord* bone =
+        &rinmotiondance::mdl::Bones(model)[boneIdx];
     const float* display;
     const float* quat;
     if (((app->PlaybackPhysicsMode() == 3) &                 // 0x40D417
@@ -278,4 +278,4 @@ void PostViewRefresh(MMDApp* app) {
     SetWindowTextA(GetDlgItem(hwnd, panel::kReadoutRotZEdit), text);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

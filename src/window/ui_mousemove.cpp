@@ -62,14 +62,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/timeline_selection_grid.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/timeline_selection_grid.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // VA 0x00414610 - ported (ui_panel_paint.cpp).
 void PanelPaint(MMDApp* app);
@@ -655,4 +655,4 @@ void HandleMouseMove(std::uint32_t lParam, int mouseY) {
         DragInterpolationControlPoint(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

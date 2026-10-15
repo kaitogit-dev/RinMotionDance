@@ -1,5 +1,5 @@
-#include "mikudancestudio/charset_conv.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
+#include "rinmotiondance/charset_conv.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
 #include <Windows.h>
 #include <cstdio>
 #include <cstring>
@@ -7,7 +7,7 @@
 #include <locale.h>
 #include <memory>
 
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 
 int main() {
     auto renderer = std::make_unique<D3DRenderer>();

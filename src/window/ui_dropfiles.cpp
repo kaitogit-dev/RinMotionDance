@@ -68,10 +68,10 @@
 #include <cwchar>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---- pending loaders called below ------------------------------------------
 // 0x435FE0 (VSQ load), 0x42A020 (DisableKinect), 0x429CB0 (OpenNiInit) and
@@ -307,4 +307,4 @@ void HandleDropFiles(HDROP hDrop) {
     DragFinish(hDrop);  // 0x461BF7 (not reached by the cancel path above)
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -36,14 +36,14 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/version.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/version.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Family entry points (defined in the per-family TUs listed above).
 void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify);
@@ -455,18 +455,18 @@ void CommandDispatch(HWND ctrl, WPARAM wParam) {
         s.state.enterKeyState = 1;
         char text[256];
 #if defined(_M_X64)
-#define MDS_ABOUT_ARCH_TAG "(64bitOS Version)"
+#define RMD_ABOUT_ARCH_TAG "(64bitOS Version)"
 #else
-#define MDS_ABOUT_ARCH_TAG "(DirectX9 Version)"
+#define RMD_ABOUT_ARCH_TAG "(DirectX9 Version)"
 #endif
         sprintf_s(text, 256,
                   s.EnglishUI() != 0
-                      ? "MikuDanceStudio Ver.%s\n  " MDS_ABOUT_ARCH_TAG "\n\n"
+                      ? "RinMotionDance Ver.%s\n  " RMD_ABOUT_ARCH_TAG "\n\n"
                         "programmed by Yu Higuchi"
-                      : "MikuDanceStudio Ver.%s\n  " MDS_ABOUT_ARCH_TAG "\n\n"
+                      : "RinMotionDance Ver.%s\n  " RMD_ABOUT_ARCH_TAG "\n\n"
                         "programmed by \x94\xF3\x8C\xFB\x97\x44",
                   kVersion);
-#undef MDS_ABOUT_ARCH_TAG
+#undef RMD_ABOUT_ARCH_TAG
         const HWND owner = s.state.floatingWindow != 0
                                ? reinterpret_cast<HWND>(s.state.floatingWindow)
                                : hwnd;
@@ -612,4 +612,4 @@ void CommandDispatch(HWND ctrl, WPARAM wParam) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

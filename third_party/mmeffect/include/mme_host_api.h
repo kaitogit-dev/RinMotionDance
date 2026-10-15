@@ -2,7 +2,7 @@
 // mme_host_api.h - 内置 MMEffect.dll 的宿主集成 API
 // ===========================================================================
 // 原版 MME 通过 d3d9.dll 代理 + IAT/vtable hook 拦截 MMD 的设备调用；本工程
-// 自带完整渲染管线，宿主（MikuDanceStudio.exe）在渲染管线的对应位置直接
+// 自带完整渲染管线，宿主（RinMotionDance.exe）在渲染管线的对应位置直接
 // 调用本 API。语义与原 MMHack 拦截层逐点对应：
 //
 //   宿主调用点                        原版对应（MMHack 拦截）
@@ -26,8 +26,8 @@
 // 绘制约定与原版一致：宿主把 Draw* 交给本 API 后不再自行下发绘制——
 // 效果引擎要么经分配的特效技术重发，要么原始转发。
 // =========================================================================//
-#ifndef MIKUDANCESTUDIO_MME_HOST_API_H_
-#define MIKUDANCESTUDIO_MME_HOST_API_H_
+#ifndef RINMOTIONDANCE_MME_HOST_API_H_
+#define RINMOTIONDANCE_MME_HOST_API_H_
 
 #include <windows.h>
 #include <d3d9.h>
@@ -120,4 +120,4 @@ int __cdecl MmeHostEffectsActive(void);
 }
 #endif
 
-#endif  // MIKUDANCESTUDIO_MME_HOST_API_H_
+#endif  // RINMOTIONDANCE_MME_HOST_API_H_

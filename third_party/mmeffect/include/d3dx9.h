@@ -2,8 +2,8 @@
 // The COM layouts match the Microsoft D3DX9 ABI. Free functions are linked
 // through a normal generated import library, requiring the original runtime
 // at process load (x64: d3dx9_43.dll; x86: d3dx9_32.dll).
-#ifndef MIKUDANCESTUDIO_MME_D3DX9_MIRROR_H_
-#define MIKUDANCESTUDIO_MME_D3DX9_MIRROR_H_
+#ifndef RINMOTIONDANCE_MME_D3DX9_MIRROR_H_
+#define RINMOTIONDANCE_MME_D3DX9_MIRROR_H_
 
 #include <d3d9.h>
 
@@ -512,4 +512,4 @@ D3DXQUATERNION* WINAPI D3DXQuaternionRotationAxis(D3DXQUATERNION*, const D3DXVEC
 HRESULT WINAPI D3DXSaveSurfaceToFileW(LPCWSTR, int, IDirect3DSurface9*, const void*, const RECT*);
 }  // extern "C"
 
-#endif  // MIKUDANCESTUDIO_MME_D3DX9_MIRROR_H_
+#endif  // RINMOTIONDANCE_MME_D3DX9_MIRROR_H_

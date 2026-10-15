@@ -1,5 +1,5 @@
-#include "mikudancestudio/physics_scene.hpp"
-#include "mikudancestudio/physics_world.hpp"
+#include "rinmotiondance/physics_scene.hpp"
+#include "rinmotiondance/physics_world.hpp"
 #include "btBulletDynamicsCommon.h"
 #include "BulletCollision/BroadphaseCollision/btAxisSweep3.h"
 
@@ -37,7 +37,7 @@ struct Constraint : btPoint2PointConstraint {
 }
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     btCollisionShape* plane = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     if (reinterpret_cast<std::uintptr_t>(plane) % 16 != 0) std::abort();
     delete plane;
@@ -56,7 +56,7 @@ int main() {
     scene.groundBody = first;
     scene.world->addConstraint(new Constraint(*first));
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     auto* world = static_cast<PhysicsWorld*>(scene.world);
     world->stepSimulation(btScalar(1) / 120, 10, btScalar(1) / 60);
     Require(world->SubstepRemainder() > 0, "substep remainder must be observable");

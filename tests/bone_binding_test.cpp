@@ -2,13 +2,13 @@
 #include <memory>
 #include <type_traits>
 
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/app_layout.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/app_layout.hpp"
 
-namespace mikudancestudio { void InitBoneSortOrder(unsigned char*); }
+namespace rinmotiondance { void InitBoneSortOrder(unsigned char*); }
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     static_assert(std::is_same_v<decltype(mdl::ModelRecord::boneOrderTable),
                                  mdl::BoneOrderEntry*>);
     static_assert(std::is_same_v<decltype(MMDAppState::selectNavRecords),

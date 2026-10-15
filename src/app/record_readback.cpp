@@ -71,12 +71,12 @@
 #include <cstdarg>
 #include <cstring>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // VA 0x00407470 - stereo activation toggle on the 0x1D574 wrapper
 // (src/io/io_device_helpers.cpp).
@@ -86,15 +86,15 @@ namespace {
 
 constexpr long kEFail = static_cast<long>(0x80004005);
 
-// MIKUDANCESTUDIO_TRACE_REC diagnostic (CMake option MIKUDANCESTUDIO_DIAG,
+// RINMOTIONDANCE_TRACE_REC diagnostic (CMake option RINMOTIONDANCE_DIAG,
 // default OFF): one line per pass (throttled), plus one line per early-out
 // with the failing stage.  The OFF stub keeps the call sites valid and
 // inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void TraceRec(const char* fmt, ...) {
-    if (getenv("MIKUDANCESTUDIO_TRACE_REC") == nullptr)
+    if (getenv("RINMOTIONDANCE_TRACE_REC") == nullptr)
         return;
-    if (FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a")) {
+    if (FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a")) {
         va_list ap;
         va_start(ap, fmt);
         vfprintf(tf, fmt, ap);
@@ -176,8 +176,8 @@ bool RecordingReadbackPass(MMDApp* app) {
     // DIAGNOSTIC ONLY: pace the recording passes to a wall-clock rate
     // (the original's pin-consumption ack paces it to ~60/s; the port runs
     // at ~200/s) to test for residual wall-clock coupling in the physics.
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (const char* pace = getenv("MIKUDANCESTUDIO_REC_PACE_MS"))
+#ifdef RINMOTIONDANCE_DIAG
+    if (const char* pace = getenv("RINMOTIONDANCE_REC_PACE_MS"))
         Sleep(atoi(pace));
 #endif
     DShowRecorder* recorder = s.Recorder();
@@ -313,4 +313,4 @@ bool RecordingReadbackPass(MMDApp* app) {
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -36,11 +36,11 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---- pending dependencies (stubs.cpp / dialog_select_ops.cpp) -------------
 // All of the 0x466630/0x461C20/0x43Dxxx family are __thiscall on Block in
@@ -163,4 +163,4 @@ INT_PTR CALLBACK SelectNavDlgProc(HWND hDlg, UINT Msg, WPARAM wParam, LPARAM lPa
     return 0;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

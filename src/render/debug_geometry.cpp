@@ -18,14 +18,14 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 using Matrix = d3dx::D3DXMATRIXF;
@@ -206,15 +206,15 @@ unsigned char* CurrentModel(MMDApp* app) {
     return app->SelectedModel();
 }
 
-Matrix* BoneMatrix(mikudancestudio::mdl::BoneRecord* bone) {
+Matrix* BoneMatrix(rinmotiondance::mdl::BoneRecord* bone) {
     return reinterpret_cast<Matrix*>(bone->matInit);
 }
 
 void AttachToBone(MMDApp* app, Matrix* world, int boneIndex) {
     auto& api = d3dx::Get();
     unsigned char* model = CurrentModel(app);
-    auto* bones = mikudancestudio::mdl::Bones(model);
-    mikudancestudio::mdl::BoneRecord* bone = &bones[(boneIndex < 0 ? 0 : boneIndex)];
+    auto* bones = rinmotiondance::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bone = &bones[(boneIndex < 0 ? 0 : boneIndex)];
     Matrix translation;
     api.translation(&translation, bone->position[0], bone->position[1],
                     bone->position[2]);
@@ -332,14 +332,14 @@ void DrawAccessoryDebug(MMDApp* app) {
     // joints (mdl::JointRecord).  While the dialog is open the records'
     // keyData / constraint slots hold the combo index (-1 = deleted slot).
     auto* bodies =
-        static_cast<mikudancestudio::mdl::RigidRecord*>(
+        static_cast<rinmotiondance::mdl::RigidRecord*>(
             app->state.rigidScratchArray);
     auto* joints =
-        static_cast<mikudancestudio::mdl::JointRecord*>(
+        static_cast<rinmotiondance::mdl::JointRecord*>(
             app->state.jointScratchArray);
     const bool dialogSelection = app->state.physicsEditorJointPage != 0;
     for (int index = 0; index < kDebugRecordCapacity; ++index) {
-        mikudancestudio::mdl::RigidRecord* record = &bodies[index];
+        rinmotiondance::mdl::RigidRecord* record = &bodies[index];
         const int comboSlot =
             static_cast<int>(reinterpret_cast<std::intptr_t>(record->keyData));
         if (comboSlot >= 0) {
@@ -359,7 +359,7 @@ void DrawAccessoryDebug(MMDApp* app) {
             if (dialogSelection) {
                 const int linkIndex = app->state.selectedJointIndex;
                 if (linkIndex >= 0) {
-                    const mikudancestudio::mdl::JointRecord* link =
+                    const rinmotiondance::mdl::JointRecord* link =
                         &joints[linkIndex];
                     selected = index == link->rigidA ||
                                index == link->rigidB;
@@ -384,7 +384,7 @@ void DrawAccessoryDebug(MMDApp* app) {
                 SetDebugColor(scene, 155, 255, 0);
         }
 
-        mikudancestudio::mdl::JointRecord* link = &joints[index];
+        rinmotiondance::mdl::JointRecord* link = &joints[index];
         if (link->constraint < 0)
             continue;
         Matrix world;
@@ -423,11 +423,11 @@ void DrawAccessoryDebug(MMDApp* app) {
 
 void DrawBoneOperationAxis(MMDApp* app, const float frameMatrix[16]) {
     unsigned char* model = CurrentModel(app);
-    const int selected = mikudancestudio::mdl::Mdl(model)->selectedBone;
+    const int selected = rinmotiondance::mdl::Mdl(model)->selectedBone;
     if (selected < 0)
         return;
-    auto* bones = mikudancestudio::mdl::Bones(model);
-    mikudancestudio::mdl::BoneRecord* bone = &bones[selected];
+    auto* bones = rinmotiondance::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bone = &bones[selected];
     const mdl::BoneType type = bone->type;
     if (type == mdl::BoneType::FixedAxis ||
         (type == mdl::BoneType::UnderIk &&
@@ -524,7 +524,7 @@ void SetupFrameWorldTransform(MMDApp* app) {
         focusZ = app->CameraPositionZ();
     } else if (targetModel >= 0) {
         auto* model = app->ModelSlot(targetModel);
-        auto* bones = mikudancestudio::mdl::Bones(model);
+        auto* bones = rinmotiondance::mdl::Bones(model);
         target = &bones[targetBone];
         const float x = target->position[0];
         const float y = target->position[1];
@@ -615,4 +615,4 @@ void SetupFrameWorldTransform(MMDApp* app) {
                          reinterpret_cast<const D3DMATRIX*>(&view));
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

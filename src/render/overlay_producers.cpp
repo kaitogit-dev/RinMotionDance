@@ -10,11 +10,11 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include "vb_dump.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct TextVertex {
@@ -251,4 +251,4 @@ void PrepareFrameLineOverlay(MMDApp* app) {  // 0x4757C3..0x4759D8
     vb->Unlock();
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

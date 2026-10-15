@@ -15,11 +15,11 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct TexturedScreenVertex {
@@ -99,10 +99,10 @@ void DrawFullscreenQuad(IDirect3DDevice9* device,
 }
 
 // Porting-era screen-texture readback under
-// MIKUDANCESTUDIO_SCREEN_TEXTURE_DUMP_DIR (CMake option MIKUDANCESTUDIO_DIAG,
+// RINMOTIONDANCE_SCREEN_TEXTURE_DUMP_DIR (CMake option RINMOTIONDANCE_DIAG,
 // default OFF); the OFF stub below keeps the call sites valid and inlines
 // away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 #pragma pack(push, 1)
 struct DumpBitmapFileHeader {
     std::uint16_t type;
@@ -119,12 +119,12 @@ struct DumpBitmapFileHeader {
 void DumpAccessoryScreenTexture(MMDApp* app, IDirect3DDevice9* device) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_SCREEN_TEXTURE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_SCREEN_TEXTURE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
 
     char stableCapture[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stableCapture,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_STABLE_CAPTURE", stableCapture,
                                 sizeof(stableCapture)) == 1 &&
         stableCapture[0] == '1') {
         char gatePath[MAX_PATH]{};
@@ -468,4 +468,4 @@ void RenderFrameScene(MMDApp* app) {
     DumpAccessoryScreenTexture(app, device);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

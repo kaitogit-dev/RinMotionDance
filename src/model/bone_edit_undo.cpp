@@ -7,11 +7,11 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     if (app == nullptr)
@@ -22,10 +22,10 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     if (model == nullptr)
         return;
 
-    const int boneCount = mikudancestudio::mdl::Mdl(model)->boneCount;
-    auto* selected = mikudancestudio::mdl::Mdl(model)->boneSelection;
-    auto* dirty = mikudancestudio::mdl::Mdl(model)->bonePhysicsState;
-    auto* bones = mikudancestudio::mdl::Bones(model);
+    const int boneCount = rinmotiondance::mdl::Mdl(model)->boneCount;
+    auto* selected = rinmotiondance::mdl::Mdl(model)->boneSelection;
+    auto* dirty = rinmotiondance::mdl::Mdl(model)->bonePhysicsState;
+    auto* bones = rinmotiondance::mdl::Bones(model);
     if (boneCount <= 0 || selected == nullptr || bones == nullptr)
         return;
 
@@ -45,14 +45,14 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     // +0x3559，紧跟 undoState 环游标（+0x3550，环深 30）。x86 旧偏移
     // 12732/12733 在 x64 落进 gap15 死垫片会让 Ctrl+Z/Y 门失效，必须走
     // typed 字段（双架构偏移由 model_layout.hpp 钉死）。
-    mikudancestudio::mdl::Mdl(model)->undoDirty = 1;
-    mikudancestudio::mdl::Mdl(model)->redoDirty = 0;
-    auto& ringIndex = mikudancestudio::mdl::Mdl(model)->undoState[0];
+    rinmotiondance::mdl::Mdl(model)->undoDirty = 1;
+    rinmotiondance::mdl::Mdl(model)->redoDirty = 0;
+    auto& ringIndex = rinmotiondance::mdl::Mdl(model)->undoState[0];
     if (++ringIndex >= 30)
         ringIndex = 0;
-    mikudancestudio::mdl::Mdl(model)->undoState[1] = ringIndex;
+    rinmotiondance::mdl::Mdl(model)->undoState[1] = ringIndex;
 
-    auto& undo = mikudancestudio::mdl::Mdl(model)->undoRings[0].slots[ringIndex];
+    auto& undo = rinmotiondance::mdl::Mdl(model)->undoRings[0].slots[ringIndex];
     undo.operation = 1;
     undo.dirty = selectedCount;
     auto*& oldSnapshot = undo.bonePose;
@@ -61,8 +61,8 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
         oldSnapshot = nullptr;
     }
 
-    auto* snapshot = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
-        ::operator new(sizeof(mikudancestudio::mdl::BonePoseSnapshot) * selectedCount));
+    auto* snapshot = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
+        ::operator new(sizeof(rinmotiondance::mdl::BonePoseSnapshot) * selectedCount));
     oldSnapshot = snapshot;
     std::memset(snapshot, 0, static_cast<std::size_t>(36) * selectedCount);
 
@@ -71,7 +71,7 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
         if (selected[i] == 0)
             continue;
         auto& record = snapshot[output++];
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         record.boneIndex = i;
         std::memcpy(record.position, bone->trans, sizeof(record.position));
         std::memcpy(record.rotation, bone->rotQuat, sizeof(record.rotation));
@@ -79,4 +79,4 @@ void PushBoneEditUndo(MMDApp* app) {  // VA 0x0042D6E0
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

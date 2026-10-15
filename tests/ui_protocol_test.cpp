@@ -1,7 +1,7 @@
-#include "mikudancestudio/timeline_selection_grid.hpp"
-#include "mikudancestudio/app_layout.hpp"
+#include "rinmotiondance/timeline_selection_grid.hpp"
+#include "rinmotiondance/app_layout.hpp"
 #include <memory>
-#include "mikudancestudio/wave_audio_context.hpp"
+#include "rinmotiondance/wave_audio_context.hpp"
 
 #include <array>
 #include <cstdio>
@@ -13,7 +13,7 @@ int main() {
         if (!ok) { std::fprintf(stderr, "%s\n", message); ++failures; }
     };
     std::array<unsigned char, 200 * 200> selected{};
-    mikudancestudio::VisitTimelineSelectionCells(2, 5, 3, 6,
+    rinmotiondance::VisitTimelineSelectionCells(2, 5, 3, 6,
         [&](std::size_t cell, int column) {
             check(column >= 3 && column < 6, "Column cursor left the selection");
             selected[cell] = 1;
@@ -23,7 +23,7 @@ int main() {
             check(selected[row * 200 + column] ==
                       (row >= 2 && row < 5 && column >= 3 && column < 6),
                   "Rectangular selection drifted in a subsequent row");
-    auto app = std::make_unique<mikudancestudio::MMDAppState>();
+    auto app = std::make_unique<rinmotiondance::MMDAppState>();
     static_assert(sizeof(app->rowHitBone) == 40000 * sizeof(int));
     static_assert(sizeof(app->rowHitMorph) == 40000 * sizeof(int));
     static_assert(sizeof(app->rowHitIk) == 40000 * sizeof(int));
@@ -34,15 +34,15 @@ int main() {
           app->rowHitIk[39999] == 33 && app->rowHitBand0[0] == 0,
           "Full-size hit grids must keep independent storage");
     int calls = 0;
-    mikudancestudio::VisitTimelineSelectionCells(0, 0, 0, 5,
+    rinmotiondance::VisitTimelineSelectionCells(0, 0, 0, 5,
         [&](std::size_t, int) { ++calls; });
-    mikudancestudio::VisitTimelineSelectionCells(0, 5, 4, 4,
+    rinmotiondance::VisitTimelineSelectionCells(0, 5, 4, 4,
         [&](std::size_t, int) { ++calls; });
     check(calls == 0, "Empty selection must not access the hit grid");
 
     // Exercise the same stop/completion publication used by the real WAV
     // worker without requiring an audio device or DirectSound buffer.
-    mikudancestudio::WaveAudioContext audio{};
+    rinmotiondance::WaveAudioContext audio{};
     int completionData = 0;
     std::thread worker([&] {
         while (audio.ReadStopFlag() != 1)

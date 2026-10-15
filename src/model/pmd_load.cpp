@@ -42,13 +42,13 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/path_workspace.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/path_workspace.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Shared Shift-JIS byte literals, maintained in model_labels.inc.
@@ -74,14 +74,14 @@ bool FailBox(HWND hwnd, bool en, bool enData, const char* enMsg,
     return false;
 }
 
-// Porting-era trace under MIKUDANCESTUDIO_PMM_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call site
+// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call site
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void LogPmdRigid(const wchar_t* path, std::uint32_t rigidIndex,
                  std::int32_t boneIndex, std::uint32_t boneCount,
                  const void* bones) {
-    const char* dir = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* dir = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (dir == nullptr || dir[0] == '\0')
         return;
     char logPath[MAX_PATH];
@@ -352,10 +352,10 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
     // ---- bones ------------------------------------------------------------
     _read(fh, &model.boneCount, 2);
     const std::uint32_t boneCount = model.boneCount;
-    mikudancestudio::mdl::BoneRecord* bones = static_cast<mikudancestudio::mdl::BoneRecord*>(
-        operator new(sizeof(mikudancestudio::mdl::BoneRecord) * (boneCount ? boneCount : 1)));
-    mikudancestudio::mdl::Bones(m) = bones;
-    std::memset(bones, 0, sizeof(mikudancestudio::mdl::BoneRecord) * (boneCount ? boneCount : 1));
+    rinmotiondance::mdl::BoneRecord* bones = static_cast<rinmotiondance::mdl::BoneRecord*>(
+        operator new(sizeof(rinmotiondance::mdl::BoneRecord) * (boneCount ? boneCount : 1)));
+    rinmotiondance::mdl::Bones(m) = bones;
+    std::memset(bones, 0, sizeof(rinmotiondance::mdl::BoneRecord) * (boneCount ? boneCount : 1));
     {
         void* t1 = operator new(4 * (boneCount ? boneCount : 1));
         std::memset(t1, 0, 4 * (boneCount ? boneCount : 1));
@@ -373,7 +373,7 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
     }
     std::uint8_t centerSeen = 0;
     for (std::uint32_t i = 0; i < boneCount; ++i) {
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         _read(fh, bone->name, sizeof(bone->name));
         if (!std::memcmp(bone->name, kNameCenter2Jp, 9)) {
             model.centerBone = static_cast<std::int32_t>(i);
@@ -398,7 +398,7 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
             bone->matWorld[f] = (f % 5 == 0) ? 1.0f : 0.0f;
         bone->slotIndex = -1;
         bone->rigidIdx = -296;
-        bone->flags |= mikudancestudio::mdl::kBoneFlagVisible;
+        bone->flags |= rinmotiondance::mdl::kBoneFlagVisible;
     }
 
     // ---- IK chains --------------------------------------------------------
@@ -429,20 +429,20 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
     // (parent flagged) || ((RotateGrant || (inherit-flags && physMode==2))
     // && tail is Ik/UnderIk) - RotateGrant is NOT gated by physMode)
     for (std::uint32_t i = 0; i < boneCount; ++i) {
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         bone->hasFlag = 0;
         const std::int32_t parent = bone->parent;
         const std::int32_t tail = bone->tailIdx;
-        const mikudancestudio::mdl::BoneType tailType = bones[tail].type;
+        const rinmotiondance::mdl::BoneType tailType = bones[tail].type;
         const bool arm1 =
             parent >= 0 &&
-            mikudancestudio::mdl::Bones(m)[parent].hasFlag != 0;
+            rinmotiondance::mdl::Bones(m)[parent].hasFlag != 0;
         const bool arm2 =
-            (bone->type == mikudancestudio::mdl::BoneType::RotateGrant ||
-             ((bone->flags & mikudancestudio::mdl::kBoneFlagInheritMask) != 0 &&
+            (bone->type == rinmotiondance::mdl::BoneType::RotateGrant ||
+             ((bone->flags & rinmotiondance::mdl::kBoneFlagInheritMask) != 0 &&
               model.physicsMode == 2)) &&
-            (tailType == mikudancestudio::mdl::BoneType::Ik ||
-             tailType == mikudancestudio::mdl::BoneType::UnderIk);
+            (tailType == rinmotiondance::mdl::BoneType::Ik ||
+             tailType == rinmotiondance::mdl::BoneType::UnderIk);
         bone->hasFlag = (arm1 || arm2) ? 1 : 0;
     }
     InitBoneSortOrder(m);                                    // x86 0x490070; bone_sort.cpp
@@ -908,4 +908,4 @@ bool ModelLoadPMD(unsigned char* m, HWND hwnd, const wchar_t* path,
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

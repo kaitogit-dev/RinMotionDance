@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <cstdint>
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 class MMDApp;
 
 // Focus is sampled before the panel traversal. SetFocus and synchronous
@@ -34,4 +34,4 @@ void RegisterCameraState(MMDApp* app, int frame);
 void RegisterLightState(MMDApp* app, int frame);
 void RegisterSelfShadowState(MMDApp* app, int frame);
 void RegisterGravityKeyCurrent(MMDApp* app, std::int32_t frame);
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

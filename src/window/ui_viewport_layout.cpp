@@ -24,10 +24,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void LayoutViewportPanels(MMDApp* app) {  // VA 0x0040CAC0
     auto& s = *app;
@@ -98,4 +98,4 @@ void LayoutViewportPanels(MMDApp* app) {  // VA 0x0040CAC0
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

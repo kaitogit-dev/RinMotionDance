@@ -14,14 +14,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Full-port callees defined in other TUs (local declarations).
 void RefreshAfterFrameApply(MMDApp* app);      // VA 0x432FA0 (ui_frame_step.cpp),
@@ -132,14 +132,14 @@ void DispatchSeparateWindowCommand(MMDApp* app, unsigned short id) {  // VA 0x00
             PostViewRefresh(app);                                // 0x40D130
         } else {
             unsigned char* model = s.SelectedModel();
-            const std::int32_t bone = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const std::int32_t bone = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (bone >= 0) {
                 PushBoneEditUndo(app);                                  // 0x42D6E0
-                mikudancestudio::mdl::BoneRecord* bones =
-                    mikudancestudio::mdl::Bones(model);
+                rinmotiondance::mdl::BoneRecord* bones =
+                    rinmotiondance::mdl::Bones(model);
                 bones[bone].trans[axis] = 0.0f;
                 unsigned char* flags =
-                    mikudancestudio::mdl::Mdl(model)->bonePhysicsState;
+                    rinmotiondance::mdl::Mdl(model)->bonePhysicsState;
                 flags[bone] = 1;
                 PostViewRefresh(app);
             } else {
@@ -154,7 +154,7 @@ void DispatchSeparateWindowCommand(MMDApp* app, unsigned short id) {  // VA 0x00
         const int axis = id - 0x21C;  // which degree cache stays non-zero
         if (s.CameraMode() == 0) {
             unsigned char* model = s.SelectedModel();
-            const std::int32_t bone = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const std::int32_t bone = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (bone >= 0) {
                 PushBoneEditUndo(app);
                 constexpr float kPiLow = 3.141592025756836f;   // 0x52B968?
@@ -183,13 +183,13 @@ void DispatchSeparateWindowCommand(MMDApp* app, unsigned short id) {  // VA 0x00
                 api.multiply(&rot, &rz, &rx);
                 api.rotY(&ry, degY);
                 api.multiply(&rot, &rot, &ry);
-                mikudancestudio::mdl::BoneRecord* bones =
-                    mikudancestudio::mdl::Bones(model);
+                rinmotiondance::mdl::BoneRecord* bones =
+                    rinmotiondance::mdl::Bones(model);
                 api.quatFromMatrix(
                     reinterpret_cast<float*>(&bones[bone].rotQuat[0]),
                     &rot);                                   // 0x462623
                 unsigned char* flags =
-                    mikudancestudio::mdl::Mdl(model)->bonePhysicsState;
+                    rinmotiondance::mdl::Mdl(model)->bonePhysicsState;
                 flags[bone] = 1;
             }
             PostViewRefresh(app);                                // 0x46252E
@@ -280,4 +280,4 @@ void DispatchSeparateWindowCommand(MMDApp* app, unsigned short id) {  // VA 0x00
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

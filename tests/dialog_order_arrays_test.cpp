@@ -1,4 +1,4 @@
-#include "mikudancestudio/dialog_order_arrays.hpp"
+#include "rinmotiondance/dialog_order_arrays.hpp"
 
 #include <array>
 #include <cstdio>
@@ -6,7 +6,7 @@
 #include <type_traits>
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     int failures = 0;
     const auto check = [&](bool condition, const char* message) {
         if (!condition) { std::fprintf(stderr, "%s\n", message); ++failures; }

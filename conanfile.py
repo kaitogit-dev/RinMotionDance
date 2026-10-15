@@ -4,8 +4,8 @@ from conan.tools.files import load
 import os
 
 
-class MikuDanceStudioConan(ConanFile):
-    """MikuDanceStudio - behavioral reconstruction of MikuMikuDance v932 x64.
+class RinMotionDanceConan(ConanFile):
+    """RinMotionDance - behavioral reconstruction of MikuMikuDance v932 x64.
 
     Package management via Conan 2.  The only third-party link-time
     dependency of the original binary is Bullet Physics 2.75 (statically
@@ -15,7 +15,7 @@ class MikuDanceStudioConan(ConanFile):
     remaining limitations are recorded in docs/PORTING_STATUS.md.
     """
 
-    name = "mikudancestudio"
+    name = "rinmotiondance"
     exports = "VERSION"
 
     def set_version(self):

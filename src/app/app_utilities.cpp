@@ -1,5 +1,5 @@
 // ===========================================================================
-// MikuDanceStudio - app/render gap-fill bodies (11 original functions, one file)
+// RinMotionDance - app/render gap-fill bodies (11 original functions, one file)
 // ===========================================================================
 // Contents (original VAs):
 //   0x0040A680  AngleFabsF          float fabs wrapper (CRT fabs)
@@ -36,12 +36,12 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Already-ported callees (real bodies; PostViewRefresh is declared in
 // ported_funcs.hpp, RefreshAfterFrameApply lives in
@@ -512,7 +512,7 @@ void JumpNextKeyframe(MMDApp* app) {  // 0x441070
             best = f;
     }
     // Selected facial display rows refer to the roots of the morph tracks.
-    if (mikudancestudio::mdl::Mdl(model)->facialFrameCount != 0) {                                    // 0x441300
+    if (rinmotiondance::mdl::Mdl(model)->facialFrameCount != 0) {                                    // 0x441300
         const auto& record = *mdl::Mdl(model);
         const mdl::MorphKey* base = record.morphKeys;
         for (int i = 0; i < record.facialFrameCount; ++i) {
@@ -539,11 +539,11 @@ void JumpNextKeyframe(MMDApp* app) {  // 0x441070
     // *(model+11668), node 60 bytes)
     {
         const int count =
-            static_cast<int>(mikudancestudio::mdl::Mdl(model)->boneCount);   // 0x4413a0
+            static_cast<int>(rinmotiondance::mdl::Mdl(model)->boneCount);   // 0x4413a0
         if (count > 0) {
             mdl::BoneKey* base = mdl::BoneKeys(model);
             const unsigned char* flags =
-                mikudancestudio::mdl::Mdl(model)->boneSelection;
+                rinmotiondance::mdl::Mdl(model)->boneSelection;
             for (int k = 0; k < count; ++k) {
                 if (flags[k] != 0) {                                // 0x4413dc
                     std::uint32_t node = k;
@@ -764,7 +764,7 @@ void JumpPrevKeyframe(MMDApp* app) {  // 0x4414C0
         }
     }
     // Selected facial display rows refer to the roots of the morph tracks.
-    if (mikudancestudio::mdl::Mdl(model)->facialFrameCount != 0) {                                    // 0x441858
+    if (rinmotiondance::mdl::Mdl(model)->facialFrameCount != 0) {                                    // 0x441858
         const auto& record = *mdl::Mdl(model);
         const mdl::MorphKey* base = record.morphKeys;
         for (int i = 0; i < record.facialFrameCount; ++i) {
@@ -796,11 +796,11 @@ void JumpPrevKeyframe(MMDApp* app) {  // 0x4414C0
     // key tree @model+9952 (count dword @model+11652, node 60 bytes)
     {
         const int count =
-            static_cast<int>(mikudancestudio::mdl::Mdl(model)->boneCount);   // 0x441954
+            static_cast<int>(rinmotiondance::mdl::Mdl(model)->boneCount);   // 0x441954
         if (count > 0) {
             mdl::BoneKey* base = mdl::BoneKeys(model);
             const unsigned char* flags =
-                mikudancestudio::mdl::Mdl(model)->boneSelection;
+                rinmotiondance::mdl::Mdl(model)->boneSelection;
             for (int k = 0; k < count; ++k) {
                 if (flags[k] != 0) {                                // 0x441994
                     std::uint32_t node = k;
@@ -837,4 +837,4 @@ void JumpPrevKeyframe(MMDApp* app) {  // 0x4414C0
     PostViewRefresh(app);                                           // 0x441ab3
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -1,5 +1,5 @@
-﻿#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
+﻿#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
 #include <cstdio>
 #include <memory>
 
@@ -7,7 +7,7 @@ namespace {
 int applied = 0;
 int refreshed = 0;
 }
-namespace mikudancestudio {
+namespace rinmotiondance {
 // Isolate navigation from window/render initialization and downstream playback.
 MMDApp::MMDApp() : state{} {}
 void RefreshAfterFrameApply(MMDApp*) { ++applied; }
@@ -17,7 +17,7 @@ void JumpPrevKeyframe(MMDApp*);
 }
 
 int main() {
-    namespace mds = mikudancestudio;
+    namespace mds = rinmotiondance;
     namespace mdl = mds::mdl;
     auto app = std::make_unique<mds::MMDApp>();
     auto model = std::make_unique<mdl::ModelRecord>();

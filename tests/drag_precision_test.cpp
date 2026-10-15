@@ -1,14 +1,14 @@
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <memory>
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 std::uint32_t Bits(float v) { std::uint32_t bits; std::memcpy(&bits,&v,4); return bits; }
 float& Position(MMDApp& app, int axis) {
     if (axis == 0) return app.CameraPositionX();

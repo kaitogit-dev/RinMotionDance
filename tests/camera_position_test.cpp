@@ -1,9 +1,9 @@
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 #include <cstdio>
 #include <cstring>
 #include <memory>
 
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 
 int main() {
     auto app = std::make_unique<MMDApp>();

@@ -59,12 +59,12 @@
 #include <fcntl.h>
 #include <io.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Shared Shift-JIS byte literals, maintained in model_labels.inc.
@@ -199,14 +199,14 @@ void SkipTextBuf(int fh) {
     }
 }
 
-// Porting-era trace under MIKUDANCESTUDIO_PMX_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_PMX_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void TracePmxOffset(int fh, const char* phase, int index, int value) {
     char directory[MAX_PATH];
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_PMX_TRACE_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_PMX_TRACE_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     char path[MAX_PATH];
@@ -734,9 +734,9 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
     std::int32_t centerBone = -1;
     bool centerFound = false;
     if (boneCount > 0) {
-        mikudancestudio::mdl::Bones(m) = static_cast<mikudancestudio::mdl::BoneRecord*>(
-            operator new(sizeof(mikudancestudio::mdl::BoneRecord) * boneCount));
-        std::memset(mikudancestudio::mdl::Bones(m), 0, sizeof(mikudancestudio::mdl::BoneRecord) * boneCount);
+        rinmotiondance::mdl::Bones(m) = static_cast<rinmotiondance::mdl::BoneRecord*>(
+            operator new(sizeof(rinmotiondance::mdl::BoneRecord) * boneCount));
+        std::memset(rinmotiondance::mdl::Bones(m), 0, sizeof(rinmotiondance::mdl::BoneRecord) * boneCount);
         mdl::Mdl(m)->boneKeyCursors = static_cast<std::uint32_t*>(
             operator new(sizeof(std::uint32_t) * boneCount));
         std::memset(mdl::Mdl(m)->boneKeyCursors, 0,
@@ -752,9 +752,9 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
             operator new(boneCount));
         std::memset(mdl::Mdl(m)->bonePhysicsState, 0, boneCount);
 
-        mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(m);
+        rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(m);
         for (std::int32_t i = 0; i < boneCount; ++i) {
-            mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+            rinmotiondance::mdl::BoneRecord* bone = &bones[i];
             bone->jpText = ReadTextBuf(fh, nullIdx); // JP name
             WideToSjis(sub, reinterpret_cast<char*>(bone),
                        reinterpret_cast<const wchar_t*>(
@@ -860,7 +860,7 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
                         sizeof(mdl::IkChain) * ikBoneCount);
             int chain = 0;
             for (std::int32_t i = 0; i < boneCount; ++i) {
-                mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+                rinmotiondance::mdl::BoneRecord* bone = &bones[i];
                 if (!(bone->flags & mdl::kBoneFlagIk))
                     continue;
                 bone->type = mdl::BoneType::Ik;               // 0x4BA740
@@ -891,7 +891,7 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
                         ch.links[l] =
                             static_cast<std::uint16_t>(link.boneIndex);
                         if (link.hasLimits == 1) {
-                            mikudancestudio::mdl::BoneRecord* lb = &bones[link.boneIndex];
+                            rinmotiondance::mdl::BoneRecord* lb = &bones[link.boneIndex];
                             lb->twistEnable = 1;
                             std::memcpy(lb->ikLimitMin, link.minimum,
                                         sizeof(lb->ikLimitMin));
@@ -906,7 +906,7 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
 
         // transform-layer inheritance pass (&bone->hasFlag flag, +496 layers) ------
         for (std::int32_t i = 0; i < boneCount; ++i) {
-            mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+            rinmotiondance::mdl::BoneRecord* bone = &bones[i];
             bone->hasFlag = 0;
             const std::int32_t parent = bone->parent;
             if (parent >= 0 && bones[parent].hasFlag) {
@@ -1549,7 +1549,7 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
             operator new(sizeof(mdl::RigidRecord) * rcount));
         std::memset(model.rigidTable, 0,
                     sizeof(mdl::RigidRecord) * rcount);
-        mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(m);
+        rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(m);
         for (std::int32_t i = 0; i < rcount; ++i) {
             TracePmxOffset(fh, "rigid-record-begin", i, rcount);
             mdl::RigidRecord& rb = model.rigidTable[i];
@@ -1773,4 +1773,4 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

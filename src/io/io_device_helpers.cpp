@@ -21,14 +21,14 @@
 #include <cstdint>
 #include <cwchar>
 
-#include "mikudancestudio/d3d_wrapper.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---------------------------------------------------------------------------
 // Shared layout note for 0x407660 / 0x407830 / 0x407470 (also 0x4076E0 and
 // 0x406BE0): `this` (ecx) is the 0x1D574 render/locale wrapper object kept
-// at app+0xA06C4, restored as mikudancestudio::D3DRenderer.
+// at app+0xA06C4, restored as rinmotiondance::D3DRenderer.
 // Its first 120000 bytes are the 10000-entry resourcePool with a 12-byte
 // stride (entry i @ wrapper + 4 + 12*i):
 //     .heapBuffer  wchar_t* name (null slot terminates the table)
@@ -178,7 +178,7 @@ bool DirectShowInit(HWND hWnd) {
 //
 // VA 0x00406950 - physics collision debug draw.  Already ported as
 //   DrawPhysicsCollisionDebug(void*) in src/render/debug_geometry.cpp
-//   (declared in include/mikudancestudio/ported_funcs.hpp); red pass for bodies
+//   (declared in include/rinmotiondance/ported_funcs.hpp); red pass for bodies
 //   with a non-zero group mask, green pass otherwise.
 //
 // VA 0x00403030 - rigid-body construction-info constructor.  This is the
@@ -195,4 +195,4 @@ bool DirectShowInit(HWND hWnd) {
 //   and the custom COM interface contract documented there.
 // ---------------------------------------------------------------------------
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

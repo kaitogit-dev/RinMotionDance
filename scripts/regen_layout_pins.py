@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# Regenerate include/mikudancestudio/layout_pins.hpp into the compact
-# MIKUDANCESTUDIO_APP_OFF macro-table form (Wave5-A).  Parses the current
+# Regenerate include/rinmotiondance/layout_pins.hpp into the compact
+# RINMOTIONDANCE_APP_OFF macro-table form (Wave5-A).  Parses the current
 # hand-written pin wall, applies the structural member-merge renames,
 # sorts the x86 wall by offset (== struct order) and re-emits it.
 # Verifies that the (member, offset) multiset is preserved 1:1.
 import re
 import sys
 
-SRC = "include/mikudancestudio/layout_pins.hpp"
+SRC = "include/rinmotiondance/layout_pins.hpp"
 
 # structural renames (mechanical ones were already applied repo-wide)
 EXPR_FIXES = {
@@ -64,21 +64,21 @@ print(f"x86 pins: {len(x86)}  x64 anchors: {len(x64)}  delta: {delta}")
 out = []
 out.append("""\
 // ===========================================================================
-// MikuDanceStudio - layout pin wall (MMDAppState)
+// RinMotionDance - layout pin wall (MMDAppState)
 // ===========================================================================
 // Regression guard for MMDAppState, split from app_layout.hpp so the
 // struct definition reads like the original author's code:
 //   * x86: every member pinned to the original binary's byte offset
 //     (the ground truth this port mirrors; recovered from IDA + probes).
 //     The wall below is ordered by offset, i.e. by struct order; one
-//     MIKUDANCESTUDIO_APP_OFF line per pinned field (array elements get
+//     RINMOTIONDANCE_APP_OFF line per pinned field (array elements get
 //     their own line, e.g. dialogFlags[17]).
 //   * x64: anchor members only - instruction-level ground truth
 //     (vote-grade twin reads); the rest keep their spacing relative to
 //     the last anchor, and the size is bounded near the original truth
 //     (see app_layout.hpp).
 // Included at the bottom of app_layout.hpp, inside namespace
-// mikudancestudio - requires MMDAppState in scope.  Hand-maintained
+// rinmotiondance - requires MMDAppState in scope.  Hand-maintained
 // alongside the struct.  Architecture switches use the canonical
 // #if defined(_M_X64) / #if !defined(_M_X64) forms.
 // ===========================================================================
@@ -88,14 +88,14 @@ out.append("""\
 
 #if !defined(_M_X64)
 // ---- x86 wall: every field pinned to the original x86 binary ----------
-#define MIKUDANCESTUDIO_APP_OFF(f, off)                                        \\
+#define RINMOTIONDANCE_APP_OFF(f, off)                                        \\
     static_assert(offsetof(MMDAppState, f) == (off),                          \\
                   #f " x86 offset must match the original binary")
 """)
 for e, o in sorted(x86, key=lambda t: t[1]):
-    out.append(f"MIKUDANCESTUDIO_APP_OFF({e}, {o});")
+    out.append(f"RINMOTIONDANCE_APP_OFF({e}, {o});")
 out.append("""
-#undef MIKUDANCESTUDIO_APP_OFF
+#undef RINMOTIONDANCE_APP_OFF
 
 // The inline path-resolution workspace (was fontSubOrPtr + 3535 pad bytes)
 // must fill the blob region up to the next live field.
@@ -104,14 +104,14 @@ static_assert(offsetof(MMDAppState, leftViewportVertices) -
               "pathWorkspace x86 span must end at the next app field");
 #else
 // ---- x64 anchors --------------------------------------------------------
-#define MIKUDANCESTUDIO_APP_OFF64(f, off)                                      \\
+#define RINMOTIONDANCE_APP_OFF64(f, off)                                      \\
     static_assert(offsetof(MMDAppState, f) == (off),                          \\
                   #f " x64 anchor must match the original binary")
 """ % delta[2])
 for e, o in x64:
-    out.append(f"MIKUDANCESTUDIO_APP_OFF64({e}, {o});")
+    out.append(f"RINMOTIONDANCE_APP_OFF64({e}, {o});")
 out.append("""
-#undef MIKUDANCESTUDIO_APP_OFF64
+#undef RINMOTIONDANCE_APP_OFF64
 #endif
 """)
 
@@ -126,7 +126,7 @@ gsplit = next(i for i, l in enumerate(glines) if l.strip() == "#else")
 gx86, gx64 = [], []
 for i, l in enumerate(glines):
     m = re.search(
-        r"MIKUDANCESTUDIO_APP_OFF(?:64)?\(([^,]+),\s*(\d+)\);", l)
+        r"RINMOTIONDANCE_APP_OFF(?:64)?\(([^,]+),\s*(\d+)\);", l)
     if m:
         (gx86 if i < gsplit else gx64).append((m.group(1), int(m.group(2))))
 

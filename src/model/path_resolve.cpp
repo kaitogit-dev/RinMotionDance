@@ -44,13 +44,13 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/path_workspace.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/path_workspace.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // minimal D3DX constants/struct for the dynamic loader (no SDK headers)
@@ -275,4 +275,4 @@ int LoadTextureShared(unsigned char* sub, wchar_t* path) {     // 0x407490
     return 1;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

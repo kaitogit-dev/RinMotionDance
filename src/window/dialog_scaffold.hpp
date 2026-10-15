@@ -18,8 +18,8 @@
 // morph frame transform 0x7FF7CB478BC3, model order 0x7FF7CB478383
 // (or ebx,-1), physics editor 0x7FF7CB4AE84E.  One helper, one constant.
 // =========================================================================//
-#ifndef MIKUDANCESTUDIO_WINDOW_DIALOG_SCAFFOLD_HPP
-#define MIKUDANCESTUDIO_WINDOW_DIALOG_SCAFFOLD_HPP
+#ifndef RINMOTIONDANCE_WINDOW_DIALOG_SCAFFOLD_HPP
+#define RINMOTIONDANCE_WINDOW_DIALOG_SCAFFOLD_HPP
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -27,9 +27,9 @@
 
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // EM_REPLACESEL prefill of one edit control (the dialogs fill their empty
 // edits by replacing the empty selection, not by SetWindowText).
@@ -71,6 +71,6 @@ inline void MakeDialogTopmostIfRequested(MMDApp* app, HWND hDlg) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance
 
-#endif  // MIKUDANCESTUDIO_WINDOW_DIALOG_SCAFFOLD_HPP
+#endif  // RINMOTIONDANCE_WINDOW_DIALOG_SCAFFOLD_HPP

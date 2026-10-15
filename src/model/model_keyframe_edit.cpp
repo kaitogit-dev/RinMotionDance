@@ -19,11 +19,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct BoneKeyUndoEntry {
@@ -58,7 +58,7 @@ void SetFrameEdit(unsigned char* model, int frame) {
 void CaptureAndApplyPose(unsigned char* model,
                          const mdl::BonePoseSnapshot* source,
                          mdl::BonePoseSnapshot* capture, int count) {
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     unsigned char* selected = mdl::Mdl(model)->bonePhysicsState;
     for (int i = 0; i < count; ++i) {
         const auto& in = source[i];
@@ -77,7 +77,7 @@ void CaptureAndApplyPose(unsigned char* model,
 
 void ApplyPose(unsigned char* model, const mdl::BonePoseSnapshot* source,
                int count) {
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     unsigned char* selected = mdl::Mdl(model)->bonePhysicsState;
     for (int i = 0; i < count; ++i) {
         const auto& in = source[i];
@@ -115,7 +115,7 @@ void SnapshotPose(unsigned char* model, mdl::UndoRecord& undo) {
                             sizeof(mdl::BonePoseSnapshot));
 
     auto* dst = static_cast<mdl::BonePoseSnapshot*>(slot);
-    mikudancestudio::mdl::BoneRecord* pose = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* pose = rinmotiondance::mdl::Bones(model);
     unsigned char* selected = mdl::Mdl(model)->bonePhysicsState;
     for (std::int32_t i = 0; i < count; ++i) {
         auto& out = dst[i];
@@ -211,7 +211,7 @@ void BoneKeyOverflow(unsigned char* model) {
         "\x8d\x73\x82\xb5\x82\xc4\x89\xba\x82\xb3\x82\xa2";
     static const char kJpTitle[] = "\xcc\xda\xb0\xd1\x93\x6f\x98\x5e";
     char text[0x100];
-    if (mikudancestudio::mdl::Mdl(model)->physicsFlags != 0) {
+    if (rinmotiondance::mdl::Mdl(model)->physicsFlags != 0) {
         sprintf_s(text, sizeof(text),
                   "You cannot regist over %d point\n"
                   "Please execute 'delete unused frame'",
@@ -350,8 +350,8 @@ int RegisterBonePoseAtFrame(unsigned char* model, int boneIndex,  // VA 0x004B38
         fill(freeIndex);
     }
 
-    if (frame > mikudancestudio::mdl::Mdl(model)->maxFrame)
-        mikudancestudio::mdl::Mdl(model)->maxFrame = frame;
+    if (frame > rinmotiondance::mdl::Mdl(model)->maxFrame)
+        rinmotiondance::mdl::Mdl(model)->maxFrame = frame;
     return static_cast<int>(frame);
 }
 
@@ -496,8 +496,8 @@ void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
     mdl::BoneKey* const boneKeys = mdl::BoneKeys(model);
     mdl::MorphKey* const morphKeys = mdl::MorphKeys(model);
     mdl::DisplayKey* const displayKeys = mdl::DisplayKeys(model);
-    const std::size_t boneCount = mikudancestudio::mdl::Mdl(model)->boneCount;
-    const std::size_t morphCount = mikudancestudio::mdl::Mdl(model)->morphCount;
+    const std::size_t boneCount = rinmotiondance::mdl::Mdl(model)->boneCount;
+    const std::size_t morphCount = rinmotiondance::mdl::Mdl(model)->morphCount;
 
     int selectedBoneKeys = 0;
     for (std::size_t i = 0; i < mdl::kBoneKeyCapacity; ++i) {
@@ -536,11 +536,11 @@ void DeleteMarkedModelKeys(unsigned char* model, int frame) {  // VA 0x004A09E0
         rec.visible = 1;
         auto* ik = mdl::IkStates(rec);
         for (std::uint32_t j = 0;
-             j < mikudancestudio::mdl::Mdl(model)->ikChainCount; ++j)
+             j < rinmotiondance::mdl::Mdl(model)->ikChainCount; ++j)
             ik[j] = 1;
         auto* selectors = mdl::SelectorStates(rec);
         for (std::uint32_t j = 0;
-             j < mikudancestudio::mdl::Mdl(model)->boneOrderCount; ++j) {
+             j < rinmotiondance::mdl::Mdl(model)->boneOrderCount; ++j) {
             selectors[j].modelIndex = -1;
             selectors[j].boneIndex = 0;
         }
@@ -706,7 +706,7 @@ void SyncModelEditControls(unsigned char* model) {
         return;
     const HWND hwnd = *reinterpret_cast<HWND*>(model);
     SendMessageA(GetDlgItem(hwnd, panel::kModelVisibleCheckbox), BM_SETCHECK,
-                 mikudancestudio::mdl::Mdl(model)->loadComplete != 0 ? BST_CHECKED : BST_UNCHECKED, 0);
+                 rinmotiondance::mdl::Mdl(model)->loadComplete != 0 ? BST_CHECKED : BST_UNCHECKED, 0);
 
     mdl::IkChain* chains = mdl::IkChains(model);
     if (chains != nullptr) {
@@ -765,4 +765,4 @@ void mdl::SelectPhysicsOnBoneKeys(ModelRecord& model) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

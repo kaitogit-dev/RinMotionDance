@@ -6,7 +6,7 @@
 #include "mmhack_api.h"
 
 // 宿主附件对象布局：GetAcsAttachedPmd 的借位读取面（+0x240/+0x244）。
-#include "mikudancestudio/accessory_layout.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
 
 MmhState g_mmh;
 
@@ -34,8 +34,8 @@ BOOL __cdecl GetAcsAttachedPmd(unsigned long long accessory_id,
     int pmdIndex = -1;
     int boneIndex = 0;
     if (accessory_id != 0) {
-        const mikudancestudio::mdl::AccessoryRecord* acs =
-            mikudancestudio::mdl::Accessory(
+        const rinmotiondance::mdl::AccessoryRecord* acs =
+            rinmotiondance::mdl::Accessory(
                 reinterpret_cast<const void*>(accessory_id));
         pmdIndex = acs->parentModel;    // +0x240
         boneIndex = acs->parentBone;    // +0x244

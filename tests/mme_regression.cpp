@@ -15,9 +15,9 @@
 #define CHECK(expr) do { if (!(expr)) { std::fprintf(stderr, "%s:%d: %s\n", \
     __FILE__, __LINE__, #expr); std::exit(1); } } while (0)
 
-using mikudancestudio::mme::MeshSubsetPlan;
-using mikudancestudio::mme::PlanMeshSubset;
-using mikudancestudio::mme::DrawMeshSubsetPlan;
+using rinmotiondance::mme::MeshSubsetPlan;
+using rinmotiondance::mme::PlanMeshSubset;
+using rinmotiondance::mme::DrawMeshSubsetPlan;
 
 void TestControlObjectSelection() {
     struct Model { int identity; } first{1}, second{2}, collision{3}, other{4};
@@ -181,8 +181,8 @@ void TestRuntimeMeshAbi() {
     ID3DXBuffer* errors = nullptr;
     CHECK(SUCCEEDED(createEffect(device, source, sizeof(source) - 1, nullptr,
         nullptr, 0, nullptr, &effect, &errors)));
-    namespace fx = mikudancestudio::fx;
-    mikudancestudio::d3dx::D3DXMATRIXF written = {}, read = {};
+    namespace fx = rinmotiondance::fx;
+    rinmotiondance::d3dx::D3DXMATRIXF written = {}, read = {};
     for (int r = 0; r != 4; ++r)
         for (int c = 0; c != 4; ++c) written.m[r][c] = static_cast<float>(r * 4 + c);
     CHECK(SUCCEEDED(fx::SetMatrix(effect, "TestMatrix", &written)));

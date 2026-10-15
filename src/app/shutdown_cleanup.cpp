@@ -66,12 +66,12 @@
 #include <cstdlib>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/dshow_recorder.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/dshow_recorder.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // 0x4C4700 real body lives in src/render/accessory.cpp (not yet declared
 // in ported_funcs.hpp; the no-op stub for it in stubs.cpp is superseded).
@@ -111,7 +111,7 @@ void ReleaseRecorderCom(ComSlot& slot) {
 
 // ===========================================================================
 // VA 0x00409320 - TeardownDShowGraph and 0x004096C0 -
-// TeardownDShowGraphCoUninit now live at mikudancestudio:: scope below (the graph
+// TeardownDShowGraphCoUninit now live at rinmotiondance:: scope below (the graph
 // builder in src/app/dshow_record_graph.cpp calls the teardown too).
 // =========================================================================//
 
@@ -237,7 +237,7 @@ void DisposeRenderSubsystem(D3DRenderer* sub) {
 //     this[23],[17],[20],[21],[22],[19],[18],[17] (again),[16],[15],[14],
 //     [13],[12],[11],[10],[9],[8],[7],[6],[5],[26],[4],[3],[1],[0];
 //     free(this[2]) between [3] and [1].
-// At mikudancestudio:: scope (not the anonymous namespace above) because the graph
+// At rinmotiondance:: scope (not the anonymous namespace above) because the graph
 // builder in src/app/dshow_record_graph.cpp tears down on every failure
 // path exactly like the original.
 // =========================================================================//
@@ -503,4 +503,4 @@ void ShutdownCleanup(MMDApp* app) {
     // (the inline font sub-object at kBufFontsub); intentionally nothing.
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

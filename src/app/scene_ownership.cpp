@@ -1,24 +1,24 @@
 // ===========================================================================
-// MikuDanceStudio - scene-resident allocation teardown
+// RinMotionDance - scene-resident allocation teardown
 // ===========================================================================
 #include <cstdio>
 #include <cstdlib>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/scene_ownership.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/scene_ownership.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
-// Porting-era trace under MIKUDANCESTUDIO_PMM_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void TraceAccessoryRelease(int slot, const char* phase, const void* track) {
-    const char* directory = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* directory = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (directory == nullptr || directory[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -87,4 +87,4 @@ void ReleaseAccessoriesAndTracks(MMDApp& app) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

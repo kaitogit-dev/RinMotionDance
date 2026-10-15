@@ -6,15 +6,15 @@
 // Record layouts and the selector-refresh semantics are documented in the
 // model_keyframe_advance.cpp header; both functions agree on them.
 // =========================================================================//
-#ifndef MIKUDANCESTUDIO_SRC_MODEL_KEYFRAME_COMMON_HPP
-#define MIKUDANCESTUDIO_SRC_MODEL_KEYFRAME_COMMON_HPP
+#ifndef RINMOTIONDANCE_SRC_MODEL_KEYFRAME_COMMON_HPP
+#define RINMOTIONDANCE_SRC_MODEL_KEYFRAME_COMMON_HPP
 
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace kfa {
 
 // memcpy-based record accessors - no alignment or type-punning assumptions.
@@ -118,14 +118,14 @@ inline void RefreshIkSelectors(unsigned char* m, mdl::DisplayKey* keys,
 
 // quaternion + position copy helpers for the bone snap branches
 // (typed on BoneRecord: the offsets regrow per architecture)
-inline void CopyBoneKeyVerbatim(mikudancestudio::mdl::BoneRecord* bone,
+inline void CopyBoneKeyVerbatim(rinmotiondance::mdl::BoneRecord* bone,
                                 const mdl::BoneKey& rec) {
     for (int c = 0; c < 4; ++c)
         bone->rotQuat[c] = rec.rotation[c];
     for (int c = 0; c < 3; ++c)
         bone->trans[c] = rec.position[c];
 }
-inline void WriteBonePrevVerbatim(mikudancestudio::mdl::BoneRecord* bone,
+inline void WriteBonePrevVerbatim(rinmotiondance::mdl::BoneRecord* bone,
                                   const float pq[4], const float ppos[3]) {
     for (int c = 0; c < 4; ++c) bone->rotQuat[c] = pq[c];
     for (int c = 0; c < 3; ++c) bone->trans[c] = ppos[c];
@@ -134,7 +134,7 @@ inline void WriteBonePrevVerbatim(mikudancestudio::mdl::BoneRecord* bone,
 // Working-copy mirror for the IK-off arming: quat backup ikBackup[3..6] ->
 // working ikWorkingQuat, position backup ikBackup[0..2] -> working
 // ikWorkingPos (the mid-interpolation re-arm of both functions).
-inline void MirrorBackupsToWorking(mikudancestudio::mdl::BoneRecord* bone) {
+inline void MirrorBackupsToWorking(rinmotiondance::mdl::BoneRecord* bone) {
     for (int c = 0; c < 4; ++c)
         bone->ikWorkingQuat[c] = bone->ikBackup[3 + c];
     for (int c = 0; c < 3; ++c)
@@ -142,7 +142,7 @@ inline void MirrorBackupsToWorking(mikudancestudio::mdl::BoneRecord* bone) {
 }
 // The exact-hit arm additionally refreshes the CURRENT pose from the
 // backups (0x4A3E54..0x4A3F11 / 0x4B4BD2..0x4B4C82).
-inline void MirrorBackupsToCurrent(mikudancestudio::mdl::BoneRecord* bone) {
+inline void MirrorBackupsToCurrent(rinmotiondance::mdl::BoneRecord* bone) {
     for (int c = 0; c < 4; ++c)
         bone->rotQuat[c] = bone->ikBackup[3 + c];
     for (int c = 0; c < 3; ++c)
@@ -150,6 +150,6 @@ inline void MirrorBackupsToCurrent(mikudancestudio::mdl::BoneRecord* bone) {
 }
 
 }  // namespace kfa
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance
 
-#endif  // MIKUDANCESTUDIO_SRC_MODEL_KEYFRAME_COMMON_HPP
+#endif  // RINMOTIONDANCE_SRC_MODEL_KEYFRAME_COMMON_HPP

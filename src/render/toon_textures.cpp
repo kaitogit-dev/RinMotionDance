@@ -28,12 +28,12 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Binary-compatible D3DXIMAGE_INFO layout.  The project resolves D3DX at
@@ -162,4 +162,4 @@ bool InitToonTextures(MMDApp* app) {
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

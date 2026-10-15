@@ -1,7 +1,7 @@
 #pragma once
 
-#define MIKUDANCESTUDIO_VERSION "@MDS_VERSION@"
+#define RINMOTIONDANCE_VERSION "@RMD_VERSION@"
 
-namespace mikudancestudio {
-inline constexpr char kVersion[] = MIKUDANCESTUDIO_VERSION;
+namespace rinmotiondance {
+inline constexpr char kVersion[] = RINMOTIONDANCE_VERSION;
 }

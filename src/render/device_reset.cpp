@@ -24,13 +24,13 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 #include "fx_slots.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 template <typename ComPtr>
@@ -114,4 +114,4 @@ void PostDeviceReset(MMDApp* app) {
     app->state.recentFile2[0] = 0;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

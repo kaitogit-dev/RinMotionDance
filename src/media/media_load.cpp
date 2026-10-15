@@ -36,11 +36,11 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // 0x52BA94: "AVIデータ読込"
@@ -405,4 +405,4 @@ void LoadBackgroundPicture(MMDApp* app) {
     PicBgOverlayRefresh(app);                                                 // 0x433A22
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

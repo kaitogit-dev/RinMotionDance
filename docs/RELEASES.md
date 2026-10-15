@@ -14,7 +14,7 @@ Windows 数值版本的 `10.00` 为 `10.0.0.0`，显示文本仍为 `10.00`。
 Commit the version and changes first, then push the matching tag:
 
 ```sh
-git tag -a v10.00 -m "MikuDanceStudio 10.00"
+git tag -a v10.00 -m "RinMotionDance 10.00"
 git push origin v10.00
 ```
 
@@ -33,7 +33,7 @@ the publish job's `contents: write` permission.
 
 ## Package and runtime / 压缩包与运行环境
 
-Each ZIP contains `MikuDanceStudio.exe`, `Data/MMDxShow.dll`, version/readme and
+Each ZIP contains `RinMotionDance.exe`, `Data/MMDxShow.dll`, version/readme and
 license files. MME and the default toon textures are embedded in the executable.
 External models, motions and effects are not included. Extract the entire folder
 and keep the `Data` subdirectory next to the EXE.
@@ -46,7 +46,7 @@ The release workflow installs the checksum-pinned Microsoft runtime on its runne
 before CTest and saves JUnit results plus CTest logs, including on failure. GPU
 tests may explicitly skip with code 77 when the required device is unavailable;
 a skip is not a GPU parity result. Optional local `ray.fx` tests are enabled only
-when `MIKUDANCESTUDIO_RAY_TEST_EFFECT` is configured; CI does not supply that asset.
+when `RINMOTIONDANCE_RAY_TEST_EFFECT` is configured; CI does not supply that asset.
 
 压缩包需完整解压，运行库未打包。CI 构建不依赖本机安装的 MMD 或任何模型。
 
@@ -63,7 +63,7 @@ python -m pip install conan==2.27.1
 conan profile detect --force
 conan create recipes/bullet275 --profile:all profiles/x64 -s compiler.cppstd=17 -s build_type=Release --build=missing --lockfile=""
 conan install . --profile:all profiles/x64 -s compiler.cppstd=17 -s build_type=Release --build=missing --lockfile="" --output-folder=out/ci
-cmake -S . -B out/ci/build -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="$PWD/out/ci/build/generators/conan_toolchain.cmake" -DBUILD_TESTING=ON -DMIKUDANCESTUDIO_DIAG=OFF
+cmake -S . -B out/ci/build -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="$PWD/out/ci/build/generators/conan_toolchain.cmake" -DBUILD_TESTING=ON -DRINMOTIONDANCE_DIAG=OFF
 cmake --build out/ci/build --config Release --parallel 4
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 ctest --test-dir out/ci/build -C Release --output-on-failure --timeout 90 --no-tests=error

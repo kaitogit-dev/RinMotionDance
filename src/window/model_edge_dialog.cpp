@@ -26,11 +26,11 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // ---- dialog controls (template 0x29A EN / 0x299 JP) ----------------------
@@ -476,4 +476,4 @@ void SelectModelEdgeGroup(HWND hDlg) {  // VA 0x0045EDC0
     RefreshNameEdit(GetDlgItem(hDlg, kEditGroupNameEn), buf);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

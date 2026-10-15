@@ -20,22 +20,22 @@
 #include <cstring>
 #include <vector>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
-// Porting-era trace under MIKUDANCESTUDIO_STATE_DUMP_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_STATE_DUMP_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void TraceRange(const char* stage, int value = -1) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     char path[MAX_PATH]{};
@@ -357,4 +357,4 @@ void ApplyFrameRangeScale(HWND hDlg) {
     TraceRange("done");
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

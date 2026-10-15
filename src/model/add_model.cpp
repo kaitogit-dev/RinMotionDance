@@ -22,12 +22,12 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 #include "model_labels.inc"  // GENERATED (kMsgModelLimitJp / kTitleAddModelJp)
@@ -86,7 +86,7 @@ void LoadModelFile(MMDApp* app, const wchar_t* path) {      // 0x460430
         app->state.mainModelComboSelection =
             mdl::Mdl(model)->comboSelIndex;
         app->SetSelectedModelSlot(static_cast<std::uint8_t>(slot));
-        mikudancestudio::mdl::Mdl(model)->displayState = app->state.characterTransparentMode;
+        rinmotiondance::mdl::Mdl(model)->displayState = app->state.characterTransparentMode;
 
         if (app->state.optflag[0] != 0) {
             RebuildModelModePanel(app);                                   // 0x44D610
@@ -161,4 +161,4 @@ void LoadModelFile(MMDApp* app, const wchar_t* path) {      // 0x460430
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

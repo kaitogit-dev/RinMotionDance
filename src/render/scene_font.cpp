@@ -25,10 +25,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct Glyph { const char* s; short x, y; };
@@ -178,4 +178,4 @@ bool InitSceneFontTexture(MMDApp* app) {
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

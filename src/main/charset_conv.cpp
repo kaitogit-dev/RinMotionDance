@@ -6,10 +6,10 @@
 #include <cwchar>
 #include <memory>
 
-#include "mikudancestudio/charset_conv.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
+#include "rinmotiondance/charset_conv.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void ConvertAnsiToWide(const D3DRenderer* renderer, const char* source,
                        wchar_t* destination, int destinationWords) {
@@ -56,4 +56,4 @@ void WideToSjis(const D3DRenderer* renderer, char* destination,
             break;
     }
 }
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

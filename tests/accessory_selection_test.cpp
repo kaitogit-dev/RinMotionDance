@@ -1,9 +1,9 @@
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 #include <cstdio>
 #include <memory>
 
 namespace { int sweeps = 0, applied = 0, refreshed = 0; }
-namespace mikudancestudio {
+namespace rinmotiondance {
 MMDApp::MMDApp() : state{} {}
 MMDApp* g_Block = nullptr;
 void PostLanguageSweep(MMDApp*) { ++sweeps; }
@@ -15,7 +15,7 @@ void JumpPrevKeyframe(MMDApp*);
 }
 
 int main() {
-    namespace mds = mikudancestudio;
+    namespace mds = rinmotiondance;
     auto app = std::make_unique<mds::MMDApp>();
     mds::g_Block = app.get();
     mds::mdl::AccessoryRecord first{}, last{};

@@ -234,23 +234,23 @@
 #include <cstring>
 #include <cwchar>
 
-#include "mikudancestudio/charset_conv.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
-#include "mikudancestudio/physics_scene.hpp"
+#include "rinmotiondance/charset_conv.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/physics_scene.hpp"
 
 #include "btBulletDynamicsCommon.h"
 
 #include "dialog_scaffold.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
-// Gravity keyframe registrar, defined below at mikudancestudio scope (the
+// Gravity keyframe registrar, defined below at rinmotiondance scope (the
 // pump's Enter register-frame block in pump_edit_keys.cpp also calls it).
 void RegisterGravityKeyCurrent(MMDApp* app, std::int32_t frame);  // VA 0x00412B20
 
@@ -420,7 +420,7 @@ static const wchar_t kTitleOpenJp[] =
     L"\x30D5\x30A1\x30A4\x30EB\x3092\x958B\x304F";
 
 // ---- dialog-helper call targets with no port anywhere yet (TODO(port) ----
-// (SeekSelectedModelToCurrentFrame is declared at mikudancestudio scope below - defined in
+// (SeekSelectedModelToCurrentFrame is declared at rinmotiondance scope below - defined in
 //  src/model/model_frame_seek.cpp.)
 
 // Forward declarations (bodies below / later in this TU).
@@ -688,7 +688,7 @@ int g_displayOrderDialogCount = 0;    // was g_dword545938, VA 0x00545938 -
 // modified).  CollectEnglishNameEdit's real body now lives in model_edge_dialog.cpp;
 // only the forward declaration at the top of this TU is needed.
 }  // namespace (anonymous) - RegisterGravityKeyCurrent is consumed by pump_edit_keys.cpp
-// and stays at mikudancestudio scope.
+// and stays at rinmotiondance scope.
 // VA 0x00412B20 (x64 twin sub_7FF7CB47DA60, confirmed on the x64 binary;
 // the pre-existing "frame-table rebuild" label was wrong): the gravity
 // keyframe registrar.  Walks the gravity track's next-chain (app+0x380,
@@ -2669,7 +2669,7 @@ void CmdViewMenu(MMDApp* app, HWND hwnd, std::uint16_t id,
         if (curBone == -1) {
             return;
         }
-        mikudancestudio::mdl::BoneRecord* bone = mdl::Bones(model) + curBone;
+        rinmotiondance::mdl::BoneRecord* bone = mdl::Bones(model) + curBone;
         const float t0 = bone->trans[0];
         const float t1 = bone->trans[1];
         const float t2 = bone->trans[2];
@@ -2785,4 +2785,4 @@ void CmdViewMenu(MMDApp* app, HWND hwnd, std::uint16_t id,
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

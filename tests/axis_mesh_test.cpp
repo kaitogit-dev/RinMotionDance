@@ -1,6 +1,6 @@
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include <d3dx9.h>
 #include <cstdio>
 #include <cstring>
@@ -23,7 +23,7 @@ struct Window {
 // Compare every material byte to D3DX's buffer, including the second and last
 // records that an x86 stride misreads on x64.
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     Window window;
     Com<IDirect3D9> d3d;
     d3d.p = Direct3DCreate9(D3D_SDK_VERSION);

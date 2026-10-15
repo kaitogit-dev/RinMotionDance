@@ -40,13 +40,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // App-field offsets (file-local).
@@ -55,9 +55,9 @@ unsigned char* ActiveModel(MMDApp* app) {
     return app->SelectedModel();
 }
 
-mikudancestudio::mdl::UndoRecord& CurrentUndo(unsigned char* model) {
-    return mikudancestudio::mdl::Mdl(model)->undoRings[0].slots[
-        mikudancestudio::mdl::Mdl(model)->undoState[0]];
+rinmotiondance::mdl::UndoRecord& CurrentUndo(unsigned char* model) {
+    return rinmotiondance::mdl::Mdl(model)->undoRings[0].slots[
+        rinmotiondance::mdl::Mdl(model)->undoState[0]];
 }
 
 // Undo slot header (0x43A055..0x43A2D2 / 0x43AC..0x43B0x in both bone
@@ -66,10 +66,10 @@ mikudancestudio::mdl::UndoRecord& CurrentUndo(unsigned char* model) {
 void BeginUndoEdit(unsigned char* model, std::uint32_t frame) {
     mdl::Mdl(model)->undoDirty = 1;
     mdl::Mdl(model)->redoDirty = 0;
-    std::int32_t cursor = mikudancestudio::mdl::Mdl(model)->undoState[0] + 1;
+    std::int32_t cursor = rinmotiondance::mdl::Mdl(model)->undoState[0] + 1;
     if (cursor >= 0x1E) cursor = 0;
-    mikudancestudio::mdl::Mdl(model)->undoState[0] = cursor;
-    mikudancestudio::mdl::Mdl(model)->undoState[1] = cursor;
+    rinmotiondance::mdl::Mdl(model)->undoState[0] = cursor;
+    rinmotiondance::mdl::Mdl(model)->undoState[1] = cursor;
     auto& undo = CurrentUndo(model);
     undo.operation = 2;
     undo.frame = frame;
@@ -86,15 +86,15 @@ void SnapshotPose(unsigned char* model) {
         slot = nullptr;
     }
     const std::int32_t count = mdl::Mdl(model)->boneCount;
-    slot = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(::operator new(
+    slot = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(::operator new(
         static_cast<std::size_t>(count) *
-        sizeof(mikudancestudio::mdl::BonePoseSnapshot)));
+        sizeof(rinmotiondance::mdl::BonePoseSnapshot)));
     std::memset(slot, 0, static_cast<std::size_t>(count) * sizeof(*slot));
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     unsigned char* selected = mdl::Mdl(model)->boneSelection;
     for (std::int32_t i = 0; i < count; ++i) {
         auto& out = slot[i];
-        mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[i];
         out.boneIndex = i;
         std::memcpy(out.position, bone->trans, sizeof out.position);
         std::memcpy(out.rotation, bone->rotQuat, sizeof out.rotation);
@@ -594,4 +594,4 @@ void SelectFrameGroup(MMDApp* app, int group) {
     SelectionReeval(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

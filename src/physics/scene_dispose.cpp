@@ -1,9 +1,9 @@
-#include "mikudancestudio/physics_scene.hpp"
+#include "rinmotiondance/physics_scene.hpp"
 
 #include "btBulletDynamicsCommon.h"
 #include "BulletCollision/BroadphaseCollision/btAxisSweep3.h"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 template <typename T>
 void DeleteOwned(T*& value) {
@@ -59,4 +59,4 @@ void DisposePhysicsWorld(PhysicsScene* scene) {
     ReleaseOwned(scene->gizmoBoxSelIB);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -29,11 +29,11 @@
 #include <cstring>
 #include <cwchar>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // .rdata 0x52BA20 - double 1.2000000476837158, overlay scale divisor used by
@@ -372,4 +372,4 @@ void PicBgOverlayRefresh(MMDApp* app) {
 //  The real bodies above are the parallel-port winner - full VFW decode
 //  chain; the background_plane.cpp twin was removed.)
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

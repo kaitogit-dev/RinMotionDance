@@ -56,11 +56,11 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // --- panel layout constants --------------------------------------------------
@@ -475,4 +475,4 @@ void PostLanguageSweep(MMDApp* app) {
     PanelPaint(app);  // 0x42F730 tail call (0x414610)
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

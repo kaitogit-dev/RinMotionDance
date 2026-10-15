@@ -45,10 +45,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -354,4 +354,4 @@ void RelayoutSidebarControls(MMDApp* app) {
     LayoutViewportPanels(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -30,12 +30,12 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // color.txt order after the leading text RGB row. The file groups colors by
@@ -376,7 +376,7 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
     }
 
     char windowName[52];                                        // 0x47BD16
-    strcpy_s(windowName, 0x32, "MikuDanceStudio");
+    strcpy_s(windowName, 0x32, "RinMotionDance");
     HWND hwnd = CreateWindowExA(                                // 0x47BD4B
         0, "Polygon Movie Maker", windowName, 0xCF0000u /*WS_OVERLAPPEDWINDOW*/,
         X, Y, nWidth, nHeight, nullptr, nullptr, hInstance, nullptr);
@@ -455,4 +455,4 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

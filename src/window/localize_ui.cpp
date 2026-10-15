@@ -28,12 +28,12 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include "ui_controls.inc"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct TextEntry { int id; const char* en; };
@@ -213,7 +213,7 @@ void LocalizeUI(MMDApp* app) {
         for (int i = 0; i < kModelSlotCount; ++i) {
             unsigned char* slot = s.ModelSlot(i);
             if (slot != nullptr &&
-                mikudancestudio::mdl::Mdl(slot)->comboSelIndex == order) {
+                rinmotiondance::mdl::Mdl(slot)->comboSelIndex == order) {
                 slotIdx = i;
                 break;
             }
@@ -237,4 +237,4 @@ void LocalizeUI(MMDApp* app) {
     SendMessageA(combo449, CB_SETCURSEL, sel449, 0);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

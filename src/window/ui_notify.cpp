@@ -65,13 +65,13 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // VA 0x0041A550 - defined in ui_control_text.cpp; not yet declared in
 // ported_funcs.hpp, so an external-linkage forward declaration lives here
@@ -225,4 +225,4 @@ LRESULT HandleNotify(HWND h, UINT m, WPARAM w, LPARAM l) {
     return DefWindowProcA(h, m, w, l);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

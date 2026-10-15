@@ -27,12 +27,12 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Forward declaration for a function ported in this wave whose body lives
 // in ui_timeline_gfx.cpp (not yet added to ported_funcs.hpp; declared here
@@ -78,7 +78,7 @@ void HandleVScroll(LPARAM lParam, WPARAM wParam) {
                 app->DisplayObjectListScrollPosition() = upper;
         } else {
             unsigned char* model = app->SelectedModel();
-            mikudancestudio::mdl::ModelRecord& record = *mikudancestudio::mdl::Mdl(model);
+            rinmotiondance::mdl::ModelRecord& record = *rinmotiondance::mdl::Mdl(model);
             switch (code) {
             case 0:  // SB_LINEUP
                 --record.boneListPos;
@@ -234,4 +234,4 @@ void HandleMouseWheel(int delta) {
     PostViewRefresh(app);     // 0x40D130 (x64 sub_7FF7CB440DD0)
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

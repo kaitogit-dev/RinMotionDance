@@ -36,12 +36,12 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Bodies live in other translation units (see ported_funcs.hpp / their TUs).
 void RefreshAfterFrameApply(MMDApp* app);          // VA 0x00432FA0
@@ -184,9 +184,9 @@ void EnsureRecordRenderTarget(MMDApp* app) {
 // (0x45EC27..0x45EC67 / 0x4649AE..0x4649EB).
 void RecordStartTail(MMDApp* app) {
     auto& s = *app;
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (getenv("MIKUDANCESTUDIO_TRACE_REC")) {
-        FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a");
+#ifdef RINMOTIONDANCE_DIAG
+    if (getenv("RINMOTIONDANCE_TRACE_REC")) {
+        FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
         if (tf) {
             fputs("RecordStartTail enter\n", tf);
             fclose(tf);
@@ -205,9 +205,9 @@ void RecordStartTail(MMDApp* app) {
     s.state.recordPlaybackStartPending = 1;              // 0x45EC52
     timeBeginPeriod(1);                                        // 0x45EC58
     KickRecordPhysics(app);                                            // 0x401BD0
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (getenv("MIKUDANCESTUDIO_TRACE_REC")) {
-        FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a");
+#ifdef RINMOTIONDANCE_DIAG
+    if (getenv("RINMOTIONDANCE_TRACE_REC")) {
+        FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
         if (tf) {
             fputs("RecordStartTail done\n", tf);
             fclose(tf);
@@ -436,4 +436,4 @@ void ApplyFullscreenWindowState(MMDApp* app) {
     s.state.recordFullscreenActive = 0;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

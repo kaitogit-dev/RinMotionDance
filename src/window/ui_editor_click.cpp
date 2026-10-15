@@ -50,12 +50,12 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Forward declarations for functions ported in this wave whose bodies live
 // in other translation units (not yet registered in ported_funcs.hpp;
@@ -169,21 +169,21 @@ static void ClearSelectionBitmaps(MMDApp* app) {
 // display-key selections.  (sub_446A70 @ 0x447AF0 / 0x447BA0 / 0x447C30 etc.)
 static void ClearActiveModelFlags(MMDApp* app) {
     // The original reaches this helper only while the model-edit context is
-    // active.  During a partially completed mode switch MikuDanceStudio can briefly
+    // active.  During a partially completed mode switch RinMotionDance can briefly
     // expose the same row with no active slot, so preserve that entrance
     // invariant here instead of dereferencing slot 0/null.
     if (ActiveModel(app) == nullptr)
         return;
     unsigned char* model = ActiveModel(app);
-    mikudancestudio::mdl::BoneKey* boneKeys = mikudancestudio::mdl::BoneKeys(model);
-    for (std::size_t i = 0; i < mikudancestudio::mdl::kBoneKeyCapacity; ++i)
+    rinmotiondance::mdl::BoneKey* boneKeys = rinmotiondance::mdl::BoneKeys(model);
+    for (std::size_t i = 0; i < rinmotiondance::mdl::kBoneKeyCapacity; ++i)
         boneKeys[i].allocated = 0;
 
-    mikudancestudio::mdl::MorphKey* morphKeys = mikudancestudio::mdl::MorphKeys(model);
-    for (std::size_t i = 0; i < mikudancestudio::mdl::kMorphKeyCapacity; ++i)
+    rinmotiondance::mdl::MorphKey* morphKeys = rinmotiondance::mdl::MorphKeys(model);
+    for (std::size_t i = 0; i < rinmotiondance::mdl::kMorphKeyCapacity; ++i)
         morphKeys[i].allocated = 0;
-    mikudancestudio::mdl::DisplayKey* displayKeys = mikudancestudio::mdl::DisplayKeys(model);
-    for (std::size_t i = 0; i < mikudancestudio::mdl::kDisplayKeyCapacity; ++i)
+    rinmotiondance::mdl::DisplayKey* displayKeys = rinmotiondance::mdl::DisplayKeys(model);
+    for (std::size_t i = 0; i < rinmotiondance::mdl::kDisplayKeyCapacity; ++i)
         displayKeys[i].allocated = 0;
 }
 
@@ -331,14 +331,14 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
             boneCnt = 0;
             unsigned char* m = ActiveModel(app);
             if (m != nullptr) {
-                mikudancestudio::mdl::BoneKey* bones = mikudancestudio::mdl::BoneKeys(m);
-                for (std::size_t i = 0; i < mikudancestudio::mdl::kBoneKeyCapacity; ++i)
+                rinmotiondance::mdl::BoneKey* bones = rinmotiondance::mdl::BoneKeys(m);
+                for (std::size_t i = 0; i < rinmotiondance::mdl::kBoneKeyCapacity; ++i)
                     if (bones[i].allocated != 0) ++boneCnt;
                 if (boneCnt > 0) {
                     EnableWindow(GetDlgItem(hwnd, panel::kUndoButton), TRUE);      // 400
                     EnableWindow(GetDlgItem(hwnd, panel::kRedoButton), FALSE);     // 401
                     // keyframe-cluster append on the active model (0x449886-0x449A5A)
-                    auto* record = mikudancestudio::mdl::Mdl(m);
+                    auto* record = rinmotiondance::mdl::Mdl(m);
                     record->undoDirty = 1;
                     record->redoDirty = 0;
                     std::uint32_t& kf = record->undoState[0];
@@ -354,14 +354,14 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                         ::operator delete(bufSlot);
                         bufSlot = nullptr;
                     }
-                    const std::int32_t boneN = mikudancestudio::mdl::Mdl(m)->boneCount;
-                    bufSlot = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+                    const std::int32_t boneN = rinmotiondance::mdl::Mdl(m)->boneCount;
+                    bufSlot = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
                         ::operator new(static_cast<std::size_t>(boneN) *
-                                       sizeof(mikudancestudio::mdl::BonePoseSnapshot)));
+                                       sizeof(rinmotiondance::mdl::BonePoseSnapshot)));
                     memset(bufSlot, 0, static_cast<std::size_t>(boneN) *
-                                           sizeof(mikudancestudio::mdl::BonePoseSnapshot));
-                    mikudancestudio::mdl::BoneRecord* srcBase = mikudancestudio::mdl::Bones(m);
-                    unsigned char* flagMap = mikudancestudio::mdl::Mdl(m)->bonePhysicsState;
+                                           sizeof(rinmotiondance::mdl::BonePoseSnapshot));
+                    rinmotiondance::mdl::BoneRecord* srcBase = rinmotiondance::mdl::Bones(m);
+                    unsigned char* flagMap = rinmotiondance::mdl::Mdl(m)->bonePhysicsState;
                     for (int i = 0; i < boneN; ++i) {
                         auto& out = bufSlot[i];
                         out.boneIndex = 0;
@@ -378,10 +378,10 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                     }
                     dataSlot = ::operator new(static_cast<std::size_t>(boneCnt) * 0x40);
                     memset(dataSlot, 0, static_cast<std::size_t>(boneCnt) * 0x40);
-                    memset(mikudancestudio::mdl::Mdl(m)->keyVisitMap, 0,
-                            sizeof(mikudancestudio::mdl::Mdl(m)->keyVisitMap));
+                    memset(rinmotiondance::mdl::Mdl(m)->keyVisitMap, 0,
+                            sizeof(rinmotiondance::mdl::Mdl(m)->keyVisitMap));
                     // feed every set bone flag to 0x49D410 (0x449CF0-0x449D1C)
-                    for (std::size_t i = 0; i < mikudancestudio::mdl::kBoneKeyCapacity; ++i)
+                    for (std::size_t i = 0; i < rinmotiondance::mdl::kBoneKeyCapacity; ++i)
                         if (bones[i].allocated != 0)
                             AppendBoneKeyToUndo(ActiveModel(app), static_cast<int>(i));
                     // bone-temp records (0x449D1E-0x449F53): 6 flags per 0x168-stride
@@ -391,9 +391,9 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                     app->TimelineSelectionRecords(TimelineSelectionBand::ModelIk) =
                         reinterpret_cast<TimelineSelectionRecord*>(bout);
                     int idx = 2;
-                    for (std::size_t i = 0; i < mikudancestudio::mdl::kBoneKeyCapacity / 6; ++i) {
+                    for (std::size_t i = 0; i < rinmotiondance::mdl::kBoneKeyCapacity / 6; ++i) {
                         for (int k = 0; k < 6; ++k) {
-                            mikudancestudio::mdl::BoneKey& key = bones[i * 6 + k];
+                            rinmotiondance::mdl::BoneKey& key = bones[i * 6 + k];
                             if (key.allocated != 0) {
                                 bout[0] = idx - 2 + k;
                                 bout[3] = static_cast<std::int32_t>(key.frame);
@@ -413,8 +413,8 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                 morphCnt = 0;
                 {
                     unsigned char* mm = ActiveModel(app);
-                    mikudancestudio::mdl::MorphKey* morphs = mikudancestudio::mdl::MorphKeys(mm);
-                    for (std::size_t i = 0; i < mikudancestudio::mdl::kMorphKeyCapacity; ++i)
+                    rinmotiondance::mdl::MorphKey* morphs = rinmotiondance::mdl::MorphKeys(mm);
+                    for (std::size_t i = 0; i < rinmotiondance::mdl::kMorphKeyCapacity; ++i)
                         if (morphs[i].allocated != 0) ++morphCnt;
                     if (morphCnt > 0) {
                         std::int32_t* mout = static_cast<std::int32_t*>(
@@ -424,7 +424,7 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                         int idx = 2;
                         for (int i = 0; i < 0xFA0; ++i) {
                             for (int k = 0; k < 5; ++k) {
-                                mikudancestudio::mdl::MorphKey& key = morphs[i * 5 + k];
+                                rinmotiondance::mdl::MorphKey& key = morphs[i * 5 + k];
                                 if (key.allocated != 0) {
                                     mout[0] = idx - 2 + k;
                                     mout[3] = static_cast<std::int32_t>(key.frame);
@@ -445,8 +445,8 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                 ikCnt = 0;
                 {
                     unsigned char* mm = ActiveModel(app);
-                    mikudancestudio::mdl::DisplayKey* displayKeys = mikudancestudio::mdl::DisplayKeys(mm);
-                    for (std::size_t i = 0; i < mikudancestudio::mdl::kDisplayKeyCapacity; ++i)
+                    rinmotiondance::mdl::DisplayKey* displayKeys = rinmotiondance::mdl::DisplayKeys(mm);
+                    for (std::size_t i = 0; i < rinmotiondance::mdl::kDisplayKeyCapacity; ++i)
                         if (displayKeys[i].allocated != 0) ++ikCnt;
                     if (ikCnt > 0) {
                         std::int32_t* iout = static_cast<std::int32_t*>(
@@ -456,7 +456,7 @@ static void SelectionStats(MMDApp* app, int x, int y, HWND hwnd) {
                         int idx = 2;
                         for (int i = 0; i < 0xC8; ++i) {       // 0x6D60/0x8C
                             for (int k = 0; k < 5; ++k) {
-                                mikudancestudio::mdl::DisplayKey& key = displayKeys[i * 5 + k];
+                                rinmotiondance::mdl::DisplayKey& key = displayKeys[i * 5 + k];
                                 if (key.allocated != 0) {
                                     iout[0] = idx - 2 + k;
                                     iout[3] = static_cast<std::int32_t>(key.frame);
@@ -686,17 +686,17 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
     if (!app->ShiftModifierActive()) {
         unsigned char* m0 = ActiveModel(app);
         const std::int32_t boneCount =
-            mikudancestudio::mdl::Mdl(m0)->boneCount;
+            rinmotiondance::mdl::Mdl(m0)->boneCount;
         for (int i = 0; i < boneCount; ++i) {
             unsigned char* mm = ActiveModel(app);
-            mikudancestudio::mdl::Mdl(mm)->boneSelection[i] = 0;
+            rinmotiondance::mdl::Mdl(mm)->boneSelection[i] = 0;
         }
         for (int i = 0;
              i < static_cast<int>(mdl::Mdl(m0)->facialFrameCount); ++i) {
             unsigned char* mm = ActiveModel(app);
             mdl::DisplayFrames(mm)[i].selected = 0;
         }
-        mikudancestudio::mdl::Mdl(ActiveModel(app))->displayKeyframesPresent = 0;
+        rinmotiondance::mdl::Mdl(ActiveModel(app))->displayKeyframesPresent = 0;
     }
 
     // loc_446C8A: row lookup + selection toggle
@@ -704,14 +704,14 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
         unsigned char* m = ActiveModel(app);
         const std::int32_t row = Div14(y - 0xA0);
         const std::int32_t idx =
-            mikudancestudio::mdl::Mdl(m)->boneListRowRecord[row];
+            rinmotiondance::mdl::Mdl(m)->boneListRowRecord[row];
         if (idx >= 0) {
-            unsigned char* p = mikudancestudio::mdl::Mdl(m)->boneSelection + idx;
+            unsigned char* p = rinmotiondance::mdl::Mdl(m)->boneSelection + idx;
             if (*p != 0) {
                 *p = 0;
             } else {
                 *p = 1;
-                mikudancestudio::mdl::Mdl(m)->selectedBone = idx;
+                rinmotiondance::mdl::Mdl(m)->selectedBone = idx;
             }
             // via 0x44702D
         } else if (idx == -999) {                       // 0xFFFFFC19
@@ -733,26 +733,26 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
                 } else {
                     faceRec.selected = 1;
                     const std::int32_t morphIndex = faceRec.targetIndex;
-                    auto& morph = mikudancestudio::mdl::Morphs(m)[morphIndex];
+                    auto& morph = rinmotiondance::mdl::Morphs(m)[morphIndex];
                     const auto panel = morph.panel;
                     HWND hCombo = nullptr, hSpin = nullptr, hText = nullptr;
                     switch (panel) {                         // 0x446D99-0x446E77
-                        case mikudancestudio::mdl::MorphPanel::eyebrow:
+                        case rinmotiondance::mdl::MorphPanel::eyebrow:
                             hCombo = GetDlgItem(hwnd, panel::kMorphCombo0);
                             hSpin = GetDlgItem(hwnd, panel::kMorphSlider0);
                             hText = GetDlgItem(hwnd, panel::kMorphEdit0);
                             break;
-                        case mikudancestudio::mdl::MorphPanel::eye:
+                        case rinmotiondance::mdl::MorphPanel::eye:
                             hCombo = GetDlgItem(hwnd, panel::kMorphCombo1);
                             hSpin = GetDlgItem(hwnd, panel::kMorphSlider1);
                             hText = GetDlgItem(hwnd, panel::kMorphEdit1);
                             break;
-                        case mikudancestudio::mdl::MorphPanel::mouth:
+                        case rinmotiondance::mdl::MorphPanel::mouth:
                             hCombo = GetDlgItem(hwnd, panel::kMorphCombo2);
                             hSpin = GetDlgItem(hwnd, panel::kMorphSlider2);
                             hText = GetDlgItem(hwnd, panel::kMorphEdit2);
                             break;
-                        case mikudancestudio::mdl::MorphPanel::other:
+                        case rinmotiondance::mdl::MorphPanel::other:
                             hCombo = GetDlgItem(hwnd, panel::kMorphCombo3);
                             hSpin = GetDlgItem(hwnd, panel::kMorphSlider3);
                             hText = GetDlgItem(hwnd, panel::kMorphEdit3);
@@ -762,7 +762,7 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
                     }
                     // Preserve the active morph separately for each panel.
                     const auto panelIndex = static_cast<unsigned>(panel) - 1;
-                    mikudancestudio::mdl::Mdl(m)->selectedMorphs[panelIndex] = morphIndex;
+                    rinmotiondance::mdl::Mdl(m)->selectedMorphs[panelIndex] = morphIndex;
                     // sync the combo cursor with the morph name
                     // (CB_GETCOUNT 0x146 / CB_GETLBTEXT 0x148 / CB_SETCURSEL
                     // 0x14E, 0x446EC0-0x446FAE)
@@ -778,8 +778,8 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
                     }
                     // Morph value spin/text sync (0x446FB4-0x447027):
                     // spin gets (int)(value*100.0), text gets "%5.4f"
-                    const float v = mikudancestudio::mdl::Morphs(m)[
-                        mikudancestudio::mdl::Mdl(m)->selectedMorphs[panelIndex]].value;
+                    const float v = rinmotiondance::mdl::Morphs(m)[
+                        rinmotiondance::mdl::Mdl(m)->selectedMorphs[panelIndex]].value;
                     SendMessageA(hSpin, TBM_SETPOS, 1,
                                  static_cast<LPARAM>(static_cast<std::int32_t>(v * 100.0)));
                     char valBuf[0x64];
@@ -796,7 +796,7 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
         unsigned char* m = ActiveModel(app);
         const std::int32_t type =
             static_cast<std::int8_t>(
-                mikudancestudio::mdl::Mdl(m)->boneListRowType[Div14(y - 0xA0)]);
+                rinmotiondance::mdl::Mdl(m)->boneListRowType[Div14(y - 0xA0)]);
         if (type == 1) {
             mdl::Mdl(m)->displayKeyframesPresent =
                 (mdl::Mdl(m)->displayKeyframesPresent == 0) ? 1 : 0;  // setz
@@ -829,7 +829,7 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
             if (static_cast<std::int8_t>(rigid.groupIndex) == type) {
                 const std::int32_t boneIdx = rigid.targetIndex;
                 unsigned char* p =
-                    mikudancestudio::mdl::Mdl(m)->boneSelection + boneIdx;
+                    rinmotiondance::mdl::Mdl(m)->boneSelection + boneIdx;
                 if (*p != 0)
                     *p = 0;
                 else
@@ -928,11 +928,11 @@ static void HandleLButtonDown_TimelineAreaHit(MMDApp* app, HWND hwnd,
         const std::int32_t ikType = app->state.rowHitIk[row2d];
         if (ikType > 0) {
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::DisplayKeys(ActiveModel(app))[ikType],
+                rinmotiondance::mdl::DisplayKeys(ActiveModel(app))[ikType],
                 shiftActive);
         } else if (ikType == -10) {                 // loc_447CD9 (row 0)
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::DisplayKeys(ActiveModel(app))[0],
+                rinmotiondance::mdl::DisplayKeys(ActiveModel(app))[0],
                 shiftActive);
         }
         // stage 2 (loc_447F03): morph-type flags, model+0x26E4
@@ -940,19 +940,19 @@ static void HandleLButtonDown_TimelineAreaHit(MMDApp* app, HWND hwnd,
         const std::int32_t morphType = app->state.rowHitMorph[row2d];
         if (morphType > 0) {
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::MorphKeys(ActiveModel(app))[morphType],
+                rinmotiondance::mdl::MorphKeys(ActiveModel(app))[morphType],
                 shiftActive);
         } else if (morphType == -10) {              // loc_448189 (row 0)
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::MorphKeys(ActiveModel(app))[0],
+                rinmotiondance::mdl::MorphKeys(ActiveModel(app))[0],
                 shiftActive);
         } else if (morphType == -1) {               // loc_4483B8
             StageRangeRow(app, morphType,
-                          mikudancestudio::mdl::MorphKeys(ActiveModel(app)),
+                          rinmotiondance::mdl::MorphKeys(ActiveModel(app)),
                           shiftActive);
         } else if (morphType == -2) {               // loc_4483F1
             StageRangeRow(app, morphType,
-                          mikudancestudio::mdl::MorphKeys(ActiveModel(app)),
+                          rinmotiondance::mdl::MorphKeys(ActiveModel(app)),
                           shiftActive);
         }
         // stage 3 (loc_4485FB): bone-type flags, model+0x26E0 0x3C flag
@@ -960,19 +960,19 @@ static void HandleLButtonDown_TimelineAreaHit(MMDApp* app, HWND hwnd,
         const std::int32_t boneType = app->state.rowHitBone[row2d];
         if (boneType > 0) {
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::BoneKeys(ActiveModel(app))[boneType],
+                rinmotiondance::mdl::BoneKeys(ActiveModel(app))[boneType],
                 shiftActive);
         } else if (boneType == -10) {               // loc_448889 (row 0)
             ToggleModelKeyAllocated(app,
-                mikudancestudio::mdl::BoneKeys(ActiveModel(app))[0],
+                rinmotiondance::mdl::BoneKeys(ActiveModel(app))[0],
                 shiftActive);
         } else if (boneType == -1) {                // loc_448AB8
             StageRangeRow(app, boneType,
-                          mikudancestudio::mdl::BoneKeys(ActiveModel(app)),
+                          rinmotiondance::mdl::BoneKeys(ActiveModel(app)),
                           shiftActive);
         } else if (boneType == -2) {                // loc_448AF1
             StageRangeRow(app, boneType,
-                          mikudancestudio::mdl::BoneKeys(ActiveModel(app)),
+                          rinmotiondance::mdl::BoneKeys(ActiveModel(app)),
                           shiftActive);
         }
         // loc_448CFB: none of the three stages hit -> wholesale
@@ -1228,4 +1228,4 @@ void HandleLButtonDown(MMDApp* app) {
     HandleLButtonDown_NameRowRectHit(app, x, y, rc.bottom);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

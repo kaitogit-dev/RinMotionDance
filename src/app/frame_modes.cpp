@@ -25,15 +25,15 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include "frame_state_dump.hpp"
 #include "bone_selection.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Exact doubles from the original image.  These stay double until the final
 // store, matching the x87 instruction stream at 0x470E4B..0x470EDF.
@@ -314,9 +314,9 @@ void UpdateBoneBoxSelection(MMDApp* app) {
     unsigned char* model = ActiveBoneModel(app);
     if (model == nullptr)
         return;
-    auto* bones = mikudancestudio::mdl::Bones(model);
-    auto* selected = mikudancestudio::mdl::Mdl(model)->boneSelection;
-    const int count = mikudancestudio::mdl::Mdl(model)->boneCount;
+    auto* bones = rinmotiondance::mdl::Bones(model);
+    auto* selected = rinmotiondance::mdl::Mdl(model)->boneSelection;
+    const int count = rinmotiondance::mdl::Mdl(model)->boneCount;
     if (bones == nullptr || selected == nullptr || count <= 0)
         return;
 
@@ -762,7 +762,7 @@ void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
                      &rot);
 
     unsigned char* model = app->SelectedModel();
-    auto* bones = mikudancestudio::mdl::Bones(model);
+    auto* bones = rinmotiondance::mdl::Bones(model);
 
     auto modeOrigin = [&](int modeValue, d3dx::D3DXMATRIXF* out) {
         if (modeValue == 1) {                                  // 0x41AD79
@@ -773,7 +773,7 @@ void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
             const float tz = -rec.matInit[14];
             api.translation(out, tx, ty, tz);
         } else if (modeValue == 2) {                           // 0x41ADC6
-            std::int32_t idx = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            std::int32_t idx = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (idx < 0)
                 idx = 0;
             const mdl::BoneRecord& rec = bones[idx];
@@ -805,4 +805,4 @@ void ApplyCameraReferenceModeChange(MMDApp* app, int oldMode) {
     app->CameraDistance() -= tOld.m[3][2] - tNew.m[3][2];
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

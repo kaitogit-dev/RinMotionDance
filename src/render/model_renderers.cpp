@@ -13,21 +13,21 @@
 #include <cstring>
 
 #include "fx_slots.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 using Matrix = d3dx::D3DXMATRIXF;
 
-// Porting-era material-state capture under MIKUDANCESTUDIO_VB_DUMP_DIR
-// (CMake option MIKUDANCESTUDIO_DIAG, default OFF); the OFF stubs below
+// Porting-era material-state capture under RINMOTIONDANCE_VB_DUMP_DIR
+// (CMake option RINMOTIONDANCE_DIAG, default OFF); the OFF stubs below
 // keep the call sites valid and inline away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 struct MaterialStateCapture {
     FILE* stream = nullptr;
     bool first = true;
@@ -58,16 +58,16 @@ bool BeginMaterialStateCapture() {
 
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return false;
 
     char stable[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stable,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_STABLE_CAPTURE", stable,
                                 sizeof(stable)) == 1 && stable[0] == '1') {
         char requireLine[2]{};
         const bool refreshed =
-            GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_REQUIRE_LINE", requireLine,
+            GetEnvironmentVariableA("RINMOTIONDANCE_AB_REQUIRE_LINE", requireLine,
                                     sizeof(requireLine)) == 1 &&
             requireLine[0] == '1';
         char gate[MAX_PATH]{};
@@ -1814,4 +1814,4 @@ void RenderShadowMap(MMDApp* app, const float frameMatrix[16]) {   // 0x426CD0
     device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

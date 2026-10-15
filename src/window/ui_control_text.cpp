@@ -22,10 +22,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void DrawControlText(MMDApp* app, HWND hwnd, HDC hdc, RECT rc) {
     char text[0x100];
@@ -79,4 +79,4 @@ void HandleTimer100(MMDApp* app) {
     app->AudioSeekReady() = 1;                             // this+656054
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

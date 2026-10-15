@@ -1,6 +1,6 @@
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
 #include "../src/app/pump_input.hpp"
 
 #include <cstdio>
@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 
 namespace {
 struct Command {

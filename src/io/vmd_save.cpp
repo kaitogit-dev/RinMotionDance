@@ -47,12 +47,12 @@
 #include <io.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 unsigned char* ActiveModel(MMDApp* app) {
@@ -163,17 +163,17 @@ void SaveVmdFile(const wchar_t* path) {
     // 并跳过循环（计数全来自全局键表 app+976/984/992）。这些 model 侧的
     // 计数与表指针只在模型模式读取；相机模式下 model 可能为空。
     int boneCount = 0, morphCount = 0, ikChainCount = 0;
-    mikudancestudio::mdl::BoneRecord* bones = nullptr;
-    mikudancestudio::mdl::MorphRecord* morphs = nullptr;
-    mikudancestudio::mdl::IkChain* ikChains = nullptr;
+    rinmotiondance::mdl::BoneRecord* bones = nullptr;
+    rinmotiondance::mdl::MorphRecord* morphs = nullptr;
+    rinmotiondance::mdl::IkChain* ikChains = nullptr;
     if (!cameraMode) {
         auto* const rec = mdl::Mdl(model);
         boneCount = rec->boneCount;
         morphCount = rec->morphCount;
         ikChainCount = rec->ikChainCount;
-        bones = mikudancestudio::mdl::Bones(model);
-        morphs = mikudancestudio::mdl::Morphs(model);
-        ikChains = mikudancestudio::mdl::IkChains(model);
+        bones = rinmotiondance::mdl::Bones(model);
+        morphs = rinmotiondance::mdl::Morphs(model);
+        ikChains = rinmotiondance::mdl::IkChains(model);
     }
 
     std::uint32_t outDword;
@@ -322,4 +322,4 @@ void SaveVmdFile(const wchar_t* path) {
     _close(fd);                                                  // 0x41A17B
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

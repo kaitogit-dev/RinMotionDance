@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
 include(cmake/Version.cmake)
-project(MikuDanceStudio VERSION "${MDS_VERSION_MAJOR}.${MDS_VERSION_MINOR}" LANGUAGES CXX)
-configure_file(cmake/version.hpp.in generated/mikudancestudio/version.hpp @ONLY)
+project(RinMotionDance VERSION "${RMD_VERSION_MAJOR}.${RMD_VERSION_MINOR}" LANGUAGES CXX)
+configure_file(cmake/version.hpp.in generated/rinmotiondance/version.hpp @ONLY)
 configure_file(res/version.rc.in generated/version.rc @ONLY)
 
 # ---------------------------------------------------------------------------
-# MikuDanceStudio: behavioural restoration of MikuMikuDance v932.
+# RinMotionDance: behavioural restoration of MikuMikuDance v932.
 # MikuMikuDanceE_v932x64 is the x64 reference.  The x86 binary remains a
 # source-recovery aid only; see docs/X64_RECONSTRUCTION.md for the evidence
 # and layout rules.  The porting ledger lives in docs/PORTING_STATUS.md.
@@ -43,7 +43,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif()
 
 if (NOT WIN32)
-    message(FATAL_ERROR "MikuDanceStudio targets Windows only (Win32/DirectX9).")
+    message(FATAL_ERROR "RinMotionDance targets Windows only (Win32/DirectX9).")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ find_package(BULLET275 REQUIRED)
 # ---------------------------------------------------------------------------
 # Core static library: application state, math, startup chain, effect API.
 # ---------------------------------------------------------------------------
-add_library(mikudancestudio_core STATIC
+add_library(rinmotiondance_core STATIC
     src/app/mmd_app.cpp
     src/app/globals.cpp
     src/app/app_ctor.cpp
@@ -185,11 +185,11 @@ add_library(mikudancestudio_core STATIC
     src/app/late_ports.cpp
 )
 
-target_include_directories(mikudancestudio_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(rinmotiondance_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # 内置 MMEffect 的宿主集成面（mme_bridge → MmeHost* 声明）。
-target_include_directories(mikudancestudio_core PRIVATE
+target_include_directories(rinmotiondance_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/include)
-target_link_libraries(mikudancestudio_core PUBLIC
+target_link_libraries(rinmotiondance_core PUBLIC
     BULLET275::BULLET275
     user32      # RegisterClass / CreateWindow / MessageBox
     gdi32       # CreateSolidBrush / GetStockObject
@@ -206,46 +206,46 @@ target_link_libraries(mikudancestudio_core PUBLIC
 if (MSVC)
     # Align the PMX skinning stride workers with the original's VCOMP90
     # parallel regions (x64 _vcomp_fork, default static schedule).
-    target_compile_options(mikudancestudio_core PRIVATE /openmp)
+    target_compile_options(rinmotiondance_core PRIVATE /openmp)
 endif()
 
 # ---------------------------------------------------------------------------
-# Porting-era diagnostics.  The MIKUDANCESTUDIO_* environment probes
+# Porting-era diagnostics.  The RINMOTIONDANCE_* environment probes
 # (state dumps, A/B traces, canaries) are comparison tooling against the
 # original binaries, not product features.  Default OFF: the shipped build
 # contains none of that code.  Turn ON only while running A/B sessions:
-#   cmake -B build-x64/diag -DMIKUDANCESTUDIO_DIAG=ON ..
+#   cmake -B build-x64/diag -DRINMOTIONDANCE_DIAG=ON ..
 # ---------------------------------------------------------------------------
-option(MIKUDANCESTUDIO_DIAG
-       "Compile the porting-era diagnostics probes (MIKUDANCESTUDIO_* env dumps/traces)" OFF)
-if (MIKUDANCESTUDIO_DIAG)
-    target_compile_definitions(mikudancestudio_core PUBLIC MIKUDANCESTUDIO_DIAG=1)
+option(RINMOTIONDANCE_DIAG
+       "Compile the porting-era diagnostics probes (RINMOTIONDANCE_* env dumps/traces)" OFF)
+if (RINMOTIONDANCE_DIAG)
+    target_compile_definitions(rinmotiondance_core PUBLIC RINMOTIONDANCE_DIAG=1)
 endif()
 
 # ---------------------------------------------------------------------------
 # Main executable.  WIN32 subsystem matches the original PE header
-# (Subsystem 2, GUI).  Exports (Exp*) come from exports/MikuMikuDance.def
+# (Subsystem 2, GUI).  Exports (Exp*) come from exports/RinMotionDance.def
 # exactly like the original export table at RVA 0x00141328.
 # ---------------------------------------------------------------------------
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     # x64 build embeds the original x64 manifest (amd64 dependencies +
     # Data\MMDxShow.dll reg-free COM) - the x86 manifest's x86 assemblies
     # make the 64-bit loader fail with STATUS_INVALID_IMAGE_FORMAT.
-    set(MIKUDANCESTUDIO_GEN_RES res/gen_resources_x64.res)
+    set(RINMOTIONDANCE_GEN_RES res/gen_resources_x64.res)
 else()
-    set(MIKUDANCESTUDIO_GEN_RES res/gen_resources.res)
+    set(RINMOTIONDANCE_GEN_RES res/gen_resources.res)
 endif()
-target_include_directories(mikudancestudio_core PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/generated")
-add_executable(MikuDanceStudio WIN32
+target_include_directories(rinmotiondance_core PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/generated")
+add_executable(RinMotionDance WIN32
     "${CMAKE_CURRENT_BINARY_DIR}/generated/version.rc"
     src/main/winmain.cpp
     res/MMD.rc
-    ${MIKUDANCESTUDIO_GEN_RES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/exports/MikuMikuDance.def
+    ${RINMOTIONDANCE_GEN_RES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/exports/RinMotionDance.def
 )
 
-target_link_libraries(MikuDanceStudio PRIVATE
-    mikudancestudio_core
+target_link_libraries(RinMotionDance PRIVATE
+    rinmotiondance_core
     winmm      # timeGetTime - main loop timing
     dsound     # original timeline/audio subsystem initialization (0x4C2470)
     user32
@@ -255,13 +255,13 @@ target_link_libraries(MikuDanceStudio PRIVATE
 # .res directly as an input file (CMake itself would classify it as <None>).
 # /MANIFEST:NO keeps the linker from adding a default manifest on top of the
 # original one embedded through the .res.
-target_link_options(MikuDanceStudio PRIVATE
-    "/MAP:${CMAKE_CURRENT_BINARY_DIR}/MikuDanceStudio.map"
+target_link_options(RinMotionDance PRIVATE
+    "/MAP:${CMAKE_CURRENT_BINARY_DIR}/RinMotionDance.map"
     "/MANIFEST:NO"
-    "${CMAKE_CURRENT_SOURCE_DIR}/${MIKUDANCESTUDIO_GEN_RES}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${RINMOTIONDANCE_GEN_RES}"
 )
-set_target_properties(MikuDanceStudio PROPERTIES
-    OUTPUT_NAME "MikuDanceStudio"
+set_target_properties(RinMotionDance PROPERTIES
+    OUTPUT_NAME "RinMotionDance"
     # Export the 37 Exp* symbols from the .def file (ordinals 1..37).
     ENABLE_EXPORTS ON
 )
@@ -325,7 +325,7 @@ target_include_directories(MMEffect PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mmeffect/src/mmhack   # mmhack_state.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include          # d3dx_dyn.hpp（运行时 d3dx9 转发）
 )
-target_compile_definitions(MMEffect PUBLIC MIKUDANCESTUDIO_MME_EMBEDDED=1)
+target_compile_definitions(MMEffect PUBLIC RINMOTIONDANCE_MME_EMBEDDED=1)
 target_link_libraries(MMEffect PUBLIC D3DXRuntime)
 target_link_libraries(MMEffect PRIVATE
     user32       # 窗口/菜单/消息
@@ -339,7 +339,7 @@ target_link_libraries(MMEffect PRIVATE
     shlwapi
     advapi32
 )
-target_link_libraries(MikuDanceStudio PRIVATE MMEffect)
+target_link_libraries(RinMotionDance PRIVATE MMEffect)
 
 # Resource IDs are distinct from the host. Icon child IDs are explicit too.
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -354,9 +354,9 @@ add_custom_command(
             third_party/mmeffect/res/res_mme.ico
             third_party/mmeffect/include/mme_resources.h
     VERBATIM)
-target_sources(MikuDanceStudio PRIVATE
+target_sources(RinMotionDance PRIVATE
     third_party/mmeffect/res/MMEffect.rc ${MME_ICON_RES})
-target_link_options(MikuDanceStudio PRIVATE "${MME_ICON_RES}")
+target_link_options(RinMotionDance PRIVATE "${MME_ICON_RES}")
 
 include(CTest)
 if(BUILD_TESTING)
@@ -366,20 +366,20 @@ if(BUILD_TESTING)
     add_test(NAME wave_data_chunk COMMAND wave_data_chunk_test)
     add_executable(pmx_buffer_failure_test tests/pmx_buffer_failure_test.cpp)
     target_link_libraries(pmx_buffer_failure_test PRIVATE
-        mikudancestudio_core MMEffect dsound)
+        rinmotiondance_core MMEffect dsound)
     add_test(NAME pmx_buffer_failure COMMAND pmx_buffer_failure_test)
     set_tests_properties(pmx_buffer_failure PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(charset_conv_test tests/charset_conv_test.cpp src/main/charset_conv.cpp)
     target_include_directories(charset_conv_test PRIVATE include)
     add_test(NAME charset_conv COMMAND charset_conv_test)
     add_executable(input_sequence_test tests/input_sequence_test.cpp)
-    target_link_libraries(input_sequence_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(input_sequence_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME input_sequence COMMAND input_sequence_test)
     add_executable(bone_pick_test tests/bone_pick_test.cpp)
-    target_link_libraries(bone_pick_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(bone_pick_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME bone_pick COMMAND bone_pick_test)
     add_executable(model_key_selection_test tests/model_key_selection_test.cpp)
-    target_link_libraries(model_key_selection_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(model_key_selection_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME model_key_selection COMMAND model_key_selection_test)
     add_executable(morph_navigation_test tests/morph_navigation_test.cpp
         src/app/app_utilities.cpp)
@@ -389,14 +389,14 @@ if(BUILD_TESTING)
     target_link_libraries(morph_navigation_test PRIVATE user32)
     add_test(NAME morph_navigation COMMAND morph_navigation_test)
     add_executable(accessory_drag_test tests/accessory_drag_test.cpp)
-    target_link_libraries(accessory_drag_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(accessory_drag_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME accessory_drag COMMAND accessory_drag_test)
     add_executable(camera_position_test tests/camera_position_test.cpp)
-    target_link_libraries(camera_position_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(camera_position_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME camera_position COMMAND camera_position_test)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         add_executable(drag_precision_test tests/drag_precision_test.cpp)
-        target_link_libraries(drag_precision_test PRIVATE mikudancestudio_core MMEffect dsound)
+        target_link_libraries(drag_precision_test PRIVATE rinmotiondance_core MMEffect dsound)
         add_test(NAME drag_precision COMMAND drag_precision_test)
         if(MSVC)
             add_executable(pmd_skinning_test tests/pmd_skinning_test.cpp)
@@ -417,22 +417,22 @@ if(BUILD_TESTING)
     add_executable(mme_anime_timeline_test tests/mme_anime_timeline_test.cpp)
     target_include_directories(mme_anime_timeline_test PRIVATE
         third_party/mmeffect/include third_party/mmeffect/src/mmhack)
-    target_link_libraries(mme_anime_timeline_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_anime_timeline_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_anime_timeline COMMAND mme_anime_timeline_test)
     add_executable(mme_anime_recovery_test tests/mme_anime_recovery_test.cpp)
     target_include_directories(mme_anime_recovery_test PRIVATE
         third_party/mmeffect/include third_party/mmeffect/src/mmhack)
-    target_link_libraries(mme_anime_recovery_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_anime_recovery_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_anime_recovery COMMAND mme_anime_recovery_test)
     add_executable(mme_posteffect_message_test tests/mme_posteffect_message_test.cpp)
     target_include_directories(mme_posteffect_message_test PRIVATE
         third_party/mmeffect/include third_party/mmeffect/src/mmhack)
-    target_link_libraries(mme_posteffect_message_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_posteffect_message_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_posteffect_message COMMAND mme_posteffect_message_test)
     add_executable(mme_shader_message_test tests/mme_shader_message_test.cpp)
     target_include_directories(mme_shader_message_test PRIVATE
         third_party/mmeffect/include third_party/mmeffect/src/mmhack)
-    target_link_libraries(mme_shader_message_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_shader_message_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_shader_message_gpu COMMAND mme_shader_message_test)
     set_tests_properties(mme_shader_message_gpu PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 90)
     add_executable(mme_log_test tests/mme_log_test.cpp)
@@ -442,7 +442,7 @@ if(BUILD_TESTING)
     add_test(NAME mme_log_sentinel COMMAND mme_log_test sentinel)
     configure_file(tests/axis_mesh.rc.in ${CMAKE_CURRENT_BINARY_DIR}/axis_mesh_test.rc @ONLY)
     add_executable(axis_mesh_test tests/axis_mesh_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/axis_mesh_test.rc)
-    target_link_libraries(axis_mesh_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(axis_mesh_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME axis_mesh_gpu COMMAND axis_mesh_test)
     set_tests_properties(axis_mesh_gpu PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(model_initialization_test tests/model_initialization_test.cpp
@@ -461,11 +461,11 @@ if(BUILD_TESTING)
     target_link_libraries(undo_frame_test PRIVATE user32)
     add_executable(physics_scene_dispose_test tests/physics_scene_dispose_test.cpp
         src/physics/scene_dispose.cpp)
-    target_compile_definitions(physics_scene_dispose_test PRIVATE MIKUDANCESTUDIO_DIAG=1)
+    target_compile_definitions(physics_scene_dispose_test PRIVATE RINMOTIONDANCE_DIAG=1)
     target_link_libraries(physics_scene_dispose_test PRIVATE BULLET275::BULLET275)
     add_executable(physics_gizmo_reset_test tests/physics_gizmo_reset_test.cpp)
     target_include_directories(physics_gizmo_reset_test PRIVATE include)
-    target_link_libraries(physics_gizmo_reset_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(physics_gizmo_reset_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME physics_gizmo_reset_gpu COMMAND physics_gizmo_reset_test)
     set_tests_properties(physics_gizmo_reset_gpu PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 90)
     add_executable(mme_regression tests/mme_regression.cpp)
@@ -476,38 +476,38 @@ if(BUILD_TESTING)
     add_test(NAME mme_host_object_cache COMMAND mme_host_object_cache_test)
     add_executable(mme_effect_mapping_test tests/mme_effect_mapping_test.cpp)
     target_include_directories(mme_effect_mapping_test PRIVATE third_party/mmeffect/src/mmeffect)
-    target_link_libraries(mme_effect_mapping_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_effect_mapping_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_effect_mapping COMMAND mme_effect_mapping_test)
     add_executable(background_hotkeys_test tests/background_hotkeys_test.cpp)
-    target_link_libraries(background_hotkeys_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(background_hotkeys_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME background_hotkeys COMMAND background_hotkeys_test)
     add_executable(mme_buffer_pass_test tests/mme_buffer_pass_test.cpp)
     target_include_directories(mme_buffer_pass_test PRIVATE third_party/mmeffect/src/mmeffect)
-    target_link_libraries(mme_buffer_pass_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_buffer_pass_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_buffer_pass_gpu COMMAND mme_buffer_pass_test)
     set_tests_properties(mme_buffer_pass_gpu PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(mme_ray_smoke_test tests/mme_ray_smoke_test.cpp)
     target_include_directories(mme_ray_smoke_test PRIVATE third_party/mmeffect/src/mmeffect)
-    target_link_libraries(mme_ray_smoke_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_ray_smoke_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_executable(mme_offscreen_turn_test tests/mme_offscreen_turn_test.cpp)
     add_executable(mme_assignment_graph_test tests/mme_assignment_graph_test.cpp)
     target_include_directories(mme_assignment_graph_test PRIVATE third_party/mmeffect/src/mmeffect)
-    target_link_libraries(mme_assignment_graph_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_assignment_graph_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_assignment_graph_gpu COMMAND mme_assignment_graph_test)
     set_tests_properties(mme_assignment_graph_gpu PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 90)
     add_executable(mme_snapshot_cache_test tests/mme_snapshot_cache_test.cpp)
     target_include_directories(mme_snapshot_cache_test PRIVATE
         third_party/mmeffect/include third_party/mmeffect/src/mmhack)
-    target_link_libraries(mme_snapshot_cache_test PRIVATE mikudancestudio_core MMEffect dsound)
+    target_link_libraries(mme_snapshot_cache_test PRIVATE rinmotiondance_core MMEffect dsound)
     add_test(NAME mme_snapshot_cache_gpu COMMAND mme_snapshot_cache_test)
     set_tests_properties(mme_snapshot_cache_gpu PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 90)
     target_include_directories(mme_offscreen_turn_test PRIVATE third_party/mmeffect/src/mmeffect)
-    target_link_libraries(mme_offscreen_turn_test PRIVATE mikudancestudio_core MMEffect dsound)
-    set(MIKUDANCESTUDIO_RAY_TEST_EFFECT "" CACHE FILEPATH
+    target_link_libraries(mme_offscreen_turn_test PRIVATE rinmotiondance_core MMEffect dsound)
+    set(RINMOTIONDANCE_RAY_TEST_EFFECT "" CACHE FILEPATH
         "Optional local ray.fx for real-asset GPU regression tests")
-    if(MIKUDANCESTUDIO_RAY_TEST_EFFECT)
-        add_test(NAME mme_ray_script_gpu COMMAND mme_ray_smoke_test "${MIKUDANCESTUDIO_RAY_TEST_EFFECT}")
-        add_test(NAME mme_ray_offscreen_gpu COMMAND mme_offscreen_turn_test "${MIKUDANCESTUDIO_RAY_TEST_EFFECT}")
+    if(RINMOTIONDANCE_RAY_TEST_EFFECT)
+        add_test(NAME mme_ray_script_gpu COMMAND mme_ray_smoke_test "${RINMOTIONDANCE_RAY_TEST_EFFECT}")
+        add_test(NAME mme_ray_offscreen_gpu COMMAND mme_offscreen_turn_test "${RINMOTIONDANCE_RAY_TEST_EFFECT}")
         set_tests_properties(mme_ray_script_gpu mme_ray_offscreen_gpu PROPERTIES
             SKIP_RETURN_CODE 77 TIMEOUT 90)
     endif()
@@ -534,14 +534,14 @@ if(BUILD_TESTING)
     add_test(NAME d3dx_direct_imports COMMAND d3dx_import_probe)
     add_test(NAME d3dx_pe_imports COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_d3dx_imports.py
-        $<TARGET_FILE:MikuDanceStudio>)
+        $<TARGET_FILE:RinMotionDance>)
     add_test(NAME d3dx_loader_failure COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_d3dx_loader_failure.py
         $<TARGET_FILE:d3dx_import_probe> $<TARGET_FILE:incomplete_d3dx_runtime>
         ${D3DX_RUNTIME_NAME})
     add_executable(embedded_mme_resources_test tests/embedded_mme_resources_test.cpp)
     target_include_directories(embedded_mme_resources_test PRIVATE third_party/mmeffect/include)
-    add_dependencies(embedded_mme_resources_test MikuDanceStudio)
+    add_dependencies(embedded_mme_resources_test RinMotionDance)
     add_test(NAME embedded_mme_resources
-        COMMAND embedded_mme_resources_test $<TARGET_FILE:MikuDanceStudio>)
+        COMMAND embedded_mme_resources_test $<TARGET_FILE:RinMotionDance>)
 endif()

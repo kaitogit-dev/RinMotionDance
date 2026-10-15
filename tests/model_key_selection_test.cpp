@@ -1,10 +1,10 @@
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 #include <cstdio>
 #include <memory>
 #include <vector>
 
 int main() {
-    using namespace mikudancestudio::mdl;
+    using namespace rinmotiondance::mdl;
     auto model = std::make_unique<ModelRecord>();
     std::vector<BoneKey> keys(kBoneKeyCapacity);
     std::vector<MorphKey> morphs(kMorphKeyCapacity);

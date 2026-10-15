@@ -31,10 +31,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 IDirect3DDevice9* DeviceOf(MMDApp* app) {
@@ -139,4 +139,4 @@ void InitRenderStates(MMDApp* app) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -58,14 +58,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Dependencies still stubbed (stubs.cpp): RefreshAfterFrameApply frame-apply
 // refresh chain (real body: ui_frame_step.cpp), PushBoneEditUndo bone-edit
@@ -104,10 +104,10 @@ void ComposeEulerToBone(MMDApp* app, unsigned char* model, int sel) {
     d3dx->multiply(&rot, &rot, &tmp);
     d3dx->rotY(&tmp, app->state.eulerY);
     d3dx->multiply(&rot, &rot, &tmp);
-    mikudancestudio::mdl::BoneRecord* bones = mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones = rinmotiondance::mdl::Bones(model);
     d3dx->quatFromMatrix(reinterpret_cast<float*>(&bones[sel].rotQuat[0]),
                          &rot);
-    mikudancestudio::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+    rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
 }
 
 }  // namespace
@@ -127,11 +127,11 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         const double v = atof(text);
         if (!cameraMode) {
             unsigned char* model = SlotModel(app);
-            const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (sel >= 0) {
                 PushBoneEditUndo(app);
-                mikudancestudio::mdl::Bones(model)[sel].trans[0] = static_cast<float>(v);
-                mikudancestudio::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                rinmotiondance::mdl::Bones(model)[sel].trans[0] = static_cast<float>(v);
+                rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
             }
             PostViewRefresh(app);
             return;
@@ -147,11 +147,11 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         const double v = atof(text);
         if (!cameraMode) {
             unsigned char* model = SlotModel(app);
-            const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (sel >= 0) {
                 PushBoneEditUndo(app);
-                mikudancestudio::mdl::Bones(model)[sel].trans[1] = static_cast<float>(v);
-                mikudancestudio::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                rinmotiondance::mdl::Bones(model)[sel].trans[1] = static_cast<float>(v);
+                rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
             }
             PostViewRefresh(app);
             return;
@@ -167,11 +167,11 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         double v = atof(text);
         if (!cameraMode) {
             unsigned char* model = SlotModel(app);
-            const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (sel >= 0) {
                 PushBoneEditUndo(app);
-                mikudancestudio::mdl::Bones(model)[sel].trans[2] = static_cast<float>(v);
-                mikudancestudio::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                rinmotiondance::mdl::Bones(model)[sel].trans[2] = static_cast<float>(v);
+                rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
             }
             PostViewRefresh(app);
             return;
@@ -189,7 +189,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
         const double v = atof(text);
         if (!cameraMode) {
             unsigned char* model = SlotModel(app);
-            const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+            const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
             if (sel >= 0) {
                 PushBoneEditUndo(app);
                 app->state.eulerX =
@@ -224,7 +224,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
             return;
         }
         unsigned char* model = SlotModel(app);
-        const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+        const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
         if (sel >= 0) {
             PushBoneEditUndo(app);
             app->state.eulerX =      // re-convert stored
@@ -255,7 +255,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
             return;
         }
         unsigned char* model = SlotModel(app);
-        const int sel = mikudancestudio::mdl::Mdl(model)->selectedBone;
+        const int sel = rinmotiondance::mdl::Mdl(model)->selectedBone;
         if (sel >= 0) {
             PushBoneEditUndo(app);
             app->state.eulerX =
@@ -433,10 +433,10 @@ void CommitEditControl(MMDApp* app, HWND edit) {
             const double v = atof(text);
             unsigned char* model = SlotModel(app);
             const int selector =
-                mikudancestudio::mdl::Mdl(model)->selectedMorphs[
+                rinmotiondance::mdl::Mdl(model)->selectedMorphs[
                     (morphEdit - 506) / 5];
-            if (mikudancestudio::mdl::Morphs(model) != nullptr && selector >= 0)
-                mikudancestudio::mdl::Morphs(model)[selector].value =
+            if (rinmotiondance::mdl::Morphs(model) != nullptr && selector >= 0)
+                rinmotiondance::mdl::Morphs(model)[selector].value =
                     static_cast<float>(v);
             SendMessageA(GetDlgItem(main, morphEdit - 1), TBM_SETPOS, 1,
                          static_cast<LPARAM>(static_cast<int>(v * 100.0)));
@@ -560,4 +560,4 @@ void InstallControlSubclass(MMDApp* app, HWND control, int id) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

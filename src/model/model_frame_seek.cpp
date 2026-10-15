@@ -49,13 +49,13 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
 #include "keyframe_common.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 using kfa::CopyIkDisplayFlags;
@@ -108,7 +108,7 @@ int SeekModelFrame(unsigned char* model, int frameArg, int physicsMode) {
             }
             if (!resolved) {
                 // chain exhausted past a2: terminal variant A (0x4B43A0)
-                mikudancestudio::mdl::Mdl(m)->loadComplete = keys[found].visible;
+                rinmotiondance::mdl::Mdl(m)->loadComplete = keys[found].visible;
                 CopyIkDisplayFlags(m, keys[found]);
                 RefreshIkSelectors(m, keys, found, found, false, 0, 0);
             }
@@ -118,14 +118,14 @@ int SeekModelFrame(unsigned char* model, int frameArg, int physicsMode) {
         if (resolved) {
             if (keys[found].frame == frameU32) {
                 // exact hit: variant B (0x4B42BF)
-                mikudancestudio::mdl::Mdl(m)->loadComplete = keys[found].visible;
+                rinmotiondance::mdl::Mdl(m)->loadComplete = keys[found].visible;
                 CopyIkDisplayFlags(m, keys[found]);
                 RefreshIkSelectors(m, keys, found, found, true, found, found);
             } else {
                 // between keys: variant C (0x4B46BA) - flags/pairs from the
                 // PREVIOUS record, forward condition against the found one
                 const int prevIdx = static_cast<int>(keys[found].previous);
-                mikudancestudio::mdl::Mdl(m)->loadComplete = keys[prevIdx].visible;
+                rinmotiondance::mdl::Mdl(m)->loadComplete = keys[prevIdx].visible;
                 CopyIkDisplayFlags(m, keys[prevIdx]);
                 RefreshIkSelectors(m, keys, prevIdx, prevIdx, true, found,
                                    found);
@@ -137,7 +137,7 @@ int SeekModelFrame(unsigned char* model, int frameArg, int physicsMode) {
     const int morphCnt = static_cast<int>(mdl::Mdl(m)->morphCount);
     if (morphCnt > 0) {
         mdl::MorphKey* const keys = mdl::MorphKeys(m);
-        mikudancestudio::mdl::MorphRecord* const vals = mikudancestudio::mdl::Morphs(m);  // 136-byte structs
+        rinmotiondance::mdl::MorphRecord* const vals = rinmotiondance::mdl::Morphs(m);  // 136-byte structs
         for (int k = 0; k < morphCnt; ++k) {
             int found = k;              // morph k's first record is #k
             if (keys[found].frame < frameU32) {
@@ -196,9 +196,9 @@ int SeekModelFrame(unsigned char* model, int frameArg, int physicsMode) {
     const int boneCnt = static_cast<int>(mdl::Mdl(m)->boneCount);
     if (boneCnt > 0) {
         mdl::BoneKey* const keys = mdl::BoneKeys(m);
-        mikudancestudio::mdl::BoneRecord* const bones = mdl::Bones(m);
+        rinmotiondance::mdl::BoneRecord* const bones = mdl::Bones(m);
         for (int b = 0; b < boneCnt; ++b) {
-            mikudancestudio::mdl::BoneRecord* const bone = &bones[b];
+            rinmotiondance::mdl::BoneRecord* const bone = &bones[b];
             // type gate (0x4B4A5F): signed setle <= 6 or == 8
             const std::int8_t btype = static_cast<std::int8_t>(bone->type);
             if (!(btype <= static_cast<std::int8_t>(mdl::BoneType::Effector) ||
@@ -517,4 +517,4 @@ void SeekSelectedModelToCurrentFrame(MMDApp* app) {
     app->RecordedFrameCountByte1() = 1;                                        // 0x4220E4
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

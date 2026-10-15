@@ -1,6 +1,6 @@
 // mme_bridge.cpp - 内置 MMEffect 宿主桥实现。
 //
-// 见 include/mikudancestudio/mme_bridge.hpp。效果引擎静态内置在宿主中，
+// 见 include/rinmotiondance/mme_bridge.hpp。效果引擎静态内置在宿主中，
 // 全部调用直达 MmeHost*，无需代理 DLL 或设备 hook。
 //
 // [核验结论 2026-09] 原 MMHack 对宿主 EXE 的 user32!GetKeyState IAT hook
@@ -17,14 +17,14 @@
 // MmeKeyboardHookProc，不受此 IAT hook 影响）。内置版因此不需要、也不应
 // 添加任何 Ctrl+Shift+E 屏蔽——本工程按键轮询键表与原版一致（frame_modes.
 // cpp / model_query_helpers.cpp），亦无 'E' 查询点。
-#include "mikudancestudio/mme_bridge.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
 
 #include <Windows.h>
 #include <string.h>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 #include "mme_host_api.h"
 #include "mesh_subset.hpp"
 
@@ -34,7 +34,7 @@
 extern "C" const wchar_t* MmdModelPathW(int index);
 extern "C" const wchar_t* MmdAcsPathW(int index);
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace mme {
 namespace {
 
@@ -331,4 +331,4 @@ void RecordTexture(const wchar_t* path, IDirect3DBaseTexture9* texture) {
 }
 
 }  // namespace mme
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

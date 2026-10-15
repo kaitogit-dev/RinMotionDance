@@ -17,9 +17,9 @@
 // ===========================================================================
 #include <cwchar>
 
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 wchar_t* ExtractDirFromPath(wchar_t* destination, const wchar_t* fullPath) {
     wchar_t* out = destination;  // caller owns a wchar_t[1000]-class buffer
@@ -49,4 +49,4 @@ wchar_t* ExtractDirFromPath(wchar_t* destination, const wchar_t* fullPath) {
     return out;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

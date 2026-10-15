@@ -126,12 +126,12 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // ---- JP-locale texts, verbatim Shift-JIS bytes from .rdata ---------------
@@ -870,4 +870,4 @@ void LoadVsqFile(MMDApp* app, const wchar_t* path) {
         AviBgOverlayRefresh(app);                                   // 0x4168D0
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

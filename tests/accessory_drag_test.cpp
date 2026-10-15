@@ -1,12 +1,12 @@
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 #include <cstdio>
 #include <cstring>
 #include <memory>
 
-using namespace mikudancestudio;
+using namespace rinmotiondance;
 
 int main() {
     auto app = std::make_unique<MMDApp>();

@@ -59,11 +59,11 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/physics_scene.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/physics_scene.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Model-owned tables are raw storage from scalar ::operator new.
@@ -139,7 +139,7 @@ void ModelDispose(unsigned char* m) {
     DeleteOwnedStorage(model.rigidTable);
 
     // ---- two consecutive 30-slot undo rings -------------------------------
-    for (auto& ring : mikudancestudio::mdl::Mdl(m)->undoRings) {
+    for (auto& ring : rinmotiondance::mdl::Mdl(m)->undoRings) {
         for (auto& undo : ring.slots) {
             if (undo.auxiliaryPose != nullptr) {
                 ::operator delete(undo.auxiliaryPose);
@@ -204,8 +204,8 @@ void ModelDispose(unsigned char* m) {
 
     // ---- IK chains ---------------------------------------------------------
     if (mdl::Mdl(m)->ikChains != nullptr &&
-        mikudancestudio::mdl::Mdl(m)->ikChainCount > 0) {
-        const int n = mikudancestudio::mdl::Mdl(m)->ikChainCount;
+        rinmotiondance::mdl::Mdl(m)->ikChainCount > 0) {
+        const int n = rinmotiondance::mdl::Mdl(m)->ikChainCount;
         for (int i = 0; i < n; ++i)
             DeleteOwnedStorage(mdl::IkChains(m)[i].links);
     }
@@ -217,10 +217,10 @@ void ModelDispose(unsigned char* m) {
     DeleteOwnedStorage(mdl::Mdl(m)->boneTrackActive);
 
     // ---- bones -------------------------------------------------------------
-    if (mikudancestudio::mdl::Mdl(m)->boneCount > 0) {
-        mikudancestudio::mdl::BoneRecord* bones = mdl::Mdl(m)->boneTable;
-        for (std::uint32_t i = 0; i < mikudancestudio::mdl::Mdl(m)->boneCount; ++i) {
-            mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+    if (rinmotiondance::mdl::Mdl(m)->boneCount > 0) {
+        rinmotiondance::mdl::BoneRecord* bones = mdl::Mdl(m)->boneTable;
+        for (std::uint32_t i = 0; i < rinmotiondance::mdl::Mdl(m)->boneCount; ++i) {
+            rinmotiondance::mdl::BoneRecord* bone = &bones[i];
             DeleteOwnedStorage(bone->jpText);
             DeleteOwnedStorage(bone->enText);
             DeleteOwnedStorage(bone->ikLinks);
@@ -258,4 +258,4 @@ void DeleteModel(unsigned char* model, int freeFlag) {
         ::operator delete(model);                                   // 0x40A720
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

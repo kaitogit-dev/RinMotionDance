@@ -3,7 +3,7 @@
 // ===========================================================================
 // Direct3D9 subsystem bootstrap, called at the top of UI creation
 // (0x00466D20 @ 0x466D5B, i.e. during WM_CREATE).  The render object is
-// the D3DRenderer restored in include/mikudancestudio/d3d_wrapper.hpp (original
+// the D3DRenderer restored in include/rinmotiondance/d3d_wrapper.hpp (original
 // field offsets pinned there by static_assert on both architectures).
 //
 // Flow: monitor enum -> Direct3DCreate9 -> format probing (CheckDeviceType +
@@ -24,13 +24,13 @@
 #include <cstring>
 #include <cstdint>
 
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // VA 0x00406E50 - fnEnum: track the largest monitor dimensions.
@@ -49,17 +49,17 @@ void ReleaseCom(void* object) {
     reinterpret_cast<IUnknown*>(object)->Release();  // vtable slot 2
 }
 
-// Porting-era error/state dumps under MIKUDANCESTUDIO_STATE_DUMP_DIR /
-// MIKUDANCESTUDIO_VB_DUMP_DIR (CMake option MIKUDANCESTUDIO_DIAG, default
+// Porting-era error/state dumps under RINMOTIONDANCE_STATE_DUMP_DIR /
+// RINMOTIONDANCE_VB_DUMP_DIR (CMake option RINMOTIONDANCE_DIAG, default
 // OFF); the OFF stubs below keep the call sites valid and inline away to
 // nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void DumpCreateDeviceFailure(const D3DPRESENT_PARAMETERS& pp,
                              const HRESULT* attempts, int attemptCount,
                              D3DFORMAT depthFormat) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     CreateDirectoryA(directory, nullptr);
@@ -86,10 +86,10 @@ void DumpCreateDeviceFailure(const D3DPRESENT_PARAMETERS& pp,
 void DumpEffectFailure(HRESULT result, int resourceId, void* errors) {
     char directory[MAX_PATH]{};
     DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH) {
         length = GetEnvironmentVariableA(
-            "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+            "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     }
     if (length == 0 || length >= MAX_PATH)
         return;
@@ -116,7 +116,7 @@ void DumpEffectStatus(bool haveD3dx, int vsMajor, int psMajor,
                       int maxTexW, int maxTexH, D3DRenderer* renderer) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     CreateDirectoryA(directory, nullptr);
@@ -466,4 +466,4 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

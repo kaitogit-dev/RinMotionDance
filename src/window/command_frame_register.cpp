@@ -152,13 +152,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---- helpers ported in other translation units (declared with original
 //      VAs; not yet registered in ported_funcs.hpp) -------------------------
@@ -295,7 +295,7 @@ void BonePosEdit(MMDApp* app, float* vec, std::size_t axis) {
     if (sel >= 0) {
         PushBoneEditUndo(app);   // 0x42D6E0 bone-edit keyframe register
         unsigned char* m = ActiveModel(app);
-        mikudancestudio::mdl::Bones(m)[sel].trans[axis] = 0.0f;
+        rinmotiondance::mdl::Bones(m)[sel].trans[axis] = 0.0f;
         m = ActiveModel(app);
         mdl::Mdl(m)->bonePhysicsState[sel] = 1;
     }
@@ -902,4 +902,4 @@ void CmdControl500(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notif
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

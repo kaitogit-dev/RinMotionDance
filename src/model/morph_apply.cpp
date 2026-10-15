@@ -52,9 +52,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // D3DXQuaternionMultiply(out, a, b): out = a * b (Hamilton product).
@@ -356,4 +356,4 @@ void ModelApplyMorphs(unsigned char* m) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

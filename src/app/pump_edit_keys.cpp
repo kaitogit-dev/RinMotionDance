@@ -5,13 +5,13 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 #include "pump_input.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -392,4 +392,4 @@ void PumpEscStop(MMDApp* app, bool focusNotInPanelEdit) {
         FinishAviRecord(app);                                    // 0x464A00
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

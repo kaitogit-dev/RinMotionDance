@@ -14,10 +14,10 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // WM_COMMAND child dispatch (0x004620A0) - full port in wndproc_aux_windows.cpp.
 void DispatchSeparateWindowCommand(MMDApp* app, unsigned short id);  // VA 0x004620A0
@@ -218,4 +218,4 @@ void SaveFlagSubsystem(MMDApp* app) {
     RelayoutSidebarControls(app);                                                // 0x462090
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

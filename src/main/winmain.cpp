@@ -22,14 +22,14 @@
 #include <cwchar>
 #include <cstdio>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 #include "mme_host_api.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine, int nShowCmd) {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
 
     (void)hPrevInstance;
 
@@ -71,13 +71,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     app->MilliToSec() = 0.001f;         // [Block+0xA0B70] = flt_5318D0
 
     PeekMessageA(&msg, nullptr, 0, 0, 0);  // PM_NOREMOVE prime, original arg set
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     // DIAG(fps): once per second append loop/pump/sleep statistics to the
-    // file named by MIKUDANCESTUDIO_PUMP_STATS.  Purely observational -
+    // file named by RINMOTIONDANCE_PUMP_STATS.  Purely observational -
     // the loop below is untouched when the variable is unset.
     char pumpStatsPath[MAX_PATH]{};
     std::FILE* pumpStats = nullptr;
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_PUMP_STATS",
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_PUMP_STATS",
                                 pumpStatsPath, MAX_PATH) > 0) {
         pumpStats = std::fopen(pumpStatsPath, "a");
     }
@@ -89,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         if (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessageA(&msg);
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
             if (pumpStats != nullptr) ++statsMsgs;
 #endif
         } else {
@@ -110,7 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             // Sleep when cap enabled and positive.
             float sleepSec = 1.0f / app->FpsLimit() - delta;
             if (app->RecordingWindow() == nullptr && sleepSec > 0.0f) {
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
                 DWORD pre = timeGetTime();
 #endif
                 Sleep(static_cast<DWORD>(sleepSec * 1000.0f));
@@ -122,7 +122,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 nowHigh = static_cast<std::uint32_t>(addMs >> 32);
                 nowLow += static_cast<std::uint32_t>(addMs);
                 app->DeltaTime() = sleepSec + app->DeltaTime();
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
                 if (pumpStats != nullptr) statsSleepMs += timeGetTime() - pre;
 #endif
             }
@@ -131,11 +131,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             timeLow = nowLow;
             timeHigh = nowHigh;
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
             DWORD pumpT0 = pumpStats != nullptr ? timeGetTime() : 0;
 #endif
             FrameDriver(g_Block);                            // 0x46B090
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
             if (pumpStats != nullptr) {
                 statsPumpMs += timeGetTime() - pumpT0;
                 ++statsPumps;
@@ -158,7 +158,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #endif
         }
     }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (pumpStats != nullptr) std::fclose(pumpStats);
 #endif
 

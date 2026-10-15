@@ -33,15 +33,15 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 #include <cstdio>
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 #include "ui_controls.inc"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 static int EvalPos(const ui::PosExpr& e, int sidebar) {
     switch (e.kind) {
@@ -59,12 +59,12 @@ static unsigned char* NewZeroed(std::size_t bytes) {
     return p;
 }
 
-// Porting-era trace under MIKUDANCESTUDIO_PMM_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call site
+// Porting-era trace under RINMOTIONDANCE_PMM_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call site
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 static void TraceInitialAccessoryTrack(const MMDApp& app) {
-    const char* directory = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* directory = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (directory == nullptr || directory[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -87,11 +87,11 @@ static bool InitTimelineAudio(MMDApp* app, HWND hwnd, HDC timeline,
     audio->englishUI = english ? 1 : 0;
     audio->mainWindow = hwnd;
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     // Debug escape hatch: MSVC ASAN's CreateThread wrapper crashes the
     // DSOUND worker thread that DirectSoundCreate spawns (null read inside
     // GetDeviceID), so sanitizer builds can run without timeline audio.
-    if (std::getenv("MIKUDANCESTUDIO_SKIP_DSOUND") != nullptr)
+    if (std::getenv("RINMOTIONDANCE_SKIP_DSOUND") != nullptr)
         return false;
 #endif
 
@@ -451,8 +451,8 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
         s.ObjectSlot(i) = nullptr;                              // 0x9DD70[i]
     }
     TraceInitialAccessoryTrack(s);
-#ifdef MIKUDANCESTUDIO_DIAG
-    if (std::getenv("MIKUDANCESTUDIO_PMM_GUARD_ACCESSORY_TRACKS") != nullptr) {
+#ifdef RINMOTIONDANCE_DIAG
+    if (std::getenv("RINMOTIONDANCE_PMM_GUARD_ACCESSORY_TRACKS") != nullptr) {
         SYSTEM_INFO systemInfo{};
         GetSystemInfo(&systemInfo);
         const std::uintptr_t address = reinterpret_cast<std::uintptr_t>(
@@ -722,10 +722,10 @@ void RefillBoneRegisterCombo(MMDApp* app, int slot) {
         if (model != nullptr) {
             const std::int32_t boneCount =
                 *reinterpret_cast<std::int32_t*>(model + 11652);
-            mikudancestudio::mdl::BoneRecord* bones =
-                mikudancestudio::mdl::Bones(model);
+            rinmotiondance::mdl::BoneRecord* bones =
+                rinmotiondance::mdl::Bones(model);
             for (std::int32_t i = 0; i < boneCount; ++i) {       // 0x4100B1
-                mikudancestudio::mdl::BoneRecord* bone = &bones[i];
+                rinmotiondance::mdl::BoneRecord* bone = &bones[i];
                 const mdl::BoneType type = bone->type;
                 if (type < mdl::BoneType::InertTip ||
                     type == mdl::BoneType::FixedAxis) {
@@ -742,4 +742,4 @@ void RefillBoneRegisterCombo(MMDApp* app, int slot) {
     PostLanguageSweep2(app);                                     // 0x410132
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

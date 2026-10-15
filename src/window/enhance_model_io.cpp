@@ -28,14 +28,14 @@
 #include <share.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 constexpr UINT kD3dxDefault = 0xFFFFFFFFu;
@@ -878,4 +878,4 @@ void ReloadTextureCache(void* rendererArg) {
 // VA 0x004629D0 - fullscreen enter/restore window manager; the real body
 // now lives in src/app/avi_record_start.cpp (declared in ported_funcs.hpp).
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

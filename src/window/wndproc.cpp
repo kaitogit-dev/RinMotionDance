@@ -35,11 +35,11 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // WM_CLOSE 确认框的 JP 文案，SJIS 字节自 x64 实读回填（MainWndProc
 // 0x7FF7CB4FBBF0 引用；x86 侧地址 0x531810/0x531794/0x531864 已弃用）：
@@ -257,4 +257,4 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -2,12 +2,12 @@
 #include <cstring>
 #include <vector>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio { void ModelInitDefaults(unsigned char*); }
+namespace rinmotiondance { void ModelInitDefaults(unsigned char*); }
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     std::vector<unsigned char> storage(mdl::kSize, 0);
     auto* bytes = storage.data();
     auto& model = *mdl::Mdl(bytes);

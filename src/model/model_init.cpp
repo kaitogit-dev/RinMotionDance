@@ -10,9 +10,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 void ModelInitMorphSlots(unsigned char* m);                  // 0x4A89B0
 
@@ -130,11 +130,11 @@ void ModelInitMorphSlots(unsigned char* m) {               // 0x4A89B0
             joint[sample * 3 + 2] = 0.0f;
         }
     }
-    mikudancestudio::mdl::Mdl(m)->lightDir[0] = -1.0f;
+    rinmotiondance::mdl::Mdl(m)->lightDir[0] = -1.0f;
     mdl::PoseTraceFlag(m) = 0;
-    mikudancestudio::mdl::Mdl(m)->lightDir[1] = 90.0f;
-    mikudancestudio::mdl::Mdl(m)->lightDir[2] = 10.0f;
+    rinmotiondance::mdl::Mdl(m)->lightDir[1] = 90.0f;
+    rinmotiondance::mdl::Mdl(m)->lightDir[2] = 10.0f;
     mdl::Mdl(m)->legIkXOffset = 1.0f;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

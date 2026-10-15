@@ -73,13 +73,13 @@
 #include <io.h>
 #include <sys/stat.h>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 // loader-tail helpers defined in src/app/late_ports.cpp (window-session
 // convention: local declarations for stubbed targets)
 void SelectionReeval(MMDApp* app);                   // 0x430510
@@ -338,9 +338,9 @@ int LoadVmdMotion(MMDApp* app, const wchar_t* fileName) {  // VA 0x00434B60
     const unsigned int boneKeyCount = count;
 
     // clear the allocation marks of all three key arrays
-    mikudancestudio::mdl::BoneKey* const bkeys = mikudancestudio::mdl::BoneKeys(model);
-    mikudancestudio::mdl::MorphKey* const mkeys = mikudancestudio::mdl::MorphKeys(model);
-    mikudancestudio::mdl::DisplayKey* const ikeys = mikudancestudio::mdl::DisplayKeys(model);
+    rinmotiondance::mdl::BoneKey* const bkeys = rinmotiondance::mdl::BoneKeys(model);
+    rinmotiondance::mdl::MorphKey* const mkeys = rinmotiondance::mdl::MorphKeys(model);
+    rinmotiondance::mdl::DisplayKey* const ikeys = rinmotiondance::mdl::DisplayKeys(model);
     for (int i = 0; i < static_cast<int>(mdl::kBoneKeyCapacity); ++i) bkeys[i].allocated = 0;
     for (int i = 0; i < 20000; ++i) mkeys[i].allocated = 0;
     for (int i = 0; i < 1000; ++i) ikeys[i].allocated = 0;
@@ -354,7 +354,7 @@ int LoadVmdMotion(MMDApp* app, const wchar_t* fileName) {  // VA 0x00434B60
     if (++ringIdx >= 30) ringIdx = 0;
     record.undoState[1] = ringIdx;
 
-    auto& undo = mikudancestudio::mdl::Mdl(model)->undoRings[0].slots[ringIdx];
+    auto& undo = rinmotiondance::mdl::Mdl(model)->undoRings[0].slots[ringIdx];
     undo.operation = 2;
     undo.dirty = 0;
     undo.frame = s.state.currentFrame;
@@ -365,19 +365,19 @@ int LoadVmdMotion(MMDApp* app, const wchar_t* fileName) {  // VA 0x00434B60
     // (boneIndex / trans / rotQuat / 物理标志)，源端等价于按
     // BoneRecord 类型化字段读取（x64 骨骼表 624 字节 stride 下
     // trans@+328、rotQuat@+340），物理标志取 model+12584[b]
-    auto* const snap = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
-        operator new(boneCnt * sizeof(mikudancestudio::mdl::BonePoseSnapshot)));
+    auto* const snap = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
+        operator new(boneCnt * sizeof(rinmotiondance::mdl::BonePoseSnapshot)));
     undo.bonePose = snap;
     std::memset(snap, 0,
                 static_cast<std::size_t>(boneCnt) *
-                    sizeof(mikudancestudio::mdl::BonePoseSnapshot));
+                    sizeof(rinmotiondance::mdl::BonePoseSnapshot));
     if (boneCnt > 0) {
-        mikudancestudio::mdl::BoneRecord* const bones =
-            mikudancestudio::mdl::Bones(model);
+        rinmotiondance::mdl::BoneRecord* const bones =
+            rinmotiondance::mdl::Bones(model);
         const unsigned char* const flags =
-            mikudancestudio::mdl::Mdl(model)->bonePhysicsState;
+            rinmotiondance::mdl::Mdl(model)->bonePhysicsState;
         for (int b = 0; b < boneCnt; ++b) {
-            mikudancestudio::mdl::BonePoseSnapshot& slot = snap[b];
+            rinmotiondance::mdl::BonePoseSnapshot& slot = snap[b];
             slot.boneIndex = b;
             std::memcpy(slot.position, bones[b].trans, sizeof slot.position);
             std::memcpy(slot.rotation, bones[b].rotQuat, sizeof slot.rotation);
@@ -511,4 +511,4 @@ void LoadVmdFile(const wchar_t* path) {
     LoadVmdMotion(g_Block, path);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

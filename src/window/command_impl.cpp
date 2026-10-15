@@ -29,11 +29,11 @@
 #include <cstring>
 #include <cwchar>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // 主窗口句柄（x64 app+0xA16C8）。文件内部使用；command_file_menu.cpp 另有
@@ -631,4 +631,4 @@ void CmdLoadAvi(MMDApp* app) {
     app->SceneModified() = 1;                   // 0x46B35A [0xA1B31]
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

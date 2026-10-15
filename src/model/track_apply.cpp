@@ -34,10 +34,10 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 constexpr float kWrap2p32 = 4294967296.0f;   // 0x52B9F0
@@ -157,4 +157,4 @@ void ApplyGravityTrack(MMDApp* app) {  // VA 0x00412330
 // Ported in src/window/accessory_paste.cpp (parallel-port winner: verbatim
 // prev-record copy in the between-keys branch, per 0x4131AC..0x413224).
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

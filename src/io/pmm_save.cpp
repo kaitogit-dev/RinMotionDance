@@ -116,20 +116,20 @@
 #include <cstdlib>
 #include <io.h>
 
-#include "mikudancestudio/charset_conv.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/charset_conv.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
 // Shared PMM IO constants (window-title format; the loader record readers
 // live there too).
 #include "pmm_io_common.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -1013,4 +1013,4 @@ void SaveSceneFile(MMDApp* app) {
     mme::NotifyPmmSaved(s);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

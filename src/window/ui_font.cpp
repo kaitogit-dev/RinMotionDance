@@ -26,9 +26,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-namespace mikudancestudio {
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+namespace rinmotiondance {
 
 void CreateUiFont(MMDApp* app, HWND hwnd) {
     auto& s = *app;
@@ -74,4 +74,4 @@ void ApplyUiFontToControl(MMDApp* app, HWND control, int id) {
                          TRUE);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

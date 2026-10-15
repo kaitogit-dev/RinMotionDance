@@ -8,10 +8,10 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 void ClearAccessoryRowSelection(MMDApp* app) {
@@ -138,4 +138,4 @@ void CloseDataFile(void* file) {
     audio->fileHandle = nullptr;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

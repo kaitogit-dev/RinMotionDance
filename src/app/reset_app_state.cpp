@@ -22,16 +22,16 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/scene_ownership.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/scene_ownership.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 void ReloadModels(MMDApp* app);   // VA 0x0042E640 (timeline_advance.cpp)
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // JP wide literals (byte-verified against the original .rdata):
 // 0x52B784 カメラ / 0x52D390 照明 / 0x52D398 セルフ影 / 0x52D3A4 重力
@@ -407,7 +407,7 @@ void ResetAppState(MMDApp* app) {
     CheckMenuItem(GetMenu(hwnd), 0xE9, 0u);
     {
         char title[0x100];
-        sprintf_s(title, 0x100, "MikuDanceStudio");
+        sprintf_s(title, 0x100, "RinMotionDance");
         SetWindowTextA(hwnd, title);
     }
     app->state.envFileName[0] = 0;
@@ -522,4 +522,4 @@ void ResetAppState(MMDApp* app) {
     InvalidateRect(hwnd, nullptr, FALSE);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

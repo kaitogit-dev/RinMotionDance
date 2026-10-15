@@ -4,9 +4,9 @@
 #include <cstdio>
 #include <memory>
 
-#include "mikudancestudio/d3d_wrapper.hpp"
-#include "mikudancestudio/physics_scene.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3d_wrapper.hpp"
+#include "rinmotiondance/physics_scene.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 int main() {
     HWND window = CreateWindowW(L"STATIC", L"Physics gizmo reset", WS_OVERLAPPED,
@@ -34,12 +34,12 @@ int main() {
         return 77;
     }
 
-    auto renderer = std::make_unique<mikudancestudio::D3DRenderer>();
+    auto renderer = std::make_unique<rinmotiondance::D3DRenderer>();
     renderer->device = device;
-    mikudancestudio::PhysicsScene scene{};
-    const bool built = mikudancestudio::SceneConstruct(&scene, renderer.get());
+    rinmotiondance::PhysicsScene scene{};
+    const bool built = rinmotiondance::SceneConstruct(&scene, renderer.get());
     const HRESULT reset = built ? device->Reset(&pp) : E_FAIL;
-    mikudancestudio::DisposePhysicsWorld(&scene);
+    rinmotiondance::DisposePhysicsWorld(&scene);
     device->Release();
     d3d->Release();
     DestroyWindow(window);

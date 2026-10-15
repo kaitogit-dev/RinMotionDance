@@ -7,12 +7,12 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // x64 0x7FF7CB482BB0 - the selection re-evaluation body, ported in
 // misc_dialogs.cpp as CurvePanelRepaint (same original as the x86
@@ -268,4 +268,4 @@ void SelectionReeval(MMDApp* app) {  // 0x430510 / x64 0x7FF7CB482BB0
     CurvePanelRepaint(app);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -63,10 +63,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/dshow_recorder.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/dshow_recorder.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // Defined in src/app/shutdown_cleanup.cpp (drain + release run).
 void TeardownDShowGraph(DShowRecorder* rec);
@@ -818,4 +818,4 @@ bool BuildRecordingGraph(DShowRecorder* rec, HWND hwnd, unsigned char english,
     return true;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

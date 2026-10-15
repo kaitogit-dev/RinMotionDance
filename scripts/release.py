@@ -20,7 +20,7 @@ def version():
 def package(build_dir, arch, output):
     release = build_dir / "Release"
     files = {
-        "MikuDanceStudio.exe": release / "MikuDanceStudio.exe",
+        "RinMotionDance.exe": release / "RinMotionDance.exe",
         "Data/MMDxShow.dll": release / "MMDxShow.dll",
         "LICENSE": ROOT / "LICENSE",
         "README.md": ROOT / "README.md",
@@ -33,13 +33,13 @@ def package(build_dir, arch, output):
             raise FileNotFoundError(source)
     # Refuse to label an x86 binary as x64 (or vice versa).
     expected = {"x86": 0x14C, "x64": 0x8664}[arch]
-    for name in ("MikuDanceStudio.exe", "Data/MMDxShow.dll"):
+    for name in ("RinMotionDance.exe", "Data/MMDxShow.dll"):
         data = files[name].read_bytes()
         offset = int.from_bytes(data[0x3C:0x40], "little")
         if data[offset:offset + 4] != b"PE\0\0" or int.from_bytes(data[offset + 4:offset + 6], "little") != expected:
             raise ValueError(f"Wrong PE architecture: {files[name]}")
     output.mkdir(parents=True, exist_ok=True)
-    stem = f"MikuDanceStudio-v{version()}-windows-{arch}"
+    stem = f"RinMotionDance-v{version()}-windows-{arch}"
     archive = output / f"{stem}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
         for name, source in files.items():

@@ -44,17 +44,17 @@
 #include <cstring>
 #include <cwchar>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
 #include "pump_input.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 #include "frame_state_dump.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -78,13 +78,13 @@ void AdvanceFrameRenderGate(MMDApp* app) {
         state = 0;
 }
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 // ---- A/B capture tooling (see frame_state_dump.hpp for the gate) ---------
 
 void TraceOperationInput(MMDApp* app, const char* phase) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_AB_TRACE_INPUT", directory, MAX_PATH);
+        "RINMOTIONDANCE_AB_TRACE_INPUT", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     const int state = app->LeftMouseButtonState();
@@ -100,9 +100,9 @@ void TraceOperationInput(MMDApp* app, const char* phase) {
     const unsigned slot = app->state.slotIdx;
     auto* model = app->ModelSlot(slot);
     if (model != nullptr) {
-        const int selected = mikudancestudio::mdl::Mdl(model)->selectedBone;
-        auto* bones = mikudancestudio::mdl::Bones(model);
-        const int count = static_cast<int>(mikudancestudio::mdl::Mdl(model)->boneCount);
+        const int selected = rinmotiondance::mdl::Mdl(model)->selectedBone;
+        auto* bones = rinmotiondance::mdl::Bones(model);
+        const int count = static_cast<int>(rinmotiondance::mdl::Mdl(model)->boneCount);
         if (bones != nullptr && selected >= 0 && selected < count)
             std::memcpy(quaternion, &bones[selected].rotQuat[0],
                         sizeof(quaternion));
@@ -120,7 +120,7 @@ void TraceOperationInput(MMDApp* app, const char* phase) {
 
 bool LineCaptureSwitchReady() {
     char stableCapture[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stableCapture,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_STABLE_CAPTURE", stableCapture,
                                 sizeof(stableCapture)) != 1 ||
         stableCapture[0] != '1') {
         return true;
@@ -128,7 +128,7 @@ bool LineCaptureSwitchReady() {
 
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return false;
 
@@ -162,7 +162,7 @@ bool WriteCaptureMarker(const char* path, const char* contents) {
 void ActivateRefreshedVbCapture() {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
 
@@ -178,7 +178,7 @@ void ActivateRefreshedVbCapture() {
 
 void HoldPresentCaptureFence() {
     char stableCapture[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stableCapture,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_STABLE_CAPTURE", stableCapture,
                                 sizeof(stableCapture)) != 1 ||
         stableCapture[0] != '1') {
         return;
@@ -186,7 +186,7 @@ void HoldPresentCaptureFence() {
 
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
 
@@ -211,7 +211,7 @@ void HoldPresentCaptureFence() {
         Sleep(1);
 }
 
-#endif  // MIKUDANCESTUDIO_DIAG
+#endif  // RINMOTIONDANCE_DIAG
 
 }  // namespace
 
@@ -339,13 +339,13 @@ void TimelineAdvance(MMDApp* app) {
 }
 
 void FrameDriver(MMDApp* app) {
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     // DIAGNOSTIC ONLY: append a tick per pass to prove liveness of the
     // frame driver in real-time runs (stderr is unavailable in the GUI
     // subsystem).
     static char tickPath[MAX_PATH]{};
     static bool tickInit = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_TRACE_TICKS", tickPath, sizeof tickPath) != 0;
+        "RINMOTIONDANCE_TRACE_TICKS", tickPath, sizeof tickPath) != 0;
     if (tickInit) {
         static LONG tickCount = 0;
         if (InterlockedIncrement(&tickCount) % 60 == 0) {
@@ -355,27 +355,27 @@ void FrameDriver(MMDApp* app) {
     }
 #endif
     AdvanceFrameRenderGate(app);
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     char freezePhysics[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_FREEZE_PHYSICS", freezePhysics,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_FREEZE_PHYSICS", freezePhysics,
                                 sizeof(freezePhysics)) == 1 &&
         freezePhysics[0] == '1') {
         app->state.accessoryEditDialogOpen = 1;
     }
     char requireLine[2]{};
     const bool requireLineEnabled =
-        GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_REQUIRE_LINE", requireLine,
+        GetEnvironmentVariableA("RINMOTIONDANCE_AB_REQUIRE_LINE", requireLine,
                                 sizeof(requireLine)) == 1 &&
         requireLine[0] == '1';
     char keepPhysics[2]{};
     const bool keepPhysicsEnabled =
-        GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_KEEP_PHYSICS", keepPhysics,
+        GetEnvironmentVariableA("RINMOTIONDANCE_AB_KEEP_PHYSICS", keepPhysics,
                                 sizeof(keepPhysics)) == 1 &&
         keepPhysics[0] == '1';
     static LONG lineModeRequested = 0;
 #endif
     DumpFrameEntryState(app);
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (requireLineEnabled && lineModeRequested != 0)
         DumpFrameEntryState(app, "frame_state_line.json");
 #endif
@@ -404,7 +404,7 @@ void FrameDriver(MMDApp* app) {
     ConsumeRightButtonDrag(app);
     ConsumeMiddleButtonPan(app);
     ConsumeKeyboardInput(app);
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     TraceOperationInput(app, "before");
 #endif
 
@@ -448,7 +448,7 @@ void FrameDriver(MMDApp* app) {
             break;
         }
     }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     TraceOperationInput(app, "after");
 #endif
 
@@ -481,7 +481,7 @@ void FrameDriver(MMDApp* app) {
     // the transient line counter for the next frame.
     DumpRequestedFrameState(app);
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     // Match ida_capture_original_vb.py: its one-shot breakpoint changes
     // these fields at the first camera sprite Unlock, after transforms and
     // sprite production but before the following FrameDriver cycle.
@@ -501,7 +501,7 @@ void FrameDriver(MMDApp* app) {
         }
         char stableCapture[2]{};
         if (GetEnvironmentVariableA(
-                "MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stableCapture,
+                "RINMOTIONDANCE_AB_STABLE_CAPTURE", stableCapture,
                 sizeof(stableCapture)) == 1 && stableCapture[0] == '1') {
             app->state.fpsOverlayElapsedSeconds = 0.0f;
             app->state.fpsOverlayFrameCount = 0;
@@ -557,9 +557,9 @@ void FrameDriver(MMDApp* app) {
 
     // ---- 8. reload path (0x47989D..0x4798CB) ----------------------------
     if (s.state.modelReloadPending != 0) {
-#ifdef MIKUDANCESTUDIO_DIAG
-        if (getenv("MIKUDANCESTUDIO_TRACE_REC")) {
-            FILE* tf = fopen(getenv("MIKUDANCESTUDIO_TRACE_REC"), "a");
+#ifdef RINMOTIONDANCE_DIAG
+        if (getenv("RINMOTIONDANCE_TRACE_REC")) {
+            FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");
             if (tf) { fputs("frame section8 reload path\n", tf); fclose(tf); }
         }
 #endif
@@ -631,7 +631,7 @@ void FrameDriver(MMDApp* app) {
             }
         }
     }
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
     if (presented && SUCCEEDED(hr)) {
         if (requireLineEnabled && lineModeRequested != 0)
             ActivateRefreshedVbCapture();
@@ -681,4 +681,4 @@ void FrameDriver(MMDApp* app) {
 
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

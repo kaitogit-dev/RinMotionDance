@@ -18,7 +18,7 @@
 
 /////////////// _EXPORT definition ///////////////
 // (plugin side) imports from MikuMikuDance.exe
-#if defined(MIKUDANCESTUDIO_MME_EMBEDDED)
+#if defined(RINMOTIONDANCE_MME_EMBEDDED)
 #define _EXPORT
 #else
 #define _EXPORT __declspec(dllimport)

@@ -22,21 +22,21 @@
 #include <cstring>
 #include <cmath>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
-// Porting-era trace under MIKUDANCESTUDIO_LIGHT_TRACE_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_LIGHT_TRACE_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // (including the cross-TU TraceSceneLightState) valid and inlines away to
 // nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void WriteLightTrace(MMDApp* app, const char* stage) {
-    const char* directory = std::getenv("MIKUDANCESTUDIO_LIGHT_TRACE_DIR");
+    const char* directory = std::getenv("RINMOTIONDANCE_LIGHT_TRACE_DIR");
     if (directory == nullptr || directory[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -359,4 +359,4 @@ void RegisterSelfShadowState(MMDApp* app, int frameValue) {
         app->state.lastRegisteredFrame = frame;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

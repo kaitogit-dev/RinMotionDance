@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
 
 int main(int argc, char** argv) {
     // The loader-failure test verifies that this marker is never reached.
@@ -11,8 +11,8 @@ int main(int argc, char** argv) {
         std::fputs("entered main", marker);
         std::fclose(marker);
     }
-    mikudancestudio::d3dx::D3DXMATRIXF a{}, b{}, product{};
-    auto& api = mikudancestudio::d3dx::Get();
+    rinmotiondance::d3dx::D3DXMATRIXF a{}, b{}, product{};
+    auto& api = rinmotiondance::d3dx::Get();
     api.translation(&a, 1, 2, 3);
     api.scaling(&b, 2, 3, 4);
     api.multiply(&product, &a, &b);

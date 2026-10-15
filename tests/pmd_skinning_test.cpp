@@ -9,7 +9,7 @@
 #endif
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     constexpr int count = 4099; // Uneven partition boundaries with four workers.
     constexpr float distance = 0.125f;
     auto model = std::make_unique<mdl::ModelRecord>();

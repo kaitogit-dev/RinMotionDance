@@ -9,11 +9,11 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 void PicBgOverlayRefresh(MMDApp* app);  // VA 0x00417130
 namespace {
 
@@ -263,4 +263,4 @@ void RefreshSeparateWindowViewport(MMDApp* app) {  // 0x4290F0..0x42976B
               0.625f, 0.9375f);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

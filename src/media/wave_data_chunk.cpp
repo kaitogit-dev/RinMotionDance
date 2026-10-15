@@ -1,8 +1,8 @@
-#include "mikudancestudio/wave_data_chunk.hpp"
+#include "rinmotiondance/wave_data_chunk.hpp"
 
 #include <climits>
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 bool ScanWaveDataChunk(std::FILE* stream, std::int32_t& size,
                        std::int32_t& offset) {

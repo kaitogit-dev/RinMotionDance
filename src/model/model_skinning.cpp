@@ -23,32 +23,32 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
-// Porting-era VB dump under MIKUDANCESTUDIO_VB_DUMP_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub below keeps the call
+// Porting-era VB dump under RINMOTIONDANCE_VB_DUMP_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub below keeps the call
 // site valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 bool ModelVbCaptureReady(char directory[MAX_PATH]) {
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_VB_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_VB_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return false;
 
     char stable[2]{};
-    if (GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_STABLE_CAPTURE", stable,
+    if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_STABLE_CAPTURE", stable,
                                 sizeof(stable)) != 1 || stable[0] != '1')
         return true;
 
     char requireLine[2]{};
     const bool refreshed =
-        GetEnvironmentVariableA("MIKUDANCESTUDIO_AB_REQUIRE_LINE", requireLine,
+        GetEnvironmentVariableA("RINMOTIONDANCE_AB_REQUIRE_LINE", requireLine,
                                 sizeof(requireLine)) == 1 &&
         requireLine[0] == '1';
     char gate[MAX_PATH]{};
@@ -562,12 +562,12 @@ void ApplyPmdVertexMorphs(unsigned char* model) {
         vertex.position[2] = entry.offset[2];
     }
 
-    mikudancestudio::mdl::MorphRecord* morphs = mikudancestudio::mdl::Morphs(model);
+    rinmotiondance::mdl::MorphRecord* morphs = rinmotiondance::mdl::Morphs(model);
     const int morphCount = record.morphCount;
     if (morphs == nullptr || morphCount <= 1)
         return;
     for (int i = 1; i < morphCount; ++i) {
-        mikudancestudio::mdl::MorphRecord* morph = &morphs[i];
+        rinmotiondance::mdl::MorphRecord* morph = &morphs[i];
         const float weight = morph->value;
         if (weight == 0.0f)
             continue;
@@ -592,7 +592,7 @@ float PmdEdgeDistance(MMDApp* app, unsigned char* model,
     const int boneCount = record.boneCount;
     float modelPoint[3]{};
     if (bones != nullptr && boneCount > 0) {
-        mikudancestudio::mdl::BoneRecord* bone = &bones[(boneCount > 1 ? 1 : 0)];
+        rinmotiondance::mdl::BoneRecord* bone = &bones[(boneCount > 1 ? 1 : 0)];
         const float bind[3] = {bone->position[0], bone->position[1],
                                bone->position[2]};
         TransformPosition(modelPoint, bind,
@@ -850,4 +850,4 @@ void UpdateModelVertexBuffers(MMDApp* app, unsigned char* model,
     edgeVb->Unlock();
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

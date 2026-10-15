@@ -7,13 +7,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 #include "pump_input.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 namespace {
 
@@ -372,4 +372,4 @@ void ConsumeKeyboardInput(MMDApp* app) {
     ConsumeKeyboardInput(app, input);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -91,13 +91,13 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 
 #include "keyframe_common.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 using kfa::Rd32;
@@ -124,7 +124,7 @@ void OverflowBox(unsigned char* m, int limit) {
     char text[256];
     // x64 sub_7FF7CB4E9390 @0x7FF7CB4E9D4B: language byte selects both the
     // format and the caption ("register frame" / フレーム登録).
-    if (mikudancestudio::mdl::Mdl(m)->physicsFlags != 0) {
+    if (rinmotiondance::mdl::Mdl(m)->physicsFlags != 0) {
         sprintf_s(text, 0x100,
                   "You cannot regist over %d point\n"
                   "Please execute 'delete unused frame'", limit);
@@ -279,12 +279,12 @@ int ResetMorphKeyCursor(unsigned char* model) {
 void RegisterMorphKeyCurrent(unsigned char* model, int morph, int frameArg) {
     unsigned char* const m = model;
     if (m == nullptr || morph < 0 ||
-        (mikudancestudio::mdl::Mdl(m)->physicsMode != 2 && morph == 0) || mikudancestudio::mdl::Morphs(m) == nullptr)
+        (rinmotiondance::mdl::Mdl(m)->physicsMode != 2 && morph == 0) || rinmotiondance::mdl::Morphs(m) == nullptr)
         return;
 
     mdl::MorphKey* const keys = mdl::MorphKeys(m);
     const std::uint32_t frame = static_cast<std::uint32_t>(frameArg);
-    const float value = mikudancestudio::mdl::Morphs(m)[morph].value;
+    const float value = rinmotiondance::mdl::Morphs(m)[morph].value;
 
     const auto fill = [&](int index) {
         keys[index].frame = frame;
@@ -376,7 +376,7 @@ bool RegisterBoneKey(unsigned char* model, unsigned char* rec, int frameOffset,
         (btype == mdl::BoneType::UnderIk &&
          (bone.flags & mdl::kBoneFlagFixedAxis) == mdl::kBoneFlagFixedAxis)) {
         float boneAxis[3];
-        if (mikudancestudio::mdl::Mdl(m)->physicsMode == 2) {  // PMX
+        if (rinmotiondance::mdl::Mdl(m)->physicsMode == 2) {  // PMX
             std::memcpy(boneAxis, bone.axis, sizeof boneAxis);
         } else {
             const mdl::BoneRecord& tail = mdl::Bones(m)[bone.tailBone];
@@ -509,7 +509,7 @@ bool RegisterMirroredBoneKey(unsigned char* model, unsigned char* rec,
         (btype == mdl::BoneType::UnderIk &&
          (bone.flags & mdl::kBoneFlagFixedAxis) == mdl::kBoneFlagFixedAxis)) {
         float boneAxis[3];
-        if (mikudancestudio::mdl::Mdl(m)->physicsMode == 2) {
+        if (rinmotiondance::mdl::Mdl(m)->physicsMode == 2) {
             std::memcpy(boneAxis, bone.axis, sizeof boneAxis);
         } else {
             const mdl::BoneRecord& tail = mdl::Bones(m)[bone.tailBone];
@@ -630,7 +630,7 @@ bool RegisterMorphKeyFromRecord(unsigned char* model, const unsigned char* rec,
     int morphIdx = 0;
     const int morphCnt = static_cast<int>(mdl::Mdl(m)->morphCount);
     if (morphCnt <= 0) return true;
-    const mikudancestudio::mdl::MorphRecord* mrec = mikudancestudio::mdl::Morphs(m);
+    const rinmotiondance::mdl::MorphRecord* mrec = rinmotiondance::mdl::Morphs(m);
     while (std::strcmp(reinterpret_cast<const char*>(rec),
                        reinterpret_cast<const char*>(mrec)) != 0) {
         if (++morphIdx >= morphCnt) return true;
@@ -859,7 +859,7 @@ void RegisterDisplayKeyCurrent(unsigned char* model, int frameArg) {
 
     const auto fill = [&](int index) {
         mdl::DisplayKey& rec = keys[index];
-        rec.visible = mikudancestudio::mdl::Mdl(m)->loadComplete;
+        rec.visible = rinmotiondance::mdl::Mdl(m)->loadComplete;
         auto* const ik = mdl::IkStates(rec);
         mdl::IkChain* const chains = mdl::IkChains(m);
         for (std::uint32_t i = 0; i < mdl::Mdl(m)->ikChainCount; ++i)
@@ -973,4 +973,4 @@ int MarkKeyTrackRangeByName(unsigned char* model, std::uint32_t from,
     return 0;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

@@ -24,7 +24,7 @@ assert "phase E" in lines[1135], lines[1135]
 assert lines[1136].lstrip().startswith("for (int i = 0; i < boneCount"), lines[1136]
 assert "typedChannelPass = [&]" in lines[577], lines[577]
 assert lines[1224].rstrip() == "}", lines[1224]
-assert lines[1226].rstrip() == "}  // namespace mikudancestudio", lines[1226]
+assert lines[1226].rstrip() == "}  // namespace rinmotiondance", lines[1226]
 
 
 def sl(a, b):

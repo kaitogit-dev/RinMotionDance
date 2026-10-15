@@ -1,6 +1,6 @@
 #pragma once
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace mdl { struct ModelRecord; }
 
 // Consume a viewport click using the bone markers' projected client positions.

@@ -1,10 +1,10 @@
-#include "mikudancestudio/wave_data_chunk.hpp"
+#include "rinmotiondance/wave_data_chunk.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 
-using mikudancestudio::ScanWaveDataChunk;
+using rinmotiondance::ScanWaveDataChunk;
 
 void Check(bool condition) {
     if (!condition) std::abort();

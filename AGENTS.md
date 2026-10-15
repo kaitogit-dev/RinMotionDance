@@ -1,4 +1,4 @@
-# MikuDanceStudio
+# RinMotionDance
 
 MikuMikuDance v9.32 的行为级移植（C++ / Win32 / DirectX 9），准备开源。
 

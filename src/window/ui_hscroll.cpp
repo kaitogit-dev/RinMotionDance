@@ -80,13 +80,13 @@
 #include <cstdio>
 #include <cmath>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // One of the four bone-transform sliders (505/510/515/520).  The original
@@ -352,4 +352,4 @@ void HandleHScroll(LPARAM lParam, WPARAM wParam) {
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

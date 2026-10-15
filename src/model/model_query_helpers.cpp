@@ -36,12 +36,12 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // ---- tiny raw accessors (offsets are model/app byte offsets) ---------------
@@ -241,7 +241,7 @@ void ScrollDisplayBoneIntoView(MMDApp* app, int boneIdx) {
 
     int rows = -1;                                              // v5
     const unsigned tblCnt =
-        static_cast<unsigned char>(mikudancestudio::mdl::Mdl(m)->groupCount);                    // 0x41A2D4
+        static_cast<unsigned char>(rinmotiondance::mdl::Mdl(m)->groupCount);                    // 0x41A2D4
     if (tblCnt <= 1u)
         return;
     const mdl::DisplayGroup* const tbl = mdl::DisplayGroups(m);
@@ -250,7 +250,7 @@ void ScrollDisplayBoneIntoView(MMDApp* app, int boneIdx) {
         ++rows;                                                 // 0x41A2FC
         if (tbl[k].flags == 0)                                  // 0x41A2FF
             continue;
-        const unsigned char sep = mikudancestudio::mdl::Mdl(m)->facialFrameCount;                 // v7
+        const unsigned char sep = rinmotiondance::mdl::Mdl(m)->facialFrameCount;                 // v7
         if (sep != 0 && k == 2) {                               // 0x41A31A
             rows += sep;                                        // 0x41A32D
             continue;
@@ -406,7 +406,7 @@ void SelectNextDisplayBone(MMDApp* app) {
     const mdl::FrameGroup* const grps = mdl::RigidGroups(m);
     const mdl::DisplayGroup* const tbl = mdl::DisplayGroups(m);
     const int n = static_cast<int>(mdl::Mdl(m)->rigidBodyCount);
-    const int tblLast = static_cast<unsigned char>(mikudancestudio::mdl::Mdl(m)->groupCount) - 1;  // v17
+    const int tblLast = static_cast<unsigned char>(rinmotiondance::mdl::Mdl(m)->groupCount) - 1;  // v17
 
     if (cur == record->displayRootBone) {                        // 0x438F96
         for (int g = 1; g <= tblLast; ++g) {                    // 0x438FE8
@@ -678,4 +678,4 @@ void SelectNextEditTarget(MMDApp* app) {
     SelectDisplayObject(app, i);
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

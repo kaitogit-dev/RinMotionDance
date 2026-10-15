@@ -41,11 +41,11 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 // Free-if-non-null then null the slot - mirrors the exact asm block
@@ -169,4 +169,4 @@ void HandleLButtonUp(MMDApp* app) {
     app->PendingTimelineSelectionRow() = TimelineSelectionRow::None;
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

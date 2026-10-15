@@ -7,10 +7,10 @@
 
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 using QueryInterface = void* (__cdecl*)(std::uint32_t);
@@ -161,4 +161,4 @@ void UpdateFrameStereo(MMDApp* app) {  // 0x46DC75..0x46DC9F
         SetStereoConvergence(wrapper, -app->CameraDistance());
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

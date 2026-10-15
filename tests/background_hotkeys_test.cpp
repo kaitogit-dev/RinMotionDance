@@ -1,4 +1,4 @@
-#include "mikudancestudio/mmd_app.hpp"
+#include "rinmotiondance/mmd_app.hpp"
 #include "../src/app/pump_input.hpp"
 #include <cstdio>
 #include <cstring>
@@ -25,7 +25,7 @@ int main() {
     HWND window = CreateWindowExW(WS_EX_TOOLWINDOW, cls.lpszClassName, L"",
         WS_POPUP, 0, 0, 1, 1, nullptr, nullptr, cls.hInstance, nullptr);
     if (!window) return 1;
-    auto app = std::make_unique<mikudancestudio::MMDApp>();
+    auto app = std::make_unique<rinmotiondance::MMDApp>();
     std::memset(&app->state, 0, sizeof(app->state));
     app->MainWindow() = window;
     // Original x64 uses (focus == main || viewportActive), then the panel
@@ -42,10 +42,10 @@ int main() {
                 for (int active = 0; active != 2; ++active) {
                     for (int panelEdit = 0; panelEdit != 2; ++panelEdit) {
                         app->ViewportInputActive() = active;
-                        const mikudancestudio::KeyboardInputContext input{
+                        const rinmotiondance::KeyboardInputContext input{
                             focusMain ? window : nullptr, panelEdit == 0};
                         const int before = commands;
-                        mikudancestudio::ConsumeKeyboardInput(app.get(), input);
+                        rinmotiondance::ConsumeKeyboardInput(app.get(), input);
                         const int expected = (focusMain || active) && !panelEdit;
                         if (commands - before != expected) {
                             std::fprintf(stderr, "Background key gate mismatch: slot=%d focus=%d active=%d edit=%d\n",

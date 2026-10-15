@@ -38,7 +38,7 @@ int main() {
     device.caps.MaxPrimitiveCount = 100;
     unsigned indexedCalls = 0;
     auto draw = [&] {
-        return mikudancestudio::mme::DrawMeshSubsetWithFallback(
+        return rinmotiondance::mme::DrawMeshSubsetWithFallback(
             mesh, device, vertices, indices, 17,
             [&] { ++indexedCalls; return S_FALSE; });
     };

@@ -10,12 +10,12 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
 #include "vb_dump.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 namespace {
 
 struct SpriteVertex {
@@ -82,7 +82,7 @@ ClipPoint TransformPoint(const ClipPoint& p, const D3DMATRIX& m) {
 
 // pointOffset is a byte offset into the bone record (x64 original 0x7FF7CB4E4980:
 // [index*0x270 + boneTable + 0x13C] - record-scaled index, raw byte field offset).
-bool ProjectBonePoint(mikudancestudio::mdl::BoneRecord* bone, std::size_t pointOffset,
+bool ProjectBonePoint(rinmotiondance::mdl::BoneRecord* bone, std::size_t pointOffset,
                       const D3DMATRIX& world, const D3DMATRIX& view,
                       const D3DMATRIX& projection, const RECT& viewport,
                       int* screenX, int* screenY, float* clipW) {
@@ -271,7 +271,7 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                 app->SpriteOverlayPrimitiveCount();
             BoneOverlayResult boneResult{393939, 393939, 0.0f, 0,
                 app->LineOverlayPrimitiveCount()};
-            auto* bones = mikudancestudio::mdl::Bones(model);
+            auto* bones = rinmotiondance::mdl::Bones(model);
             const int boneCount = mdl::Mdl(model)->boneCount;
             const int selected = mdl::Mdl(model)->selectedBone;
             auto* active = mdl::Mdl(model)->boneSelection;
@@ -326,12 +326,12 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                     SUCCEEDED(lineVb->Lock(40 * incomingLineCount,
                         40 * (5000 - incomingLineCount),
                         reinterpret_cast<void**>(&lines), 0))) {
-                    const auto filtered = [&](mikudancestudio::mdl::BoneRecord* bone) -> bool {
+                    const auto filtered = [&](rinmotiondance::mdl::BoneRecord* bone) -> bool {
                         return (physMode == 1 && bone->hasRigidBody) ||
                             (physMode == 2 && bone->hasRigidBody &&
                              bone->physicsDisabled == 0);
                     };
-                    const auto endpoint = [&](mikudancestudio::mdl::BoneRecord* bone,
+                    const auto endpoint = [&](rinmotiondance::mdl::BoneRecord* bone,
                                               int* x, int* y) -> bool {
                         const std::uint16_t flags =
                             bone->flags;
@@ -352,7 +352,7 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
                         *y = bones[linked].selState2;
                         return true;
                     };
-                    const auto emitBone = [&](mikudancestudio::mdl::BoneRecord* bone,
+                    const auto emitBone = [&](rinmotiondance::mdl::BoneRecord* bone,
                                               D3DCOLOR color) -> bool {
                         int endX = 393939;
                         int endY = 393939;
@@ -764,4 +764,4 @@ void PrepareFrameSpriteOverlay(MMDApp* app) {
     vb->Unlock();
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

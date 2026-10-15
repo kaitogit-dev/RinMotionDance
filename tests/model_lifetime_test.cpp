@@ -1,15 +1,15 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/model.hpp"
+#include "rinmotiondance/model.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 void ModelInitDefaults(unsigned char*);
 void ModelDispose(unsigned char*);
 }
 
 int main() {
-    using namespace mikudancestudio;
+    using namespace rinmotiondance;
     auto* bytes = static_cast<unsigned char*>(::operator new(mdl::kSize));
     std::memset(bytes, 0, mdl::kSize);
     ModelInitDefaults(bytes);

@@ -5,9 +5,9 @@
 
 #include <cstring>
 #include <d3dx9.h>
-#include "mikudancestudio/d3dx_dyn.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
 
-namespace mikudancestudio::fx {
+namespace rinmotiondance::fx {
 
 inline ID3DXEffect* Effect(void* effect) {
     return static_cast<ID3DXEffect*>(effect);
@@ -60,4 +60,4 @@ inline HRESULT OnResetDevice(void* effect) {
     return Effect(effect)->OnResetDevice();
 }
 
-} // namespace mikudancestudio::fx
+} // namespace rinmotiondance::fx

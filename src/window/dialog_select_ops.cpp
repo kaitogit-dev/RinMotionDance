@@ -39,13 +39,13 @@
 #include <cstring>
 #include <new>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---- display refresh --------------------------------------------------------
 // VA 0x004250C0 - select-dialog value display refresh (thiscall app, hDlg);
@@ -515,11 +515,11 @@ void RefreshSelectNavDisplay(MMDApp* app, HWND hDlg) {  // VA 0x004250C0
     }
 
     unsigned char* model = s.SelectedModel();
-    mikudancestudio::mdl::BoneRecord* bones =
-        mikudancestudio::mdl::Bones(model);
+    rinmotiondance::mdl::BoneRecord* bones =
+        rinmotiondance::mdl::Bones(model);
     const mdl::BoneOrderEntry* const rec =
         SelRecord(app, sel);                             // 0xA0668 + 20*sel
-    mikudancestudio::mdl::BoneRecord* bone = &bones[rec->boneIndex];
+    rinmotiondance::mdl::BoneRecord* bone = &bones[rec->boneIndex];
 
     auto& api = d3dx::Get();
     d3dx::D3DXMATRIXF m{}, t{}, t2{};
@@ -527,9 +527,9 @@ void RefreshSelectNavDisplay(MMDApp* app, HWND hDlg) {  // VA 0x004250C0
         std::memcpy(&m, bone->matInit, sizeof m);
     } else if (kind >= 2) {                                      // 0x425286
         unsigned char* srcModel = s.ModelSlot(rec->linkedModel);
-        mikudancestudio::mdl::BoneRecord* srcBones =
-            mikudancestudio::mdl::Bones(srcModel);
-        mikudancestudio::mdl::BoneRecord& src =
+        rinmotiondance::mdl::BoneRecord* srcBones =
+            rinmotiondance::mdl::Bones(srcModel);
+        rinmotiondance::mdl::BoneRecord& src =
             srcBones[rec->linkedBone];
         std::memcpy(&m, &src.matInit[0], sizeof m);
         const float* const p = src.position;  // x64 0x13C (bone+316)
@@ -610,4 +610,4 @@ void RefreshSelectNavDisplay(MMDApp* app, HWND hDlg) {  // VA 0x004250C0
     EnableWindow(GetDlgItem(hDlg, panel::kOrderUpButton), TRUE);                   // 0x425685
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

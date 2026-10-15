@@ -182,15 +182,15 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // ---------------------------------------------------------------------------
 // App-state offsets used by this family, kept file-local (never
@@ -236,14 +236,14 @@ static void ReplaceClipboardBuffer(Record*& buffer, std::uint32_t count) {
     memset(buffer, 0, count * sizeof(Record));
 }
 
-// Porting-era trace under MIKUDANCESTUDIO_STATE_DUMP_DIR (CMake option
-// MIKUDANCESTUDIO_DIAG, default OFF); the OFF stub keeps the call sites
+// Porting-era trace under RINMOTIONDANCE_STATE_DUMP_DIR (CMake option
+// RINMOTIONDANCE_DIAG, default OFF); the OFF stub keeps the call sites
 // valid and inlines away to nothing.
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 static void TraceModelPaste(const char* format, ...) {
     char directory[MAX_PATH]{};
     const DWORD length = GetEnvironmentVariableA(
-        "MIKUDANCESTUDIO_STATE_DUMP_DIR", directory, MAX_PATH);
+        "RINMOTIONDANCE_STATE_DUMP_DIR", directory, MAX_PATH);
     if (length == 0 || length >= MAX_PATH)
         return;
     char path[MAX_PATH]{};
@@ -2029,7 +2029,7 @@ static void Cmd400_FramePaste(MMDApp* app, HWND hwnd) {
             record.undoState[0] = next >= 0x1E ? 0 : next;
             const std::int32_t cur = record.undoState[0];
             record.undoState[1] = cur;
-            auto& undo = mikudancestudio::mdl::Mdl(model)->undoRings[0].slots[cur];
+            auto& undo = rinmotiondance::mdl::Mdl(model)->undoRings[0].slots[cur];
             undo.operation = 2;
             undo.frame = frame;
             // bone-name snapshot buffer (+0x10 of the entry, 0x24-
@@ -2040,19 +2040,19 @@ static void Cmd400_FramePaste(MMDApp* app, HWND hwnd) {
                 undo.bonePose = nullptr;
             }
             const std::int32_t boneCount = mdl::Mdl(model)->boneCount;
-            auto* undoBone = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+            auto* undoBone = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
                 ::operator new(static_cast<std::uint32_t>(boneCount) *
-                       sizeof(mikudancestudio::mdl::BonePoseSnapshot)));
+                       sizeof(rinmotiondance::mdl::BonePoseSnapshot)));
             if (undoBone != nullptr) {
                 ConstructArrayElements(undoBone,
-                                       sizeof(mikudancestudio::mdl::BonePoseSnapshot),
+                                       sizeof(rinmotiondance::mdl::BonePoseSnapshot),
                                        static_cast<std::uint32_t>(boneCount),
                                        reinterpret_cast<void*>(&IdentityCtor));
             }
             undo.bonePose = undoBone;
             memset(undoBone, 0,
                    static_cast<std::uint32_t>(boneCount) *
-                       sizeof(mikudancestudio::mdl::BonePoseSnapshot));
+                       sizeof(rinmotiondance::mdl::BonePoseSnapshot));
             if (boneCount > 0) {
                 const mdl::ModelRecord& record = *mdl::Mdl(model);
                 const mdl::BoneRecord* bones = record.boneTable;
@@ -2317,7 +2317,7 @@ static void Cmd400_FrameReversePaste(MMDApp* app, HWND hwnd) {
     record.undoState[0] = next >= 0x1E ? 0 : next;
     const std::int32_t cur = record.undoState[0];
     record.undoState[1] = cur;
-    auto& undo = mikudancestudio::mdl::Mdl(model)->undoRings[0].slots[cur];
+    auto& undo = rinmotiondance::mdl::Mdl(model)->undoRings[0].slots[cur];
     undo.operation = 2;
     undo.frame = frame;
     void* p = undo.bonePose;
@@ -2326,18 +2326,18 @@ static void Cmd400_FrameReversePaste(MMDApp* app, HWND hwnd) {
         undo.bonePose = nullptr;
     }
     const std::int32_t boneCount = mdl::Mdl(model)->boneCount;
-    auto* undoBone = static_cast<mikudancestudio::mdl::BonePoseSnapshot*>(
+    auto* undoBone = static_cast<rinmotiondance::mdl::BonePoseSnapshot*>(
         ::operator new(static_cast<std::uint32_t>(boneCount) *
-                       sizeof(mikudancestudio::mdl::BonePoseSnapshot)));
+                       sizeof(rinmotiondance::mdl::BonePoseSnapshot)));
     if (undoBone != nullptr) {
         ConstructArrayElements(undoBone,
-                               sizeof(mikudancestudio::mdl::BonePoseSnapshot),
+                               sizeof(rinmotiondance::mdl::BonePoseSnapshot),
                                static_cast<std::uint32_t>(boneCount),
                                reinterpret_cast<void*>(&IdentityCtor));
     }
     undo.bonePose = undoBone;
     memset(undoBone, 0, static_cast<std::uint32_t>(boneCount) *
-                            sizeof(mikudancestudio::mdl::BonePoseSnapshot));
+                            sizeof(rinmotiondance::mdl::BonePoseSnapshot));
     if (boneCount > 0) {
         const mdl::BoneRecord* bones = record.boneTable;
         unsigned char* boneState = record.bonePhysicsState;
@@ -3153,4 +3153,4 @@ void CmdControl400(MMDApp* app, HWND hwnd, std::uint16_t id,
     }
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

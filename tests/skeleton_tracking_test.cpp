@@ -1,12 +1,12 @@
-#include "mikudancestudio/model_layout.hpp"
-#include "mikudancestudio/bone_layout.hpp"
-#include "mikudancestudio/skeleton_tracking.hpp"
+#include "rinmotiondance/model_layout.hpp"
+#include "rinmotiondance/bone_layout.hpp"
+#include "rinmotiondance/skeleton_tracking.hpp"
 
 #include <cstdio>
 #include <cstring>
 #include <memory>
 
-using namespace mikudancestudio::mdl;
+using namespace rinmotiondance::mdl;
 
 int main() {
     int failures = 0;

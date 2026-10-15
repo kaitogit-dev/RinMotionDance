@@ -2,7 +2,7 @@
 # Usage: powershell -File verify_bare.ps1 [-Cycles 3]
 param([int]$Cycles = 3)
 $ErrorActionPreference = "Continue"
-$rel = "C:\Users\jstzw\Documents\github\MikuDanceStudio\build-x64\build\Release"
+$rel = "C:\Users\jstzw\Documents\github\RinMotionDance\build-x64\build\Release"
 $drop = "$rel\drop_test.ps1"
 $results = @()
 for ($i = 1; $i -le $Cycles; $i++) {

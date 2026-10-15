@@ -71,13 +71,13 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mikudancestudio/globals.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/globals.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 // 既有孪生（定义见各自文件）。
 void ModelVertexHistoryPush(unsigned char* model, int samples);   // dialog_helpers.cpp, x86 0x4B75C0
@@ -583,4 +583,4 @@ void ManageKinectRecordGate(MMDApp* app, unsigned char selActive) {
     s.state.autoRepeat = 0;                       // x64 0xA1E14 / x86 0xA0D68
 }
 
-}  // namespace mikudancestudio
+}  // namespace rinmotiondance

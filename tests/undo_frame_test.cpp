@@ -1,15 +1,15 @@
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
 
-namespace mds = mikudancestudio;
-namespace mdl = mikudancestudio::mdl;
+namespace mds = rinmotiondance;
+namespace mdl = rinmotiondance::mdl;
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 // This regression covers empty-key undo/redo and caller frame restoration.
 // Physics mode changes require the Bullet-backed animation subsystem and are
 // outside this fixture. Never let an unexpected call silently pass the test.
@@ -17,7 +17,7 @@ void NotifyBonePhysicsMode(unsigned char*, int, unsigned char) {
     std::fputs("Unexpected physics mode change in empty-key undo test\n", stderr);
     std::abort();
 }
-} // namespace mikudancestudio
+} // namespace rinmotiondance
 
 static_assert(std::is_same_v<decltype(&mds::UndoModelEdit),
                             void (*)(unsigned char*, std::int32_t&)>);
