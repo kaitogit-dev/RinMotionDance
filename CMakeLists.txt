@@ -80,6 +80,7 @@ add_library(rinmotiondance_core STATIC
     src/render/device_reset.cpp
     src/app/avi_record_start.cpp
     src/app/record_readback.cpp
+    src/app/mp4_recorder.cpp
     src/app/dshow_record_graph.cpp
     src/model/model_init.cpp
     src/model/path_resolve.cpp
@@ -175,7 +176,11 @@ target_link_libraries(rinmotiondance_core PUBLIC
     shell32     
     d3d9        
     vfw32       
-    avifil32    
+    avifil32
+    mfplat
+    mfreadwrite
+    mfuuid
+    mf    
     ole32       
     strmiids    
     uuid        

@@ -362,9 +362,20 @@ INT_PTR __stdcall AviOutDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
             EnableWindow(GetDlgItem(hDlg, panel::kAvi3dVisionCheckbox), FALSE);
             EnableWindow(GetDlgItem(hDlg, panel::kAviLeftHalfCheckbox), FALSE);
         }
-        app->AviCodecSelection() = FillCodecCombo(
-            app->Recorder(), GetDlgItem(hDlg, panel::kAviCodecCombo),
-            app->EnglishUI());
+        HWND codec = GetDlgItem(hDlg, panel::kAviCodecCombo);
+        if (IsMp4OutputPath(app->AviOutputPath())) {
+            SendMessageA(codec, CB_RESETCONTENT, 0, 0);
+            SendMessageA(codec, CB_ADDSTRING, 0,
+                         reinterpret_cast<LPARAM>("MP4 (H.264 video)"));
+            SendMessageA(codec, CB_SETCURSEL, 0, 0);
+            EnableWindow(codec, FALSE);
+            CheckDlgButton(hDlg, panel::kAviWaveCheckbox, BST_UNCHECKED);
+            EnableWindow(GetDlgItem(hDlg, panel::kAviWaveCheckbox), FALSE);
+            app->AviCodecSelection() = 0;
+        } else {
+            app->AviCodecSelection() = FillCodecCombo(
+                app->Recorder(), codec, app->EnglishUI());
+        }
         EnableWindow(GetDlgItem(hDlg, panel::kAviSettingsButton), FALSE);
     } else if (msg == WM_COMMAND) {
         if (LOWORD(wParam) == 1) {  
@@ -1061,7 +1072,8 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
         memset(&ofn, 0, sizeof(ofn));
         ofn.lStructSize = sizeof(ofn);
         ofn.hwndOwner = MainHwnd(app);
-        ofn.lpstrFilter = L"AVI files(*.avi)\0*.avi\0";   
+        ofn.lpstrFilter =
+            L"AVI video (*.avi)\0*.avi\0MP4 video (*.mp4)\0*.mp4\0";   
         ofn.lpstrFile = path;
         if ((GetMenuState(GetMenu(MainHwnd(app)), 0x12D, 0) & 8) != 0) {
             ofn.lpstrInitialDir = app->DirUser();          
@@ -1071,15 +1083,22 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
         ofn.nFilterIndex = 1;
         ofn.nMaxFile = 0x100;
         ofn.Flags = (OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY);
-        ofn.lpstrDefExt = L"avi";
+        ofn.lpstrDefExt = nullptr;
         wchar_t fileTitle[0x100];
         ofn.nMaxFileTitle = 0x100;
         ofn.lpstrFileTitle = fileTitle;
         ofn.lpstrTitle = app->EnglishUI() != 0
-                             ? L"output AVI file"   
+                             ? L"export animation"   
                              : L"AVI\x51FA\x529B";  
         if (!GetSaveFileNameW(&ofn)) {
             break;
+        }
+        const wchar_t* filename = wcsrchr(path, L'\\');
+        filename = filename != nullptr ? filename + 1 : path;
+        if (wcsrchr(filename, L'.') == nullptr) {
+            if (wcscat_s(path, 0x100,
+                         ofn.nFilterIndex == 2 ? L".mp4" : L".avi") != 0)
+                break;
         }
         if ((GetMenuState(GetMenu(MainHwnd(app)), 0x12D, 0) & 8) != 0) {
             wchar_t* dir = ExtractDirFromPath(

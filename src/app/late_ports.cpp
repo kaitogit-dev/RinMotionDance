@@ -32,6 +32,7 @@ void FinishAviRecord(MMDApp* app) {
     s.state.frameStepPlayback = 0;           
     if (flag != nullptr)
         *flag = 1;                                          
+    FinishMp4Recording(static_cast<HWND>(s.state.hwnd));
     TeardownDShowGraph(s.Recorder());                       
     D3DRenderer* r = s.Renderer();
     if (r != nullptr) {

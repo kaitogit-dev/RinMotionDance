@@ -95,7 +95,7 @@ bool RecordingReadbackPass(MMDApp* app) {
         Sleep(atoi(pace));
 #endif
     DShowRecorder* recorder = s.Recorder();
-    IPushSource* push = recorder != nullptr
+    IPushSource* push = recorder != nullptr && !Mp4RecordingActive()
         ? static_cast<IPushSource*>(recorder->framePush)
         : nullptr;
     unsigned char* flagPtr = s.RecordingCompletionFlag();
@@ -210,7 +210,13 @@ bool RecordingReadbackPass(MMDApp* app) {
     if (++passCount <= 5 || passCount % 60 == 0)
         TraceRec("readback pass#%ld push=%p capW=%d capH=%d" "\n",
                  passCount, (void*)push, (int)capW, (int)capH);
-    if (push != nullptr) {                                       
+    if (Mp4RecordingActive()) {
+        if (!WriteMp4Frame(s.CaptureReadbackPixels(), capW, capH)) {
+            (*sysSlot)->UnlockRect();
+            FinishAviRecord(app);
+            return false;
+        }
+    } else if (push != nullptr) {
         push->StartStreaming(
             reinterpret_cast<DWORD_PTR>(s.CaptureReadbackPixels()));
     }

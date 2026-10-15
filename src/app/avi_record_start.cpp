@@ -184,6 +184,9 @@ bool StartRecordGraph(MMDApp* app, std::int32_t outW, std::int32_t outH) {
         (s.AviIncludeWave() != 0 && frameStart == 0)
             ? s.WavePath()
             : nullptr;
+    if (IsMp4OutputPath(s.AviOutputPath()))
+        return StartMp4Recording(static_cast<HWND>(s.state.hwnd),
+                                 s.AviOutputPath(), outW, outH, fpsF);
     DShowRecorder* recorder = s.Recorder();
     if (recorder == nullptr)
         return false;  

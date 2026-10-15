@@ -78,7 +78,13 @@ void NotifyBonePhysicsMode(unsigned char* model, int boneIdx,
                            unsigned char mode);  
 int SeekModelFrame(unsigned char* model, int frame,
                   int physicsMode);  
-void FinishAviRecord(MMDApp* app);  
+void FinishAviRecord(MMDApp* app);
+bool IsMp4OutputPath(const wchar_t* path);
+bool Mp4RecordingActive();
+bool StartMp4Recording(HWND owner, const wchar_t* path, std::int32_t width,
+                       std::int32_t height, float fps);
+bool WriteMp4Frame(const void* pixels, std::int32_t width, std::int32_t height);
+bool FinishMp4Recording(HWND owner);  
 void StopPlayback(MMDApp* app);  
 void CloseDataFile(void* file);                       
 void WaveCtxReset(void* obj);                         

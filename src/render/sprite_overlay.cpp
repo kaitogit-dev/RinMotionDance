@@ -314,7 +314,7 @@ void PrepareTransformGizmo(MMDApp* app, unsigned char* model,
     }
     if (maxPixels < 0.0001f)
         return;
-    const float radius = std::clamp(67.0f / maxPixels, 0.001f, 50.0f);
+    const float radius = std::clamp(105.0f / maxPixels, 0.001f, 80.0f);
     gizmo.app = app;
     gizmo.model = model;
     gizmo.bone = boneIndex;
@@ -344,8 +344,8 @@ void PrepareTransformGizmo(MMDApp* app, unsigned char* model,
                     const float tx = (x1 - cx) / length;
                     const float ty = (y1 - cy) / length;
                     const float side = segment == 1 ? 1.0f : -1.0f;
-                    x0 = x1 - tx * 12.0f + -ty * side * 6.0f;
-                    y0 = y1 - ty * 12.0f + tx * side * 6.0f;
+                    x0 = x1 - tx * 18.0f + -ty * side * 10.0f;
+                    y0 = y1 - ty * 18.0f + tx * side * 10.0f;
                 }
             } else {
                 const int u = (axis + 1) % 3;
@@ -398,13 +398,24 @@ void AppendTransformGizmo(LineVertex*& lines, std::uint32_t& count) {
             hovered == op || active == drag ? selected[axis] : colors[axis];
         for (int i = 0; i < gizmo.count; ++i) {
             const auto& segment = gizmo.segments[axis][i];
-            if (!segment.visible || count >= 4998)
+            if (!segment.visible || count >= 4995)
                 continue;
-            AppendLine(lines, static_cast<int>(segment.x0),
-                       static_cast<int>(segment.y0),
-                       static_cast<int>(segment.x1),
-                       static_cast<int>(segment.y1), color);
-            ++count;
+            const float dx = segment.x1 - segment.x0;
+            const float dy = segment.y1 - segment.y0;
+            const float length = std::hypot(dx, dy);
+            if (length < 0.25f)
+                continue;
+            const float nx = -dy / length;
+            const float ny = dx / length;
+            for (int stroke = -2; stroke <= 2; ++stroke) {
+                AppendLine(lines,
+                           static_cast<int>(std::round(segment.x0 + nx * stroke)),
+                           static_cast<int>(std::round(segment.y0 + ny * stroke)),
+                           static_cast<int>(std::round(segment.x1 + nx * stroke)),
+                           static_cast<int>(std::round(segment.y1 + ny * stroke)),
+                           color);
+                ++count;
+            }
         }
     }
 }
@@ -434,7 +445,7 @@ int PickTransformGizmo(MMDApp* app, int x, int y) {
          model->boneTable[gizmo.bone].type == mdl::BoneType::Ik));
     if (moving != gizmo.move)
         return 0;
-    float best = 64.0f;
+    float best = 144.0f;
     int bestAxis = -1;
     float bestX = 0.0f;
     float bestY = 0.0f;
