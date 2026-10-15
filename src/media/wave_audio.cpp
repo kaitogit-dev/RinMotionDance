@@ -115,10 +115,16 @@ bool WaveLoadFile(void* obj, const wchar_t* path,
     std::memset(&audio->format, 0, sizeof audio->format);           
 
     ResolveUserFilePath(paths, path);                                  
-    wcscpy_s(audio->path, 0x100, paths.resolvedPath);              
+    wcscpy_s(audio->path, 0x100, paths.resolvedPath);
+    const wchar_t* readablePath = ResolveAudioPlaybackFile(audio->path);
+    if (readablePath == nullptr) {
+        MessageBoxW(hwnd, L"Could not decode the Ogg audio file.",
+                    L"audio", MB_ICONERROR);
+        return false;
+    }
 
     FILE*& stream = audio->parseStream;
-    _wfopen_s(&stream, audio->path, L"rb");                         
+    _wfopen_s(&stream, readablePath, L"rb");                         
     if (stream == nullptr) {                                       
         MessageBoxA(hwnd,
                     english ? "Cannot find Wave file!!"
@@ -179,7 +185,7 @@ bool WaveLoadFile(void* obj, const wchar_t* path,
 
     audio->bufferBytes = static_cast<std::int32_t>(
         audio->format.nAvgBytesPerSec * 2);                         
-    HANDLE file = CreateFileW(audio->path,
+    HANDLE file = CreateFileW(readablePath,
                               GENERIC_READ, 1, nullptr,
                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                               nullptr);                            
@@ -279,7 +285,10 @@ bool WaveStartPlayback(void* obj) {
         CloseDataFile(audio);
 
     std::memset(&audio->format, 0, sizeof audio->format);            
-    _wfopen_s(&stream, audio->path, L"rb");                          
+    const wchar_t* readablePath = ResolveAudioPlaybackFile(audio->path);
+    if (readablePath == nullptr)
+        return false;
+    _wfopen_s(&stream, readablePath, L"rb");
     if (stream == nullptr)                                          
         return false;
     {
@@ -307,7 +316,7 @@ bool WaveStartPlayback(void* obj) {
     const std::int32_t bufBytes = static_cast<std::int32_t>(
         audio->format.nAvgBytesPerSec * 2);                         
     audio->bufferBytes = bufBytes;                                  
-    HANDLE file = CreateFileW(audio->path,
+    HANDLE file = CreateFileW(readablePath,
                               GENERIC_READ, 1, nullptr,
                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                               nullptr);                             

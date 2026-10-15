@@ -80,6 +80,7 @@ int SeekModelFrame(unsigned char* model, int frame,
                   int physicsMode);  
 void FinishAviRecord(MMDApp* app);
 bool IsMp4OutputPath(const wchar_t* path);
+const wchar_t* ResolveAudioPlaybackFile(const wchar_t* path);
 bool Mp4RecordingActive();
 bool StartMp4Recording(HWND owner, const wchar_t* path, std::int32_t width,
                        std::int32_t height, float fps);

@@ -280,7 +280,8 @@ void CmdOpenWave(MMDApp* app) {
     ofn.hwndOwner = app->FloatingWindow() != nullptr
                         ? app->FloatingWindow()
                         : MainHwnd(app);
-    ofn.lpstrFilter = L"Wave files(*.wav)\0*.wav\0";
+    ofn.lpstrFilter =
+        L"Audio files (*.wav;*.ogg)\0*.wav;*.ogg\0WAV (*.wav)\0*.wav\0Ogg Vorbis (*.ogg)\0*.ogg\0";
     ofn.lpstrFile = path;
     ofn.nMaxFile = kDialogPathLen;
     ofn.Flags = OFN_FILEMUSTEXIST;              
@@ -291,7 +292,7 @@ void CmdOpenWave(MMDApp* app) {
     ofn.nMaxFileTitle = kDialogPathLen;
     ofn.lpstrFileTitle = fileTitle;
     ofn.lpstrTitle = app->EnglishUI() != 0
-                         ? L"open WAVE File"
+                         ? L"open audio file"
                          : kTitleOpenWaveJp;
     if (!GetOpenFileNameW(&ofn)) {
         return;

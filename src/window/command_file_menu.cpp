@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
+#include <algorithm>
 #include <new>
 
 #include "rinmotiondance/mmd_app.hpp"
@@ -332,16 +334,47 @@ INT_PTR __stdcall BlinkRegisterDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
     return 0;
 }
 
+BOOL CALLBACK RenameVideoDialogStatic(HWND control, LPARAM) {
+    wchar_t label[96]{};
+    GetWindowTextW(control, label, static_cast<int>(_countof(label)));
+    if (wcscmp(label, L"AVI size") == 0)
+        SetWindowTextW(control, L"video size");
+    else if (wcscmp(label, L"WAVE") == 0 ||
+             wcscmp(label, L"WAVE出力") == 0)
+        SetWindowTextW(control, L"audio");
+    else if (wcscmp(label, L"3D-AVI") == 0)
+        SetWindowTextW(control, L"3D video");
+    else if (wcscmp(label, L"recording frame") == 0)
+        SetWindowTextW(control, L"frame range");
+    return TRUE;
+}
+
 INT_PTR __stdcall AviOutDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {  
     MMDApp* app = g_Block;
     char text[0x100];
     if (msg == WM_INITDIALOG) {
         MakeDialogTopmostIfRequested(app, hDlg);
+        SetWindowTextW(hDlg, L"video export");
+        SetDlgItemTextW(hDlg, IDOK, L"export");
+        SetDlgItemTextW(hDlg, panel::kAviWaveCheckbox, L"output audio");
+        EnumChildWindows(hDlg, RenameVideoDialogStatic, 0);
         const HWND main = MainHwnd(app);
-        GetWindowTextA(GetDlgItem(main, panel::kPlayStartFrameEdit), text, 8);
+        int start = 0;
+        int end = std::max(0, app->state.lastRegisteredFrame);
+        char frameText[32]{};
+        GetWindowTextA(GetDlgItem(main, panel::kPlayStartFrameEdit),
+                       frameText, sizeof(frameText));
+        if (frameText[0] != '\0')
+            start = std::max(0, atoi(frameText));
+        GetWindowTextA(GetDlgItem(main, panel::kPlayStopFrameEdit),
+                       frameText, sizeof(frameText));
+        if (frameText[0] != '\0')
+            end = std::max(end, atoi(frameText));
+        end = std::max(start, end);
+        sprintf_s(text, "%d", start);
         PrefillEdit(hDlg, panel::kAviStartFrameEdit, text);
-        GetWindowTextA(GetDlgItem(main, panel::kPlayStopFrameEdit), text, 8);
+        sprintf_s(text, "%d", end);
         PrefillEdit(hDlg, panel::kAviEndFrameEdit, text);
         PrefillEdit(hDlg, panel::kAviFpsEdit, "30");
         sprintf_s(text, 0x100, "%5d",
@@ -350,8 +383,8 @@ INT_PTR __stdcall AviOutDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
         sprintf_s(text, 0x100, "%5d",
                   app->RenderHeight());
         PrefillEdit(hDlg, panel::kAviHeightEdit, text);
-        EnableWindow(GetDlgItem(hDlg, panel::kAviWidthEdit), FALSE);
-        EnableWindow(GetDlgItem(hDlg, panel::kAviHeightEdit), FALSE);
+        EnableWindow(GetDlgItem(hDlg, panel::kAviWidthEdit), TRUE);
+        EnableWindow(GetDlgItem(hDlg, panel::kAviHeightEdit), TRUE);
         if (app->state.waveEnabled != 0) {
             SendMessageA(GetDlgItem(hDlg, panel::kAviWaveCheckbox), BM_SETCHECK, 1, 0);
         } else {
@@ -379,6 +412,18 @@ INT_PTR __stdcall AviOutDlgProc(HWND hDlg, UINT msg, WPARAM wParam,
         EnableWindow(GetDlgItem(hDlg, panel::kAviSettingsButton), FALSE);
     } else if (msg == WM_COMMAND) {
         if (LOWORD(wParam) == 1) {  
+            const int width = ReadIntFromEdit(hDlg, panel::kAviWidthEdit);
+            const int height = ReadIntFromEdit(hDlg, panel::kAviHeightEdit);
+            if (width < 16 || height < 16 || width > 8192 || height > 8192 ||
+                (IsMp4OutputPath(app->AviOutputPath()) &&
+                 ((width & 1) != 0 || (height & 1) != 0))) {
+                MessageBoxW(hDlg,
+                    L"Enter a width and height between 16 and 8192. MP4 requires even dimensions.",
+                    L"video export", MB_ICONWARNING);
+                return 0;
+            }
+            app->RenderWidth() = width;
+            app->RenderHeight() = height;
             app->AviRecordStartFrame() =
                 ReadIntFromEdit(hDlg, panel::kAviStartFrameEdit);
             app->AviRecordEndFrame() =
@@ -1111,7 +1156,7 @@ void CmdFileMenu(MMDApp* app, HWND hwnd, std::uint16_t id, std::uint16_t notify)
             static_cast<HINSTANCE>(app->HInstance()),
             MAKEINTRESOURCEA(app->EnglishUI() != 0 ? 0x28E : 0x260),
             MainHwnd(app), AviOutDlgProc, 0);
-        if (r == 2) {  
+        if (r != 1) {
             break;
         }
         if (app->AviStereoOutput() != 0) {

@@ -50,6 +50,7 @@ add_library(rinmotiondance_core STATIC
     src/window/frame_line_edit.cpp
     src/window/accessory_paste.cpp
     src/media/wave_audio.cpp
+    src/media/audio_ogg.cpp
     src/media/wave_data_chunk.cpp
     src/media/media_load.cpp
     src/window/command_impl.cpp

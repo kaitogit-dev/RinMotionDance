@@ -61,7 +61,24 @@ const wchar_t* JpControlText(int id) {
 void LocalizeUI(MMDApp* app) {
     auto& s = *app;
     const bool english = s.EnglishUI() != 0;                       
-    const bool modelMode = s.state.optflag[0] != 0;  
+    const bool modelMode = s.state.optflag[0] != 0;
+    HMENU menu = GetMenu(static_cast<HWND>(s.Hwnd()));
+    if (menu != nullptr) {
+        const struct { UINT id; const wchar_t* en; const wchar_t* jp; } labels[] = {
+            {223, L"render to video file(&V)", L"動画ファイルに書き出し(&V)"},
+            {206, L"load audio file(&W)", L"音声ファイルを読み込み(&W)"},
+            {284, L"play audio with frame(&F)", L"音声をフレームと同期再生(&F)"},
+            {297, L"not play audio file(&D)", L"音声を再生しない(&D)"}
+        };
+        for (const auto& label : labels) {
+            MENUITEMINFOW info{};
+            info.cbSize = sizeof(info);
+            info.fMask = MIIM_STRING;
+            info.dwTypeData = const_cast<LPWSTR>(english ? label.en : label.jp);
+            SetMenuItemInfoW(menu, label.id, FALSE, &info);
+        }
+        DrawMenuBar(static_cast<HWND>(s.Hwnd()));
+    }
 
     HWND combo433 = Dlg(app, 433);
     SendMessageA(combo433, CB_RESETCONTENT, 0, 0);

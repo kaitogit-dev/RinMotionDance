@@ -182,7 +182,7 @@ bool StartRecordGraph(MMDApp* app, std::int32_t outW, std::int32_t outH) {
     std::memcpy(&fpsF, &s.AviRecordFps(), sizeof fpsF);
     const wchar_t* wavPath =
         (s.AviIncludeWave() != 0 && frameStart == 0)
-            ? s.WavePath()
+            ? ResolveAudioPlaybackFile(s.WavePath())
             : nullptr;
     if (IsMp4OutputPath(s.AviOutputPath()))
         return StartMp4Recording(static_cast<HWND>(s.state.hwnd),
