@@ -12,21 +12,21 @@
 #include <cstdlib>
 #include <io.h>
 
-#include "mikudancestudio/accessory_layout.hpp"
-#include "mikudancestudio/d3dx_dyn.hpp"
-#include "mikudancestudio/global_key_layout.hpp"
-#include "mikudancestudio/mme_bridge.hpp"
-#include "mikudancestudio/mmd_app.hpp"
-#include "mikudancestudio/ported_funcs.hpp"
-#include "mikudancestudio/scene_ownership.hpp"
-#include "mikudancestudio/model.hpp"
-#include "mikudancestudio/panel_controls.hpp"
+#include "rinmotiondance/accessory_layout.hpp"
+#include "rinmotiondance/d3dx_dyn.hpp"
+#include "rinmotiondance/global_key_layout.hpp"
+#include "rinmotiondance/mme_bridge.hpp"
+#include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/scene_ownership.hpp"
+#include "rinmotiondance/model.hpp"
+#include "rinmotiondance/panel_controls.hpp"
 
 #include "pmm_io_common.hpp"
 
 #pragma comment(lib, "avifil32.lib")
 
-namespace mikudancestudio {
+namespace rinmotiondance {
 
 using namespace pmm_io;
 
@@ -82,11 +82,11 @@ struct PmmModelLoadWorkspace {
 };
 
 
-#ifdef MIKUDANCESTUDIO_DIAG
+#ifdef RINMOTIONDANCE_DIAG
 void LogPmmModelAttempt(const char* rawPath, const wchar_t* resolvedPath,
                         D3DRenderer* wrap, void* physics,
                         bool loaded) {
-    const char* dir = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* dir = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (dir == nullptr || dir[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -108,7 +108,7 @@ void LogPmmModelAttempt(const char* rawPath, const wchar_t* resolvedPath,
 
 void LogPmmModelStage(int fd, const char* stage, std::int32_t fileCount,
                       std::int32_t modelCount, const void* modelData) {
-    const char* dir = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* dir = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (dir == nullptr || dir[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -124,7 +124,7 @@ void LogPmmModelStage(int fd, const char* stage, std::int32_t fileCount,
 }
 
 void LogPmmHeapState(int fd, const char* stage) {
-    const char* dir = std::getenv("MIKUDANCESTUDIO_PMM_TRACE_DIR");
+    const char* dir = std::getenv("RINMOTIONDANCE_PMM_TRACE_DIR");
     if (dir == nullptr || dir[0] == '\0')
         return;
     char path[MAX_PATH];
@@ -990,9 +990,9 @@ static bool LoadSceneV2_ModelBlock(PmmV2LoadContext& ctx, int fd,
                 if (!skipFrom4) Rd(fd, &workspace.boneGroupCount, 1);         
             } else {
                 Rd(fd, &workspace.boneGroupCount, 1);                         
-                workspace.boneGroupsMatch = workspace.boneGroupCount == mikudancestudio::mdl::Mdl(model)->groupCount ? 1 : 0; 
+                workspace.boneGroupsMatch = workspace.boneGroupCount == rinmotiondance::mdl::Mdl(model)->groupCount ? 1 : 0; 
                 LogPmmModelStage(fd, "model-marker", workspace.boneGroupCount,
-                                 mikudancestudio::mdl::Mdl(model)->groupCount, model);
+                                 rinmotiondance::mdl::Mdl(model)->groupCount, model);
             }
 
             if (!doSkip) {
@@ -2170,8 +2170,8 @@ static void LoadSceneV2_ConfigBlock(PmmV2LoadContext& ctx, int fd) {
         Rd(fd, &s->state.gravityY, 4);
         Rd(fd, &s->state.gravityZ, 4);
         Rd(fd, &b, 1);                                          
-#ifdef MIKUDANCESTUDIO_DIAG
-        if (std::getenv("MIKUDANCESTUDIO_TRACE_NOISE_OFF") != nullptr)
+#ifdef RINMOTIONDANCE_DIAG
+        if (std::getenv("RINMOTIONDANCE_TRACE_NOISE_OFF") != nullptr)
             std::fprintf(stderr, "noise byte file offset=%ld value=%d\n",
                          static_cast<long>(_tell(fd)), static_cast<int>(b));
 #endif
@@ -2302,7 +2302,7 @@ static void LoadSceneV2_PhysicsTracksAndClose(PmmV2LoadContext& ctx, int fd,
                 unsigned char mslot = 0;
                 Rd(fd, &mslot, 1);                              
                 Rd(fd,
-                   &mikudancestudio::mdl::Mdl(slots[mslot])
+                   &rinmotiondance::mdl::Mdl(slots[mslot])
                         ->frameRegistrationSelection,
                    sizeof(std::int32_t));
             }
@@ -2560,7 +2560,7 @@ static void LoadSceneV2_SuccessTail(PmmV2LoadContext& ctx,
                                  keys[cur].next,
                                  reinterpret_cast<void*>(static_cast<
                                      std::uintptr_t>(keys[cur].frame)));
-                mikudancestudio::mdl::BoneRecord* bone = mdl::Bones(m) + b;
+                rinmotiondance::mdl::BoneRecord* bone = mdl::Bones(m) + b;
                 sprintf_s(text, 0x100, kJpChainFmtPhys,
                           mdl::Mdl(m)->name,
                           reinterpret_cast<char*>(bone),

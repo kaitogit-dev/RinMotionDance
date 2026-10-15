@@ -2,6 +2,8 @@ name: Windows release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -41,8 +43,13 @@ jobs:
           python-version: '3.12'
       - name: Validate tag and version
         env:
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-        run: python scripts/release.py --tag "$env:RELEASE_TAG"
+          RELEASE_TAG: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+        run: |
+          if ($env:RELEASE_TAG) {
+            python scripts/release.py --tag "$env:RELEASE_TAG"
+          } else {
+            python scripts/release.py
+          }
       - name: Install Conan
         run: python -m pip install conan==2.27.1
       - name: Build vendored Bullet and configure dependencies
@@ -88,16 +95,19 @@ jobs:
             out/ci/build/Testing/Temporary/*.log
           if-no-files-found: warn
       - name: Package
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: python scripts/release.py --tag "$env:RELEASE_TAG" --build-dir out/ci/build --arch ${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           name: release-${{ matrix.arch }}
           path: out/release/*
           if-no-files-found: error
 
   publish:
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     permissions:
