@@ -185,7 +185,7 @@ bool InitD3D(MMDApp* app, HWND hwnd, bool english, HMODULE hModule) {
     pp.Windowed = TRUE;
     pp.EnableAutoDepthStencil = TRUE;
     pp.AutoDepthStencilFormat = r->presentParameters.AutoDepthStencilFormat;
-    pp.PresentationInterval = 0x80000000;   
+    pp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;   
 
     DWORD quality = 0;
     auto msProbe = [&](D3DFORMAT fmt, DWORD type) {

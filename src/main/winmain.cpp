@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <timeapi.h>   
 #include <new>
+#include <algorithm>
+#include <cmath>
 
 #include <cstdint>
 #include <cwchar>
@@ -41,12 +43,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     if (!InitMainWindowAndD3D(g_Block, hInstance, nShowCmd))       
         return 0;
 
-    MSG msg;
-    std::uint32_t timeHigh = 0;         
-    DWORD timeLow = timeGetTime();      
-    app->MilliToSec() = 0.001f;         
-
-    PeekMessageA(&msg, nullptr, 0, 0, 0);  
+    MSG msg{};
+    const std::uint64_t firstTick = GetTickCount64();
+    std::uint32_t timeHigh = static_cast<std::uint32_t>(firstTick >> 32);
+    DWORD timeLow = static_cast<DWORD>(firstTick);
+    app->MilliToSec() = 0.001f;
 #ifdef RINMOTIONDANCE_DIAG
     char pumpStatsPath[MAX_PATH]{};
     std::FILE* pumpStats = nullptr;
@@ -66,33 +67,58 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             if (pumpStats != nullptr) ++statsMsgs;
 #endif
         } else {
-            std::uint32_t nowLow = timeGetTime();           
-            std::uint32_t nowHigh = 0;                       
-            const std::int64_t lastTick =
-                (static_cast<std::int64_t>(timeHigh) << 32) | timeLow;
-            float delta = static_cast<float>(
-                static_cast<std::int64_t>(nowLow) - lastTick) * 0.001f;
-            app->DeltaTime() = delta;                        
-
-            float sleepSec = 1.0f / app->FpsLimit() - delta;
-            if (app->RecordingWindow() == nullptr && sleepSec > 0.0f) {
-#ifdef RINMOTIONDANCE_DIAG
-                DWORD pre = timeGetTime();
-#endif
-                Sleep(static_cast<DWORD>(sleepSec * 1000.0f));
-                std::uint64_t addMs = static_cast<std::uint64_t>(
-                    static_cast<std::int64_t>(sleepSec / 0.001f));
-                nowHigh = static_cast<std::uint32_t>(addMs >> 32);
-                nowLow += static_cast<std::uint32_t>(addMs);
-                app->DeltaTime() = sleepSec + app->DeltaTime();
-#ifdef RINMOTIONDANCE_DIAG
-                if (pumpStats != nullptr) statsSleepMs += timeGetTime() - pre;
-#endif
+            const bool recording = app->RecordingWindow() != nullptr;
+            float fps = app->FpsLimit();
+            if (!std::isfinite(fps) || fps <= 0.0f)
+                fps = 60.0f;
+            fps = std::min(fps, 120.0f);
+            if (!recording) {
+                const HWND window = static_cast<HWND>(app->Hwnd());
+                const HWND foreground = GetForegroundWindow();
+                DWORD foregroundPid = 0;
+                if (foreground != nullptr)
+                    GetWindowThreadProcessId(foreground, &foregroundPid);
+                const bool interacting =
+                    (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+                if (window != nullptr && IsIconic(window))
+                    fps = std::min(fps, 4.0f);
+                else if (foregroundPid != GetCurrentProcessId())
+                    fps = std::min(fps, 12.0f);
+                else if (app->PlaybackActive() == 0 && !interacting)
+                    fps = std::min(fps, 24.0f);
             }
-            app->TimeNowLow() = nowLow;                      
-            app->TimeNowHigh() = nowHigh;                    
-            timeLow = nowLow;
-            timeHigh = nowHigh;
+
+            const std::uint64_t lastTick =
+                (static_cast<std::uint64_t>(timeHigh) << 32) | timeLow;
+            std::uint64_t nowTick = GetTickCount64();
+            double delta = static_cast<double>(nowTick - lastTick) * 0.001;
+            const double framePeriod = 1.0 / fps;
+            if (!recording && delta < framePeriod) {
+#ifdef RINMOTIONDANCE_DIAG
+                const DWORD pre = timeGetTime();
+#endif
+                const DWORD waitMs = static_cast<DWORD>(
+                    std::clamp(std::ceil((framePeriod - delta) * 1000.0),
+                               1.0, 1000.0));
+                MsgWaitForMultipleObjectsEx(0, nullptr, waitMs,
+                                            QS_ALLINPUT, MWMO_INPUTAVAILABLE);
+#ifdef RINMOTIONDANCE_DIAG
+                if (pumpStats != nullptr)
+                    statsSleepMs += timeGetTime() - pre;
+#endif
+                nowTick = GetTickCount64();
+                delta = static_cast<double>(nowTick - lastTick) * 0.001;
+                if (delta < framePeriod)
+                    continue;
+            }
+            app->DeltaTime() = static_cast<float>(
+                std::clamp(delta, 0.0, 0.25));
+            app->TimeNowLow() = static_cast<std::uint32_t>(nowTick);
+            app->TimeNowHigh() = static_cast<std::uint32_t>(nowTick >> 32);
+            timeLow = app->TimeNowLow();
+            timeHigh = app->TimeNowHigh();
 
 #ifdef RINMOTIONDANCE_DIAG
             DWORD pumpT0 = pumpStats != nullptr ? timeGetTime() : 0;
