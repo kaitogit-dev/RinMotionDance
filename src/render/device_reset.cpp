@@ -50,7 +50,8 @@ void PostDeviceReset(MMDApp* app) {
     IDirect3DDevice9* device = r->device;
     if (device == nullptr)
         return;
-    device->Reset(&r->presentParameters);                          
+    if (FAILED(device->Reset(&r->presentParameters)))
+        return;                          
 
     mme::OnResetDevice(app);
 
@@ -72,9 +73,6 @@ void PostDeviceReset(MMDApp* app) {
         RefreshMainWindowViewport(app);                                           
     }
 
-    app->state.recentFile0[0] = 0;                                 
-    app->state.recentFile1[0] = 0;
-    app->state.recentFile2[0] = 0;
 }
 
 }  

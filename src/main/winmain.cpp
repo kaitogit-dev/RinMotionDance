@@ -40,8 +40,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         swprintf_s(app->EnvFileName(), 0x100, g_SourceFormat, L"", L"");
     }
 
-    if (!InitMainWindowAndD3D(g_Block, hInstance, nShowCmd))       
+    if (!InitMainWindowAndD3D(g_Block, hInstance, nShowCmd)) {
+        delete app;
+        g_Block = nullptr;
         return 0;
+    }
 
     MSG msg{};
     const std::uint64_t firstTick = GetTickCount64();
@@ -81,13 +84,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 const bool interacting =
                     (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0 ||
                     (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 ||
-                    (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+                    (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_UP) & 0x8000) != 0 ||
+                    (GetAsyncKeyState(VK_DOWN) & 0x8000) != 0;
+                const bool playing = app->PlaybackActive() != 0;
                 if (window != nullptr && IsIconic(window))
-                    fps = std::min(fps, 4.0f);
+                    fps = std::min(fps, playing ? 15.0f : 1.0f);
                 else if (foregroundPid != GetCurrentProcessId())
-                    fps = std::min(fps, 12.0f);
-                else if (app->PlaybackActive() == 0 && !interacting)
-                    fps = std::min(fps, 24.0f);
+                    fps = std::min(fps, playing ? 24.0f : 3.0f);
+                else if (!playing && !interacting &&
+                         app->state.depthDeviceEnabled == 0)
+                    fps = std::min(fps, 8.0f);
             }
 
             const std::uint64_t lastTick =

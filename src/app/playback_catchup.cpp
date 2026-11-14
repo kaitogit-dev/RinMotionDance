@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include <cstdint>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -33,6 +34,8 @@ btDiscreteDynamicsWorld* PlayWorld(MMDApp* app) {
 }
 
 void StepWorld(btDiscreteDynamicsWorld* world) {
+    if (world == nullptr)
+        return;
 #ifdef RINMOTIONDANCE_DIAG
     if (getenv("RINMOTIONDANCE_TRACE_STEPS") != nullptr)
         fprintf(stderr, "CATCHUP step (cursor behind target)\n");
@@ -170,22 +173,26 @@ void PlaybackCatchup(MMDApp* app, unsigned char selActive) {
     auto& s = *app;
     const bool selSkip = selActive != 0;
 
-    if (s.state.aviStereoOutput == 0) {
-        const std::int32_t n = s.state.recordedFrameCount;
-        const std::int32_t frameA = s.AviRecordStartFrame();
-        const float fps = s.AviRecordFps();
-        const int shown = static_cast<int>(
-            static_cast<float>(n * 30) / fps + UnsigFlt(frameA));
-        wchar_t buf[0x100];
-        if (s.state.englishUI != 0) {
-            swprintf_s(buf, 0x100, L" %dframe recording(until %dframe)",
-                       shown, s.AviRecordEndFrame());
-        } else {
-            swprintf_s(buf, 0x100, L" %d", shown);
+    if (s.RecordingWindow() != nullptr) {
+        if (s.state.aviStereoOutput == 0) {
+            const float fps = s.AviRecordFps();
+            if (std::isfinite(fps) && fps > 0.0f) {
+                const std::int32_t n = s.state.recordedFrameCount;
+                const std::int32_t frameA = s.AviRecordStartFrame();
+                const int shown = static_cast<int>(
+                    static_cast<float>(n * 30) / fps + UnsigFlt(frameA));
+                wchar_t buf[0x100];
+                if (s.state.englishUI != 0) {
+                    swprintf_s(buf, 0x100, L" %dframe recording(until %dframe)",
+                               shown, s.AviRecordEndFrame());
+                } else {
+                    swprintf_s(buf, 0x100, L" %d", shown);
+                }
+                SetWindowTextW(s.RecordingWindow(), buf);
+            }
         }
-        SetWindowTextW(s.RecordingWindow(), buf);
-    }
-    s.state.recordedFrameCount += 1;                                     
+        ++s.state.recordedFrameCount;
+    }                                     
 
     if (s.state.messageSeen == 0)
         return;                                    

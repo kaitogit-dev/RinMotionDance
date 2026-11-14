@@ -65,6 +65,9 @@ void RefreshRequest(int area) {
         return;
     }
 
+    if (area < 0 || area >= 255)
+        return;
+
     auto* accessory = app->AccessorySlots()[area];
     if (accessory != nullptr && accessory->rowSelected == 0) {
         app->ClearGlobalTimelineTrackSelection();

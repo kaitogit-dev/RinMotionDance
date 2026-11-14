@@ -194,8 +194,17 @@ void TimelineAdvance(MMDApp* app) {
     }
 
     IDirect3DSurface9** backBuffer = &r->backbufferSurface;  
-    if (*backBuffer == nullptr)                                   
-        device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, backBuffer);
+    if (*backBuffer == nullptr) {
+        if (FAILED(device->GetBackBuffer(
+                0, 0, D3DBACKBUFFER_TYPE_MONO, backBuffer)) ||
+            *backBuffer == nullptr) {
+            surf->Release();
+            DestroyWindow(app->RecordingWindow());
+            app->RecordingWindow() = nullptr;
+            RefreshMainWindowViewport(app);
+            return;
+        }
+    }
 
     RECT rect;                                                    
     rect.left = 0;
@@ -234,7 +243,7 @@ void TimelineAdvance(MMDApp* app) {
     else if (wcsstr(path, L".hdr") != nullptr)
         format = 7;                                               
     else
-        format = reinterpret_cast<std::intptr_t>(surf);           
+        format = 3;           
     auto& d3dxApi = d3dx::Get();
     d3dxApi.saveSurfaceToFileW(path, static_cast<int>(format),
                                surf, nullptr, &rect);            
@@ -278,6 +287,17 @@ void FrameDriver(MMDApp* app) {
     }
 #endif
     AdvanceFrameRenderGate(app);
+    if (D3DRenderer* renderer = app->Renderer()) {
+        if (IDirect3DDevice9* device = renderer->device) {
+            const HRESULT status = device->TestCooperativeLevel();
+            if (status == D3DERR_DEVICENOTRESET) {
+                PostDeviceReset(app);
+                return;
+            }
+            if (FAILED(status))
+                return;
+        }
+    }
 #ifdef RINMOTIONDANCE_DIAG
     char freezePhysics[2]{};
     if (GetEnvironmentVariableA("RINMOTIONDANCE_AB_FREEZE_PHYSICS", freezePhysics,
@@ -472,7 +492,7 @@ void FrameDriver(MMDApp* app) {
     IDirect3DDevice9* device = nullptr;
     if (s.Renderer() != nullptr)
         device = s.Renderer()->device;                     
-    static HRESULT hr = D3D_OK;         
+    HRESULT hr = D3D_OK;         
     bool presented = false;
     if (device != nullptr) {
         if (s.state.messageSeen != 0 &&
@@ -498,18 +518,10 @@ void FrameDriver(MMDApp* app) {
                 hr = mme::Present(app, device, &r, &r,
                                   static_cast<HWND>(s.Hwnd()), nullptr);
             }
-            if (hr == D3DERR_DEVICELOST) {
-                while (s.Renderer()->device->TestCooperativeLevel() != D3DERR_DEVICENOTRESET) {
-                    Sleep(1);
-                    if (s.FullscreenMode() != 0) {
-                        MSG recovery;
-                        if (PeekMessageA(&recovery, nullptr, 0, 0, PM_REMOVE)) {
-                            TranslateMessage(&recovery);
-                            DispatchMessageA(&recovery);
-                        }
-                    }
-                }
-                PostDeviceReset(app);
+            if (hr == D3DERR_DEVICELOST ||
+                hr == D3DERR_DEVICENOTRESET) {
+                if (device->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
+                    PostDeviceReset(app);
             }
         }
     }

@@ -4,6 +4,7 @@
 #include <mmsystem.h>   
 #include <dsound.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -68,27 +69,28 @@ bool WaveFindDataChunk(void* obj, FILE* stream) {
 
 bool WaveStreamRead(void* obj, void* buf, int bytes) {
     auto* audio = static_cast<WaveAudioContext*>(obj);
-    const std::int32_t cursor = audio->readCursor;
-    const std::int32_t size = audio->dataSize;
-    std::int32_t toRead;                                   
-    if (cursor + bytes < size)
-        toRead = bytes;
-    else
-        toRead = size - cursor;
+    if (buf == nullptr || bytes < 0)
+        return false;
+    if (bytes == 0)
+        return true;
+
+    const std::int64_t remaining = std::max<std::int64_t>(
+        0, static_cast<std::int64_t>(audio->dataSize) -
+               static_cast<std::int64_t>(audio->readCursor));
+    const DWORD toRead = static_cast<DWORD>(
+        std::min<std::int64_t>(remaining, bytes));
     DWORD got = 0;
-    if (!ReadFile(audio->fileHandle, buf,
-                  static_cast<DWORD>(toRead), &got, nullptr))       
+    if (toRead != 0 && audio->fileHandle != nullptr &&
+        !ReadFile(audio->fileHandle, buf, toRead, &got, nullptr))
         got = 0;
-    audio->readCursor += static_cast<std::int32_t>(got);           
-    if (static_cast<std::int32_t>(got) >= bytes)
-        return true;                                               
-    const unsigned short bits = audio->format.wBitsPerSample;
-    if (bits == 16)                                                
-        memset(static_cast<unsigned char*>(buf) + got, 0,
-               static_cast<size_t>(bytes - got));
-    else if (bits == 8)                                            
-        memset(static_cast<unsigned char*>(buf) + got, 0x80,
-               static_cast<size_t>(bytes - got));
+    audio->readCursor += static_cast<std::int32_t>(got);
+    if (got == static_cast<DWORD>(bytes))
+        return true;
+
+    const unsigned char silence = audio->format.wBitsPerSample == 8
+        ? static_cast<unsigned char>(0x80) : 0;
+    std::memset(static_cast<unsigned char*>(buf) + got, silence,
+                static_cast<std::size_t>(bytes) - got);
     return false;
 }
 
