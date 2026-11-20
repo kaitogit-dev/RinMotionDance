@@ -41,14 +41,13 @@ int ControlLeft(HWND parent, int id) {
 }
 
 void DistributeControls(HWND parent, const EditorDock& dock,
-                        DockSection section, int anchorId, int first,
+                        DockSection section, int originalLeft, int first,
                         int last, int originalWidth, float maxScale) {
     const int sectionIndex = DockIndex(section);
     const int sectionWidth = dock.width[sectionIndex];
     if (sectionWidth <= 0)
         return;
 
-    const int originalLeft = ControlLeft(parent, anchorId);
     const int targetLeft = dock.left[sectionIndex] + 14;
     const float scale = std::min(maxScale, static_cast<float>(
         sectionWidth - 26) / static_cast<float>(originalWidth));
@@ -82,28 +81,29 @@ void LayoutEditorDock(MMDApp* app) {
         return;
 
     DistributeControls(parent, dock, DockSection::Model,
-                       435, 435, 445, 132, 1.65f);
+                       ControlLeft(parent, 435), 435, 445, 132, 1.65f);
     if (dock.camera) {
         DistributeControls(parent, dock, DockSection::Edit,
-                           451, 446, 454, 160, 1.55f);
+                           ControlLeft(parent, 451), 446, 454, 160, 1.55f);
         DistributeControls(parent, dock, DockSection::Secondary,
-                           455, 455, 470, 165, 1.6f);
+                           ControlLeft(parent, 455), 455, 470, 165, 1.6f);
         DistributeControls(parent, dock, DockSection::Shadow,
-                           560, 560, 567, 182, 1.6f);
+                           ControlLeft(parent, 560), 560, 567, 182, 1.6f);
         DistributeControls(parent, dock, DockSection::Accessory,
-                           471, 471, 489, 187, 1.65f);
+                           ControlLeft(parent, 471), 471, 489, 187, 1.65f);
     } else {
         DistributeControls(parent, dock, DockSection::Edit,
-                           490, 490, 503, 190, 1.65f);
+                           ControlLeft(parent, 490), 490, 503, 190, 1.65f);
         DistributeControls(parent, dock, DockSection::Secondary,
-                           505, 504, 529, 269, 1.75f);
+                           ControlLeft(parent, 505), 504, 529, 269, 1.75f);
     }
+    const int playbackOrigin = ControlLeft(parent, 402);
     DistributeControls(parent, dock, DockSection::Playback,
-                       402, 402, 414, 155, 1.6f);
+                       playbackOrigin, 402, 414, 155, 1.6f);
     DistributeControls(parent, dock, DockSection::Playback,
-                       402, 531, 531, 155, 1.6f);
+                       playbackOrigin, 531, 531, 155, 1.6f);
     DistributeControls(parent, dock, DockSection::Playback,
-                       402, 534, 535, 155, 1.6f);
+                       playbackOrigin, 534, 535, 155, 1.6f);
 }
 
 void PanelPaint(MMDApp* app);  
@@ -361,7 +361,6 @@ void RelayoutSidebarControls(MMDApp* app) {
     ToggleVisible(hwnd, 415, 426);
     ToggleVisible(hwnd, 558, 559);
     ToggleVisible(hwnd, 434, 434);
-    LayoutEditorDock(app);
     RefreshMainWindowViewport(app);
     LayoutViewportPanels(app);
 }
