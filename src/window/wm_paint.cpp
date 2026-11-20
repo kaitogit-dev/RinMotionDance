@@ -99,9 +99,9 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     text(interp, L"AUTO", 164, 58, 65, ui_style::Muted);
 
     const DockSection model = DockSection::Model;
-    text(model, L"SHOW", 30, 85, 50, ui_style::Muted);
-    text(model, L"ON", 31, 137, 39, ui_style::Muted);
-    text(model, L"OFF", 93, 137, 42, ui_style::Muted);
+    text(model, L"SHOW", 30, 136, 51, ui_style::Muted);
+    text(model, L"ON", 108, 136, 30, ui_style::Muted);
+    text(model, L"OFF", 162, 136, 36, ui_style::Muted);
 
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;

@@ -22,7 +22,7 @@ constexpr TextEntry kEnTexts[] = {
     {440, "shadow"}, {441, "Additive"}, {442, "OP"}, {438, "register"},
     {451, "reset"}, {446, "Perspective"}, {452, "register"}, {454, "+"},
     {453, "-"}, {467, "reset"}, {468, "register"}, {562, "off"},
-    {563, "mode1"}, {564, "mode2"}, {565, "register"}, {470, "+"},
+    {563, "1"}, {564, "2"}, {565, "register"}, {470, "+"},
     {469, "-"}, {489, "+"}, {488, "-"}, {472, "load"}, {473, "delete"},
     {477, "Additive"}, {487, "register"}, {402, "front"}, {403, "back"},
     {404, "top"}, {405, "left"}, {406, "right"}, {407, "bottom"},

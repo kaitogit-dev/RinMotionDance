@@ -71,14 +71,14 @@ void LayoutEditorDock(MMDApp* app) {
     put(model, 436, 10, 28, modelW - 20, 180);
     put(model, 435, 10, 56, halfModel, 23);
     put(model, 437, 19 + halfModel, 56, halfModel, 23);
-    put(model, 439, 10, 85, 15, 15);
-    put(model, 440, 92, 83, 49, 20);
-    put(model, 441, 148, 83, modelW - 158, 20);
+    put(model, 440, 10, 83, halfModel, 22);
+    put(model, 441, 19 + halfModel, 83, halfModel, 22);
     put(model, 443, 10, 109, modelW - 20, 160);
-    put(model, 444, 12, 139, 15, 15);
-    put(model, 445, 74, 139, 15, 15);
-    put(model, 438, modelW - 88, 131, 76, 25);
-    put(model, 442, modelW - 31, 108, 19, 19);
+    put(model, 439, 10, 138, 15, 15);
+    put(model, 444, 88, 138, 15, 15);
+    put(model, 445, 142, 138, 15, 15);
+    put(model, 438, modelW - 89, 3, 76, 20);
+    put(model, 442, modelW - 121, 3, 25, 20);
 
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;
