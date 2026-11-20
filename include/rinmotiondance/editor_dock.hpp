@@ -37,10 +37,14 @@ inline EditorDock ComputeEditorDock(MMDApp* app, int clientWidth,
         return dock;
 
     const std::array<int, 7> cameraWidths{
-        200, 190, 205, 225, 185, 280, 230
+        195, 190, app->state.optflag[1] != 0 ? 230 : 100,
+        app->state.optflag[2] != 0 ? 240 : 110,
+        app->state.optflag[6] != 0 ? 185 : 110,
+        app->state.optflag[3] != 0 ? 280 : 110, 245
     };
     const std::array<int, 7> modelWidths{
-        200, 205, 270, 485, 0, 0, 245
+        200, 215, app->state.optflag[4] != 0 ? 265 : 110,
+        app->state.optflag[5] != 0 ? 475 : 110, 0, 0, 250
     };
     const auto& desired = dock.camera ? cameraWidths : modelWidths;
     int total = 0;
