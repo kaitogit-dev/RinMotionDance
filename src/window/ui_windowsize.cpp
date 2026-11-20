@@ -83,14 +83,13 @@ void LayoutEditorDock(MMDApp* app) {
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;
         const int camW = w(camera);
-        const int camHalf = (camW - 30) / 2;
-        put(camera, 451, 10, 29, camHalf, 24);
-        put(camera, 446, 20 + camHalf, 29, camHalf, 24);
+        put(camera, 451, 10, 29, 80, 24);
+        put(camera, 446, 98, 29, camW - 110, 24);
         put(camera, 448, camW - 64, 59, 52, 20);
         put(camera, 447, 10, 79, camW - 20, 19);
-        put(camera, 449, 10, 116, camW - 101, 160);
-        put(camera, 450, 10, 137, camW - 101, 160);
-        put(camera, 452, camW - 86, 132, 74, 24);
+        put(camera, 449, 10, 116, camW - 20, 160);
+        put(camera, 450, 10, 137, camW - 20, 160);
+        put(camera, 452, camW - 104, 3, 79, 20);
         put(camera, 453, camW - 21, 4, 15, 15);
         put(camera, 454, camW - 21, 4, 15, 15);
 
