@@ -342,6 +342,12 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
         if (setAttribute != nullptr) {
             const BOOL dark = TRUE;
             setAttribute(hwnd, 20, &dark, sizeof(dark));
+            const COLORREF caption = RGB(21, 27, 35);
+            const COLORREF captionText = RGB(227, 234, 242);
+            const COLORREF border = RGB(52, 62, 73);
+            setAttribute(hwnd, 35, &caption, sizeof(caption));
+            setAttribute(hwnd, 36, &captionText, sizeof(captionText));
+            setAttribute(hwnd, 34, &border, sizeof(border));
         }
         FreeLibrary(dwm);
     }

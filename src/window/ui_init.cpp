@@ -131,15 +131,15 @@ void ClearTimelineAndCurveDCs(MMDApp* app) {
     HBRUSH whiteBrush = CreateSolidBrush(ui_style::SurfaceAlt);
     HGDIOBJ oldPen = SelectObject(timeline, whitePen);
     HGDIOBJ oldBrush = SelectObject(timeline, whiteBrush);
-    SelectObject(curve, whitePen);
-    SelectObject(curve, whiteBrush);
+    HGDIOBJ oldCurvePen = SelectObject(curve, GetStockObject(NULL_PEN));
+    HGDIOBJ oldCurveBrush = SelectObject(curve, GetStockObject(LTGRAY_BRUSH));
     Rectangle(timeline, 0, 0, backbufferWidth, 49);
     Rectangle(curve, 0, 0, 127, 127);
     SelectObject(timeline, oldPen);
-    SelectObject(curve, oldPen);
+    SelectObject(curve, oldCurvePen);
     DeleteObject(whitePen);
     SelectObject(timeline, oldBrush);
-    SelectObject(curve, oldBrush);
+    SelectObject(curve, oldCurveBrush);
     DeleteObject(whiteBrush);
 
     HPEN blackPen = CreatePen(PS_SOLID, 1, ui_style::Border);
