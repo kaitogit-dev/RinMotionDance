@@ -93,6 +93,9 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     }
 
     const auto drawHint = [&](int id, const wchar_t* label, int dx, int dy) {
+        const HWND control = GetDlgItem(hwnd, id);
+        if (control == nullptr || !IsWindowVisible(control))
+            return;
         const POINT p = DockControlPosition(hwnd, id);
         DrawDockLabel(dc, font, label, p.x + dx, p.y + dy,
                       92, ui_style::Muted);
