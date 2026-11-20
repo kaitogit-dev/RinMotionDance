@@ -24,18 +24,18 @@ const int kThemeFileOrder[] = {
 };
 
 const COLORREF kDefaultThemeColors[] = {
-    RGB(19, 23, 29), RGB(39, 46, 56), RGB(33, 41, 50),
-    RGB(27, 34, 42), RGB(26, 33, 42), RGB(26, 33, 42),
-    RGB(31, 38, 47), RGB(31, 38, 47), RGB(34, 43, 53),
-    RGB(34, 43, 53), RGB(34, 43, 53), RGB(34, 43, 53),
-    RGB(31, 40, 49), RGB(31, 40, 49), RGB(33, 41, 50),
-    RGB(33, 41, 50), RGB(27, 35, 44), RGB(27, 35, 44),
-    RGB(26, 33, 42), RGB(26, 33, 42), RGB(33, 41, 50),
-    RGB(33, 41, 50), RGB(23, 28, 36), RGB(37, 45, 55),
-    RGB(54, 63, 74), RGB(44, 53, 63), RGB(33, 40, 49),
-    RGB(43, 52, 62), RGB(31, 39, 49), RGB(60, 72, 85),
-    RGB(237, 190, 116), RGB(124, 92, 55), RGB(54, 65, 77),
-    RGB(169, 183, 198), RGB(110, 186, 202),
+    RGB(24, 26, 31), RGB(42, 46, 53), RGB(34, 37, 43),
+    RGB(27, 30, 35), RGB(27, 30, 35), RGB(27, 30, 35),
+    RGB(30, 34, 40), RGB(30, 34, 40), RGB(34, 38, 45),
+    RGB(34, 38, 45), RGB(36, 40, 46), RGB(36, 40, 46),
+    RGB(29, 33, 39), RGB(29, 33, 39), RGB(35, 39, 46),
+    RGB(35, 39, 46), RGB(29, 32, 38), RGB(29, 32, 38),
+    RGB(27, 30, 35), RGB(27, 30, 35), RGB(35, 39, 46),
+    RGB(35, 39, 46), RGB(27, 30, 36), RGB(39, 43, 50),
+    RGB(65, 71, 80), RGB(46, 51, 59), RGB(32, 36, 43),
+    RGB(39, 43, 51), RGB(34, 38, 44), RGB(62, 68, 77),
+    RGB(235, 187, 103), RGB(84, 72, 52), RGB(57, 63, 72),
+    RGB(168, 177, 187), RGB(115, 160, 171),
 };
 
 void StripNewline(wchar_t* s) {
@@ -116,9 +116,9 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
     wcscpy_s(app->DirMotion(), 0x3E8, L"UserFile\\Motion");
     wcscpy_s(app->DirUser(), 0x3E8, L"UserFile");
 
-    s.UiTextRed() = 225;
-    s.UiTextGreen() = 233;
-    s.UiTextBlue() = 241;
+    s.UiTextRed() = 210;
+    s.UiTextGreen() = 216;
+    s.UiTextBlue() = 223;
     for (int i = 0; i < static_cast<int>(_countof(kDefaultThemeColors)); ++i)
         s.ThemeColorAt(i) = kDefaultThemeColors[i];
 

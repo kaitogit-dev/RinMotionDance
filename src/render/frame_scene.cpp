@@ -366,7 +366,7 @@ void RenderFrameScene(MMDApp* app) {
     const D3DCOLOR clearColor =
         app->state.blackBackgroundEnabled != 0
             ? D3DCOLOR_XRGB(0, 0, 0)
-            : D3DCOLOR_XRGB(255, 255, 255);
+            : D3DCOLOR_XRGB(49, 52, 57);
     mme::ClearScene(app, device, clearFlags, clearColor, 1.0f, 0);
 
     app->state.renderPassCount = 1;

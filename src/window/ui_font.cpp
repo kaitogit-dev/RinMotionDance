@@ -21,7 +21,7 @@ void CreateUiFont(MMDApp* app, HWND hwnd) {
 
     const bool english = s.EnglishUI() != 0;                      
     HFONT font = CreateFontA(
-        -13, 0, 0, 0,
+        -14, 0, 0, 0,
         FW_NORMAL, FALSE, FALSE, FALSE,
         english ? DEFAULT_CHARSET : SHIFTJIS_CHARSET,
         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
@@ -32,18 +32,7 @@ void CreateUiFont(MMDApp* app, HWND hwnd) {
 }
 
 void ApplyUiFontToControl(MMDApp* app, HWND control, int id) {
-        switch (id) {
-        case 417:
-        case 418:
-        case 419:
-        case 532:
-        case 533:
-        case 558:
-        case 559:
-            return;
-        default:
-            break;
-        }
+        (void)id;
         if (control != nullptr)
             SendMessageA(control, WM_SETFONT,
                          reinterpret_cast<WPARAM>(app->state.hFontUI),

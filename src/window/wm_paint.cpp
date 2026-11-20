@@ -190,7 +190,7 @@ void HandleWindowPaint(MMDApp* app) {
     }
 
     if (app->FloatingWindow() == nullptr) {
-        HBRUSH blk = CreateSolidBrush(0);
+        HBRUSH blk = CreateSolidBrush(ui_style::Window);
         SelectObject(hdc, blk);
         const int top = app->state.hideTop;
         if (top <= rc.top + 25) {

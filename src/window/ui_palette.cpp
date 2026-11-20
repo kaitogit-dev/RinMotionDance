@@ -182,18 +182,18 @@ void HandlePaletteChanged2(HDC hdc) {
         if (app->EnglishUI() != 0) {                             
             if (playing) {
                 DrawGlyph(app, "Playing", hdc, 20, xBase + 10, hideTop - 22,
-                          0xFF, 0xFF, 0xFF, 1);                  
+                          215, 222, 230, 1);                  
             } else {
                 mdl::AccessoryRecord* acc =
                     app->AccessorySlot(app->SelectedAccessorySlot());
                 if (acc == nullptr) {
                     DrawGlyph(app, "Camera / Light / Accessory", hdc, 20,
-                              xBase + 10, hideTop - 22, 0xFF, 0xFF, 0xFF, 1);  
+                              xBase + 10, hideTop - 22, 215, 222, 230, 1);  
                 } else {
                     sprintf_s(buffer, 0x100, "Camera / Light / Accessory / %s",
                               acc->name);                        
                     DrawGlyph(app, buffer, hdc, 20, xBase + 10, hideTop - 22,
-                              0xFF, 0xFF, 0xFF, 1);              
+                              215, 222, 230, 1);              
                 }
             }
             DrawGlyph(app, "camera", hdc, 14, xBase + 90, hideBottom + 10, 228, 234, 240, 1);                               
@@ -202,17 +202,17 @@ void HandlePaletteChanged2(HDC hdc) {
         }
         if (playing) {
             DrawGlyph(app, kJpPlaying, hdc, 16, xBase + 10, hideTop - 20,
-                      0xFF, 0xFF, 0xFF, 1);                      
+                      215, 222, 230, 1);                      
         } else {
             mdl::AccessoryRecord* acc =
                 app->AccessorySlot(app->SelectedAccessorySlot());
             if (acc == nullptr) {
                 DrawGlyph(app, kJpCamLightAccessoryPanel, hdc, 16, xBase + 10, hideTop - 20,
-                          0xFF, 0xFF, 0xFF, 1);                  
+                          215, 222, 230, 1);                  
             } else {
                 sprintf_s(buffer, 0x100, kJpCamLightAccessoryPanelFmt, acc->name);    
                 DrawGlyph(app, buffer, hdc, 16, xBase + 10, hideTop - 20,
-                          0xFF, 0xFF, 0xFF, 1);                  
+                          215, 222, 230, 1);                  
             }
         }
         DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 72, hideBottom + 11, 228, 234, 240, 1);                                   
@@ -220,7 +220,7 @@ void HandlePaletteChanged2(HDC hdc) {
         if (app->EnglishUI() != 0) {
             if (playing) {
                 DrawGlyph(app, "Playing", hdc, 20, xBase + 10, hideTop - 22,
-                          0xFF, 0xFF, 0xFF, 1);                  
+                          215, 222, 230, 1);                  
             } else {
                 unsigned char* model = app->SelectedModel();
                 if (model != nullptr) {                          
@@ -236,7 +236,7 @@ void HandlePaletteChanged2(HDC hdc) {
                     }
                     const int width = DrawGlyph(app, buffer, hdc, 20,
                                                 xBase + 10, hideTop - 22,
-                                                0xFF, 0xFF, 0xFF, 1);  
+                                                215, 222, 230, 1);  
                     const std::int32_t traceTarget =
                         app->CameraParentModel();
                     const bool traceActive =
@@ -247,14 +247,14 @@ void HandlePaletteChanged2(HDC hdc) {
                         if (app->state.viewDirty != 0) {  
                             DrawGlyph(app, "camera bone trace mode (release trace button)",
                                       hdc, 16, xBase + width + 30, hideTop - 22,
-                                      0xFF, 0xFF, 0xFF, 1);      
+                                      215, 222, 230, 1);      
                             DrawGlyph(app, "camera bone trace mode (release trace button)",
                                       hdc, 16, xBase + width + 29, hideTop - 23,
                                       0xFF, 0x32, 0x32, 1);      
                         } else {
                             DrawGlyph(app, "camera bone trace mode",
                                       hdc, 16, xBase + width + 30, hideTop - 22,
-                                      0xFF, 0xFF, 0xFF, 1);      
+                                      215, 222, 230, 1);      
                         }
                     }
                 }
@@ -265,7 +265,7 @@ void HandlePaletteChanged2(HDC hdc) {
         }
         if (playing) {
             DrawGlyph(app, kJpPlaying, hdc, 20, xBase + 10, hideTop - 22,
-                      0xFF, 0xFF, 0xFF, 1);                      
+                      215, 222, 230, 1);                      
         } else {
             unsigned char* model = app->SelectedModel();
             if (model != nullptr) {                              
@@ -274,7 +274,7 @@ void HandlePaletteChanged2(HDC hdc) {
                 sprintf_s(buffer, 0x100, "%s", record.name);
                 const int width = DrawGlyph(app, buffer, hdc, 16,
                                             xBase + 10, hideTop - 20,
-                                            0xFF, 0xFF, 0xFF, 1);  
+                                            215, 222, 230, 1);  
                 const std::int32_t traceTarget = app->CameraParentModel();
                 const bool traceActive =
                     (app->state.followCameraEnabled != 0) &
@@ -283,12 +283,12 @@ void HandlePaletteChanged2(HDC hdc) {
                 if (traceActive) {
                     if (app->state.viewDirty != 0) {  
                         DrawGlyph(app, kJpCameraFollowModeHint, hdc, 16, xBase + width + 30,
-                                  hideTop - 20, 0xFF, 0xFF, 0xFF, 1);  
+                                  hideTop - 20, 215, 222, 230, 1);  
                         DrawGlyph(app, kJpCameraFollowModeHint, hdc, 16, xBase + width + 29,
                                   hideTop - 21, 0xFF, 0x32, 0x32, 1);  
                     } else {
                         DrawGlyph(app, kJpCameraFollowMode, hdc, 16, xBase + width + 30,
-                                  hideTop - 20, 0xFF, 0xFF, 0xFF, 1);  
+                                  hideTop - 20, 215, 222, 230, 1);  
                     }
                 }
             }
