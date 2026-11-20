@@ -9,6 +9,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 
@@ -44,6 +45,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             return 0;
 
         case WM_DESTROY: {
+            ui_style::ReleaseBrushes();
             WINDOWPLACEMENT wndpl;
             wndpl.length = sizeof(wndpl);
             GetWindowPlacement(hwnd, &wndpl);
@@ -106,6 +108,11 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             HandleWindowSize(app);                                
             s.WindowLayoutReady() = 1;
             return 0;
+
+        case WM_DRAWITEM:
+            if (ui_style::PaintButton(reinterpret_cast<const DRAWITEMSTRUCT*>(lParam)))
+                return TRUE;
+            return DefWindowProcA(hwnd, msg, wParam, lParam);
 
         case WM_PAINT:
             HandleWindowPaint(app);                               
@@ -181,9 +188,12 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     case WM_VSCROLL:
         HandleVScroll(lParam, wParam);                            
         return 0;
-    case 0x138:  
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX:
+    case WM_CTLCOLORBTN:
+    case WM_CTLCOLORSTATIC:
         return HandleCtlColor(reinterpret_cast<HWND>(lParam),
-                              reinterpret_cast<HDC>(wParam));  
+                              reinterpret_cast<HDC>(wParam), msg);
     case WM_MOUSEMOVE:
         HandleMouseMove(static_cast<std::uint32_t>(lParam),
                         HIWORD(lParam));                          

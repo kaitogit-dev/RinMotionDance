@@ -14,7 +14,7 @@ int DrawGlyph(MMDApp* app, const char* text, HDC hdc, int size, int x, int y,
     HGLOBAL mem = GlobalAlloc(GMEM_MOVEABLE  , 0x3C);
     auto* lf = static_cast<LOGFONTA*>(GlobalLock(mem));
     const bool english = app->EnglishUI() != 0;                   
-    strcpy_s(lf->lfFaceName, 0x20, english ? "Arial" : "MS PGothic");
+    strcpy_s(lf->lfFaceName, 0x20, english ? "Segoe UI" : "Yu Gothic UI");
     lf->lfWidth = 0;
     lf->lfEscapement = 0;
     lf->lfOrientation = 0;

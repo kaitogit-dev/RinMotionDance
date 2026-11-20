@@ -19,6 +19,7 @@
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_style.hpp"
 #include "ui_controls.inc"
 
 namespace rinmotiondance {
@@ -432,13 +433,23 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
     };
 
     for (const ui::ControlSpec& c : ui::kControls) {
+        const bool isButton = (c.wide && c.wcls != nullptr &&
+                               std::wcscmp(c.wcls, L"BUTTON") == 0) ||
+                              (!c.wide && c.acls != nullptr &&
+                               std::strcmp(c.acls, "BUTTON") == 0);
+        const DWORD buttonType = c.style & BS_TYPEMASK;
+        const DWORD style = isButton &&
+                            (buttonType == BS_PUSHBUTTON ||
+                             buttonType == BS_DEFPUSHBUTTON)
+            ? (c.style & ~static_cast<DWORD>(BS_TYPEMASK)) | BS_OWNERDRAW
+            : c.style;
         HWND control = c.wide
-            ? CreateWindowExW(c.ex, c.wcls, c.wtext, c.style,
+            ? CreateWindowExW(c.ex, c.wcls, c.wtext, style,
                               EvalPos(c.x, sidebar), EvalPos(c.y, sidebar),
                               c.w, c.h, hwnd,
                               reinterpret_cast<HMENU>(static_cast<INT_PTR>(c.id)),
                               hInst, nullptr)
-            : CreateWindowExA(c.ex, c.acls, c.atext, c.style,
+            : CreateWindowExA(c.ex, c.acls, c.atext, style,
                               EvalPos(c.x, sidebar), EvalPos(c.y, sidebar),
                               c.w, c.h, hwnd,
                               reinterpret_cast<HMENU>(static_cast<INT_PTR>(c.id)),
@@ -446,6 +457,8 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
         if (control == nullptr)
             return false;   
         ApplyUiFontToControl(app, control, c.id);
+        if (isButton)
+            ui_style::InstallToggle(control, c.style);
         initializeTrackRange(control, c.id);
         InstallControlSubclass(app, control, c.id);
     }

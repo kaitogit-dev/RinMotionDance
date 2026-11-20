@@ -178,7 +178,7 @@ void KickRecordPhysics(MMDApp*);
 void HandleTimer100(MMDApp*);                               
 void HandleHScroll(LPARAM lParam, WPARAM wParam);   
 void HandleVScroll(LPARAM lParam, WPARAM wParam);   
-LRESULT HandleCtlColor(HWND control, HDC dc);  
+LRESULT HandleCtlColor(HWND control, HDC dc, UINT message);  
 void HandleMouseMove(std::uint32_t lParam, int mouseY);     
 void HandleLButtonDown(MMDApp*);                            
 void HandleLButtonUp(MMDApp*);                              

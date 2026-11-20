@@ -21,12 +21,12 @@ void CreateUiFont(MMDApp* app, HWND hwnd) {
 
     const bool english = s.EnglishUI() != 0;                      
     HFONT font = CreateFontA(
-        english ? 13 : 12, 0, 0, 0,
-        400  , FALSE, FALSE, FALSE,
-        SHIFTJIS_CHARSET  ,
-        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY  ,
-        FIXED_PITCH | FF_MODERN  ,
-        english ? "Tahoma" : "MS PGothic");                       
+        -13, 0, 0, 0,
+        FW_NORMAL, FALSE, FALSE, FALSE,
+        english ? DEFAULT_CHARSET : SHIFTJIS_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+        DEFAULT_PITCH | FF_SWISS,
+        english ? "Segoe UI" : "Yu Gothic UI");                       
     s.state.hFontUI = font;                                       
 
 }
