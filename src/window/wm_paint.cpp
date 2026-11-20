@@ -92,40 +92,40 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
                       dock.width[i] - 25, ui_style::Text);
     }
 
-    const auto small = [&](int id, const wchar_t* label, int dx, int dy) {
+    const auto drawHint = [&](int id, const wchar_t* label, int dx, int dy) {
         const POINT p = DockControlPosition(hwnd, id);
         DrawDockLabel(dc, font, label, p.x + dx, p.y + dy,
                       92, ui_style::Muted);
     };
-    small(530, L"AUTO", 16, -1);
-    small(439, L"DISPLAY", 15, -2);
-    small(444, L"ON", 17, -1);
-    small(445, L"OFF", 17, -1);
+    drawHint(530, L"AUTO", 16, -1);
+    drawHint(439, L"DISPLAY", 15, -2);
+    drawHint(444, L"ON", 17, -1);
+    drawHint(445, L"OFF", 17, -1);
 
     if (dock.camera) {
-        small(447, L"FOV", 8, -15);
-        small(449, L"FOLLOW", 0, -15);
+        drawHint(447, L"FOV", 8, -15);
+        drawHint(449, L"FOLLOW", 0, -15);
         const int sliders[] = {455, 456, 457, 458, 459, 460};
         const wchar_t* axes[] = {L"R", L"G", L"B", L"X", L"Y", L"Z"};
         for (int i = 0; i < 6; ++i)
-            small(sliders[i], axes[i], -14, 0);
+            drawHint(sliders[i], axes[i], -14, 0);
         const int acc[] = {478, 479, 480, 481, 482, 483, 484, 485};
         const wchar_t* accLabels[] = {
             L"X", L"Y", L"Z", L"RX", L"RY", L"RZ", L"S", L"T"
         };
         for (int i = 0; i < 8; ++i)
-            small(acc[i], accLabels[i], -17, 0);
+            drawHint(acc[i], accLabels[i], -17, 0);
     } else {
         const int morph[] = {509, 514, 504, 519};
         const wchar_t* names[] = {L"EYES", L"MOUTH", L"BROW", L"OTHER"};
         for (int i = 0; i < 4; ++i)
-            small(morph[i], names[i], 0, -16);
+            drawHint(morph[i], names[i], 0, -16);
     }
-    small(412, L"MODEL", 16, -2);
-    small(531, L"BONE", 16, -2);
-    small(411, L"REPEAT", 16, -2);
-    small(413, L"END", 14, -2);
-    small(414, L"START", 14, -2);
+    drawHint(412, L"MODEL", 16, -2);
+    drawHint(531, L"BONE", 16, -2);
+    drawHint(411, L"REPEAT", 16, -2);
+    drawHint(413, L"END", 14, -2);
+    drawHint(414, L"START", 14, -2);
 }
 
 
