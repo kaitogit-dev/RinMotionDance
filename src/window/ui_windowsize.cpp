@@ -29,81 +29,178 @@ void ToggleVisible(HWND parent, int firstId, int lastId) {
 
 }
 
-int ControlLeft(HWND parent, int id) {
-    HWND control = GetDlgItem(parent, id);
-    if (control == nullptr)
-        return 0;
-    RECT bounds{};
-    GetWindowRect(control, &bounds);
-    MapWindowPoints(HWND_DESKTOP, parent,
-                    reinterpret_cast<POINT*>(&bounds), 2);
-    return bounds.left;
-}
-
-void DistributeControls(HWND parent, const EditorDock& dock,
-                        DockSection section, int originalLeft, int first,
-                        int last, int originalWidth, float maxScale) {
-    const int sectionIndex = DockIndex(section);
-    const int sectionWidth = dock.width[sectionIndex];
-    if (sectionWidth <= 0)
-        return;
-
-    const int targetLeft = dock.left[sectionIndex] + 14;
-    const float scale = std::min(maxScale, static_cast<float>(
-        sectionWidth - 26) / static_cast<float>(originalWidth));
-    for (int id = first; id <= last; ++id) {
-        HWND control = GetDlgItem(parent, id);
-        if (control == nullptr)
-            continue;
-        RECT bounds{};
-        if (!GetWindowRect(control, &bounds))
-            continue;
-        MapWindowPoints(HWND_DESKTOP, parent,
-                        reinterpret_cast<POINT*>(&bounds), 2);
-        const int left = targetLeft + static_cast<int>(
-            (bounds.left - originalLeft) * scale);
-        const int width = std::max(12, static_cast<int>(
-            (bounds.right - bounds.left) * scale));
-        SetWindowPos(control, nullptr, left, bounds.top, width,
-                     bounds.bottom - bounds.top,
-                     SWP_NOZORDER | SWP_NOACTIVATE);
-    }
-}
-
 void LayoutEditorDock(MMDApp* app) {
     if (app->FloatingWindow() != nullptr)
         return;
-    HWND parent = app->MainWindow();
+    const HWND hwnd = app->MainWindow();
     RECT client{};
-    GetClientRect(parent, &client);
+    GetClientRect(hwnd, &client);
     const EditorDock dock = ComputeEditorDock(app, client.right, client.bottom);
     if (!dock.enabled)
         return;
 
-    DistributeControls(parent, dock, DockSection::Model,
-                       ControlLeft(parent, 435), 435, 445, 132, 1.65f);
+    const auto put = [&](DockSection section, int id, int x, int y,
+                         int w, int h) {
+        const int i = DockIndex(section);
+        if (dock.width[i] <= 0)
+            return;
+        const HWND control = GetDlgItem(hwnd, id);
+        if (control == nullptr)
+            return;
+        const int available = dock.width[i] - x - 9;
+        if (available <= 0)
+            return;
+        MoveCtrl(hwnd, id, dock.left[i] + x, dock.top + y,
+                 std::min(w, available), h);
+    };
+    const auto w = [&](DockSection section) -> int {
+        return dock.width[DockIndex(section)];
+    };
+
+    const DockSection interp = DockSection::Interpolation;
+    const int interpW = w(interp);
+    put(interp, 433, 143, 31, interpW - 154, 170);
+    put(interp, 530, 145, 58, 15, 15);
+    put(interp, 430, 143, 82, interpW - 154, 23);
+    put(interp, 431, 143, 109, interpW - 154, 23);
+    put(interp, 432, 143, 136, interpW - 154, 21);
+
+    const DockSection model = DockSection::Model;
+    const int modelW = w(model);
+    const int halfModel = (modelW - 29) / 2;
+    put(model, 436, 10, 28, modelW - 20, 180);
+    put(model, 435, 10, 56, halfModel, 23);
+    put(model, 437, 19 + halfModel, 56, halfModel, 23);
+    put(model, 439, 10, 85, 15, 15);
+    put(model, 440, 92, 83, 49, 20);
+    put(model, 441, 148, 83, modelW - 158, 20);
+    put(model, 443, 10, 109, modelW - 20, 160);
+    put(model, 444, 12, 139, 15, 15);
+    put(model, 445, 74, 139, 15, 15);
+    put(model, 438, modelW - 88, 131, 76, 25);
+    put(model, 442, modelW - 31, 108, 19, 19);
+
     if (dock.camera) {
-        DistributeControls(parent, dock, DockSection::Edit,
-                           ControlLeft(parent, 451), 446, 454, 160, 1.55f);
-        DistributeControls(parent, dock, DockSection::Secondary,
-                           ControlLeft(parent, 455), 455, 470, 165, 1.6f);
-        DistributeControls(parent, dock, DockSection::Shadow,
-                           ControlLeft(parent, 560), 560, 567, 182, 1.6f);
-        DistributeControls(parent, dock, DockSection::Accessory,
-                           ControlLeft(parent, 471), 471, 489, 187, 1.65f);
+        const DockSection camera = DockSection::Edit;
+        const int camW = w(camera);
+        const int camHalf = (camW - 30) / 2;
+        put(camera, 451, 10, 29, camHalf, 24);
+        put(camera, 446, 20 + camHalf, 29, camHalf, 24);
+        put(camera, 448, camW - 64, 59, 52, 20);
+        put(camera, 447, 10, 79, camW - 20, 19);
+        put(camera, 449, 10, 116, camW - 101, 160);
+        put(camera, 450, 10, 137, camW - 101, 160);
+        put(camera, 452, camW - 86, 132, 74, 24);
+        put(camera, 453, camW - 21, 4, 15, 15);
+        put(camera, 454, camW - 21, 4, 15, 15);
+
+        const DockSection light = DockSection::Secondary;
+        const int lightW = w(light);
+        const int sliders[] = {455, 456, 457, 458, 459, 460};
+        const int values[] = {461, 462, 463, 464, 465, 466};
+        for (int i = 0; i < 6; ++i) {
+            put(light, sliders[i], 28, 27 + 17 * i,
+                lightW - 93, 18);
+            put(light, values[i], lightW - 59, 27 + 17 * i,
+                47, 19);
+        }
+        put(light, 467, 11, 133, (lightW - 35) / 2, 23);
+        put(light, 468, 22 + (lightW - 35) / 2, 133,
+            (lightW - 35) / 2, 23);
+        put(light, 469, lightW - 21, 4, 15, 15);
+        put(light, 470, lightW - 21, 4, 15, 15);
+
+        const DockSection shadow = DockSection::Shadow;
+        const int shadowW = w(shadow);
+        const int modeW = (shadowW - 28) / 3;
+        put(shadow, 562, 9, 30, modeW, 24);
+        put(shadow, 563, 14 + modeW, 30, modeW, 24);
+        put(shadow, 564, 19 + 2 * modeW, 30, modeW, 24);
+        put(shadow, 561, shadowW - 65, 66, 52, 19);
+        put(shadow, 560, 10, 91, shadowW - 20, 20);
+        put(shadow, 565, 10, 130, shadowW - 20, 25);
+        put(shadow, 566, shadowW - 20, 4, 14, 14);
+        put(shadow, 567, shadowW - 20, 4, 14, 14);
+
+        const DockSection accessory = DockSection::Accessory;
+        const int accW = w(accessory);
+        put(accessory, 471, 10, 28, accW - 105, 150);
+        put(accessory, 476, accW - 86, 31, 15, 15);
+        put(accessory, 486, accW - 46, 31, 15, 15);
+        const int accButtonW = (accW - 34) / 3;
+        put(accessory, 472, 10, 54, accButtonW, 22);
+        put(accessory, 473, 17 + accButtonW, 54, accButtonW, 22);
+        put(accessory, 477, 24 + 2 * accButtonW, 54, accButtonW, 22);
+        put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
+        put(accessory, 475, 20 + (accW - 30) / 2, 79,
+            (accW - 30) / 2, 130);
+        for (int i = 0; i < 8; ++i) {
+            const int column = i < 4 ? i : i - 4;
+            const int row = i < 4 ? 0 : 1;
+            const int fieldW = (accW - 34) / 4;
+            put(accessory, 478 + i, 10 + column * (fieldW + 4),
+                108 + row * 26, fieldW, 20);
+        }
+        put(accessory, 487, accW - 89, 3, 65, 20);
+        put(accessory, 488, accW - 20, 4, 14, 14);
+        put(accessory, 489, accW - 20, 4, 14, 14);
     } else {
-        DistributeControls(parent, dock, DockSection::Edit,
-                           ControlLeft(parent, 490), 490, 503, 190, 1.65f);
-        DistributeControls(parent, dock, DockSection::Secondary,
-                           ControlLeft(parent, 505), 504, 529, 269, 1.75f);
+        const DockSection bone = DockSection::Edit;
+        const int boneW = w(bone);
+        const int cell = (boneW - 40) / 3;
+        const int controls[4][3] = {
+            {490, 493, 492},
+            {491, 494, 501},
+            {496, 497, 498},
+            {500, 495, 499}
+        };
+        for (int row = 0; row < 4; ++row)
+            for (int col = 0; col < 3; ++col)
+                put(bone, controls[row][col], 12 + col * (cell + 8),
+                    30 + row * 31, cell, 26);
+        put(bone, 502, boneW - 21, 4, 14, 14);
+        put(bone, 503, boneW - 21, 4, 14, 14);
+
+        const DockSection facial = DockSection::Secondary;
+        const int faceW = w(facial);
+        const int colWidth = faceW / 2;
+        const int comboIds[4] = {509, 514, 504, 519};
+        const int sliderIds[4] = {510, 515, 505, 520};
+        const int valueIds[4] = {511, 516, 506, 521};
+        const int prevIds[4] = {512, 517, 507, 522};
+        const int nextIds[4] = {513, 518, 508, 523};
+        const int registerIds[4] = {524, 527, 525, 526};
+        for (int i = 0; i < 4; ++i) {
+            const int x = 11 + (i % 2) * colWidth;
+            const int y = 41 + (i / 2) * 68;
+            put(facial, comboIds[i], x, y, colWidth - 79, 150);
+            put(facial, prevIds[i], x + colWidth - 70, y, 26, 23);
+            put(facial, nextIds[i], x + colWidth - 38, y, 26, 23);
+            put(facial, sliderIds[i], x, y + 25, colWidth - 142, 20);
+            put(facial, valueIds[i], x + colWidth - 131, y + 25, 47, 20);
+            put(facial, registerIds[i], x + colWidth - 76,
+                y + 24, 64, 24);
+        }
+        put(facial, 528, faceW - 21, 4, 14, 14);
+        put(facial, 529, faceW - 21, 4, 14, 14);
     }
-    const int playbackOrigin = ControlLeft(parent, 402);
-    DistributeControls(parent, dock, DockSection::Playback,
-                       playbackOrigin, 402, 414, 155, 1.6f);
-    DistributeControls(parent, dock, DockSection::Playback,
-                       playbackOrigin, 531, 531, 155, 1.6f);
-    DistributeControls(parent, dock, DockSection::Playback,
-                       playbackOrigin, 534, 535, 155, 1.6f);
+
+    const DockSection playback = DockSection::Playback;
+    const int playW = w(playback);
+    const int viewW = (playW - 36) / 3;
+    for (int i = 0; i < 6; ++i)
+        put(playback, 402 + i, 10 + (i % 3) * (viewW + 7),
+            29 + (i / 3) * 26, viewW, 23);
+    put(playback, 408, 10, 84, 86, 26);
+    put(playback, 535, 103, 84, 78, 26);
+    put(playback, 411, 193, 89, 16, 16);
+    put(playback, 412, 10, 115, 16, 16);
+    put(playback, 531, 103, 115, 16, 16);
+    put(playback, 409, 43, 134, 63, 20);
+    put(playback, 410, 158, 134, 63, 20);
+    put(playback, 414, 10, 137, 16, 16);
+    put(playback, 413, 124, 137, 16, 16);
+    put(playback, 534, playW - 28, 86, 20, 68);
 }
 
 void PanelPaint(MMDApp* app);  

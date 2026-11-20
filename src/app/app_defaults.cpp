@@ -23,11 +23,11 @@ void MMDApp::InitDefaults() {
     s.UiOptionFlag(1) = 1;
     s.UiOptionFlag(2) = 1;
     s.CameraPosition()[1] = 10.0f;
-    s.UiOptionFlag(3) = 0;
+    s.UiOptionFlag(3) = 1;
     s.UiOptionFlag(4) = 1;
     s.CameraPosition()[2] = 0.0f;
     s.UiOptionFlag(5) = 1;
-    s.UiOptionFlag(6) = 0;
+    s.UiOptionFlag(6) = 1;
     s.CameraPerspective() = 0;
     s.GroundGridEnabled() = 1;
     s.ViewportInputActive() = 1;
