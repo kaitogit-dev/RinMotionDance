@@ -187,10 +187,10 @@ void HandlePaletteChanged2(HDC hdc) {
                 mdl::AccessoryRecord* acc =
                     app->AccessorySlot(app->SelectedAccessorySlot());
                 if (acc == nullptr) {
-                    DrawGlyph(app, "camera light accessary", hdc, 20,
+                    DrawGlyph(app, "Camera / Light / Accessory", hdc, 20,
                               xBase + 10, hideTop - 22, 0xFF, 0xFF, 0xFF, 1);  
                 } else {
-                    sprintf_s(buffer, 0x100, "camera light accessary / %s",
+                    sprintf_s(buffer, 0x100, "Camera / Light / Accessory / %s",
                               acc->name);                        
                     DrawGlyph(app, buffer, hdc, 20, xBase + 10, hideTop - 22,
                               0xFF, 0xFF, 0xFF, 1);              

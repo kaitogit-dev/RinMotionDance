@@ -9,6 +9,7 @@
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/editor_dock.hpp"
 #include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
@@ -20,6 +21,114 @@ void Lbl(MMDApp* a, const char* s, HDC hdc, int size, int x, int y) {
     DrawGlyph(a, s, hdc, size, x, y,
               a->UiTextRed(), a->UiTextGreen(), a->UiTextBlue(), 0);
 }
+
+void DrawDockLabel(HDC dc, HFONT font, const wchar_t* label,
+                   int x, int y, int width, COLORREF color) {
+    RECT rect{x, y, x + width, y + 16};
+    HGDIOBJ old = font != nullptr ? SelectObject(dc, font) : nullptr;
+    SetTextColor(dc, color);
+    SetBkMode(dc, TRANSPARENT);
+    DrawTextW(dc, label, -1, &rect, DT_LEFT | DT_SINGLELINE |
+              DT_VCENTER | DT_END_ELLIPSIS);
+    if (old != nullptr)
+        SelectObject(dc, old);
+}
+
+POINT DockControlPosition(HWND hwnd, int id) {
+    HWND control = GetDlgItem(hwnd, id);
+    RECT r{};
+    if (control != nullptr)
+        GetWindowRect(control, &r);
+    POINT p{r.left, r.top};
+    ScreenToClient(hwnd, &p);
+    return p;
+}
+
+void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
+    const EditorDock dock = ComputeEditorDock(app, width, height);
+    if (!dock.enabled)
+        return;
+
+    const HWND hwnd = app->MainWindow();
+    HBRUSH background = CreateSolidBrush(ui_style::Surface);
+    RECT area{0, dock.top, width, height};
+    FillRect(dc, &area, background);
+    DeleteObject(background);
+
+    HBRUSH head = CreateSolidBrush(ui_style::Header);
+    RECT heading{0, dock.top, width, dock.top + 20};
+    FillRect(dc, &heading, head);
+    DeleteObject(head);
+
+    HPEN line = CreatePen(PS_SOLID, 1, ui_style::Border);
+    HGDIOBJ oldPen = SelectObject(dc, line);
+    MoveToEx(dc, 0, dock.top, nullptr);
+    LineTo(dc, width, dock.top);
+    for (int i = 1; i < 7; ++i) {
+        if (dock.width[i] <= 0)
+            continue;
+        const int x = dock.left[i];
+        MoveToEx(dc, x, dock.top, nullptr);
+        LineTo(dc, x, height);
+    }
+    SelectObject(dc, oldPen);
+    DeleteObject(line);
+
+    const wchar_t* cameraNames[] = {
+        L"INTERPOLATION", L"MODEL", L"CAMERA",
+        L"LIGHT", L"SELF SHADOW", L"ACCESSORY", L"VIEW / PLAYBACK"
+    };
+    const wchar_t* modelNames[] = {
+        L"INTERPOLATION", L"MODEL", L"BONE EDIT",
+        L"FACIAL MORPHS", L"", L"", L"VIEW / PLAYBACK"
+    };
+    const wchar_t* const* names = dock.camera ? cameraNames : modelNames;
+    HFONT font = reinterpret_cast<HFONT>(app->state.hFontUI);
+    for (int i = 0; i < 7; ++i) {
+        if (dock.width[i] <= 0)
+            continue;
+        DrawDockLabel(dc, font, names[i],
+                      dock.left[i] + 15, dock.top + 2,
+                      dock.width[i] - 25, ui_style::Text);
+    }
+
+    const auto small = [&](int id, const wchar_t* label, int dx, int dy) {
+        const POINT p = DockControlPosition(hwnd, id);
+        DrawDockLabel(dc, font, label, p.x + dx, p.y + dy,
+                      92, ui_style::Muted);
+    };
+    small(530, L"AUTO", 16, -1);
+    small(439, L"DISPLAY", 15, -2);
+    small(444, L"ON", 17, -1);
+    small(445, L"OFF", 17, -1);
+
+    if (dock.camera) {
+        small(447, L"FOV", 8, -15);
+        small(449, L"FOLLOW", 0, -15);
+        const int sliders[] = {455, 456, 457, 458, 459, 460};
+        const wchar_t* axes[] = {L"R", L"G", L"B", L"X", L"Y", L"Z"};
+        for (int i = 0; i < 6; ++i)
+            small(sliders[i], axes[i], -14, 0);
+        const int acc[] = {478, 479, 480, 481, 482, 483, 484, 485};
+        const wchar_t* accLabels[] = {
+            L"X", L"Y", L"Z", L"RX", L"RY", L"RZ", L"S", L"T"
+        };
+        for (int i = 0; i < 8; ++i)
+            small(acc[i], accLabels[i], -17, 0);
+    } else {
+        const int morph[] = {509, 514, 504, 519};
+        const wchar_t* names[] = {L"EYES", L"MOUTH", L"BROW", L"OTHER"};
+        for (int i = 0; i < 4; ++i)
+            small(morph[i], names[i], 0, -16);
+    }
+    small(412, L"MODEL", 16, -2);
+    small(531, L"BONE", 16, -2);
+    small(411, L"REPEAT", 16, -2);
+    small(413, L"END", 14, -2);
+    small(414, L"START", 14, -2);
+}
+
+
 
 }  
 
@@ -352,6 +461,8 @@ void HandleWindowPaint(MMDApp* app) {
         Lbl(app, "vol", hdc, 12, 1021 - panelShift, rc.bottom - 77);
     else
         Lbl(app, kJpLblVolume, hdc, 12, 1016 - panelShift, rc.bottom - 77);
+
+    PaintEditorDock(app, hdc, rc.right, rc.bottom);
 
     if (app->FloatingWindow() == nullptr)
         HandlePaletteChanged2(hdc);                               

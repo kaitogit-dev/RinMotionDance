@@ -127,8 +127,8 @@ void ClearTimelineAndCurveDCs(MMDApp* app) {
     D3DRenderer* r = app->Renderer();
     const int backbufferWidth = r->screenWidth;
 
-    HPEN whitePen = CreatePen(PS_SOLID, 1, 0xFFFFFF);
-    HBRUSH whiteBrush = CreateSolidBrush(0xFFFFFF);
+    HPEN whitePen = CreatePen(PS_SOLID, 1, ui_style::SurfaceAlt);
+    HBRUSH whiteBrush = CreateSolidBrush(ui_style::SurfaceAlt);
     HGDIOBJ oldPen = SelectObject(timeline, whitePen);
     HGDIOBJ oldBrush = SelectObject(timeline, whiteBrush);
     SelectObject(curve, whitePen);
@@ -142,7 +142,7 @@ void ClearTimelineAndCurveDCs(MMDApp* app) {
     SelectObject(curve, oldBrush);
     DeleteObject(whiteBrush);
 
-    HPEN blackPen = CreatePen(PS_SOLID, 1, 0);
+    HPEN blackPen = CreatePen(PS_SOLID, 1, ui_style::Border);
     SelectObject(timeline, blackPen);
     MoveToEx(timeline, 0, 25, nullptr);
     LineTo(timeline, backbufferWidth, 25);

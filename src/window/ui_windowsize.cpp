@@ -6,6 +6,8 @@
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/editor_dock.hpp"
+#include <algorithm>
 
 namespace rinmotiondance {
 
@@ -25,7 +27,84 @@ void ToggleVisible(HWND parent, int firstId, int lastId) {
     }
 }
 
-}  
+}
+
+int ControlLeft(HWND parent, int id) {
+    HWND control = GetDlgItem(parent, id);
+    if (control == nullptr)
+        return 0;
+    RECT bounds{};
+    GetWindowRect(control, &bounds);
+    MapWindowPoints(HWND_DESKTOP, parent,
+                    reinterpret_cast<POINT*>(&bounds), 2);
+    return bounds.left;
+}
+
+void DistributeControls(HWND parent, const EditorDock& dock,
+                        DockSection section, int anchorId, int first,
+                        int last, int originalWidth, float maxScale) {
+    const int sectionIndex = DockIndex(section);
+    const int sectionWidth = dock.width[sectionIndex];
+    if (sectionWidth <= 0)
+        return;
+
+    const int originalLeft = ControlLeft(parent, anchorId);
+    const int targetLeft = dock.left[sectionIndex] + 14;
+    const float scale = std::min(maxScale, static_cast<float>(
+        sectionWidth - 26) / static_cast<float>(originalWidth));
+    for (int id = first; id <= last; ++id) {
+        HWND control = GetDlgItem(parent, id);
+        if (control == nullptr)
+            continue;
+        RECT bounds{};
+        if (!GetWindowRect(control, &bounds))
+            continue;
+        MapWindowPoints(HWND_DESKTOP, parent,
+                        reinterpret_cast<POINT*>(&bounds), 2);
+        const int left = targetLeft + static_cast<int>(
+            (bounds.left - originalLeft) * scale);
+        const int width = std::max(12, static_cast<int>(
+            (bounds.right - bounds.left) * scale));
+        SetWindowPos(control, nullptr, left, bounds.top, width,
+                     bounds.bottom - bounds.top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+}
+
+void LayoutEditorDock(MMDApp* app) {
+    if (app->FloatingWindow() != nullptr)
+        return;
+    HWND parent = app->MainWindow();
+    RECT client{};
+    GetClientRect(parent, &client);
+    const EditorDock dock = ComputeEditorDock(app, client.right, client.bottom);
+    if (!dock.enabled)
+        return;
+
+    DistributeControls(parent, dock, DockSection::Model,
+                       435, 435, 445, 132, 1.65f);
+    if (dock.camera) {
+        DistributeControls(parent, dock, DockSection::Edit,
+                           451, 446, 454, 160, 1.55f);
+        DistributeControls(parent, dock, DockSection::Secondary,
+                           455, 455, 470, 165, 1.6f);
+        DistributeControls(parent, dock, DockSection::Shadow,
+                           560, 560, 567, 182, 1.6f);
+        DistributeControls(parent, dock, DockSection::Accessory,
+                           471, 471, 489, 187, 1.65f);
+    } else {
+        DistributeControls(parent, dock, DockSection::Edit,
+                           490, 490, 503, 190, 1.65f);
+        DistributeControls(parent, dock, DockSection::Secondary,
+                           505, 504, 529, 269, 1.75f);
+    }
+    DistributeControls(parent, dock, DockSection::Playback,
+                       402, 402, 414, 155, 1.6f);
+    DistributeControls(parent, dock, DockSection::Playback,
+                       402, 531, 531, 155, 1.6f);
+    DistributeControls(parent, dock, DockSection::Playback,
+                       402, 534, 535, 155, 1.6f);
+}
 
 void PanelPaint(MMDApp* app);  
 void LayoutViewportPanels(MMDApp* app);   
@@ -54,7 +133,8 @@ void HandleWindowSize(MMDApp* app) {
         std::int32_t newSidebar = static_cast<std::int32_t>(
             static_cast<double>(s.SidebarRatio()) *
             cr1.right);                                        
-        if (newSidebar < 250) newSidebar = 250;                                
+        if (newSidebar < 300 && cr1.right >= 1480) newSidebar = 300;
+        else if (newSidebar < 250) newSidebar = 250;                                
         const bool grew = sidebar < newSidebar;                        
         sidebar = newSidebar;                                          
         if (grew) PanelPaint(app);                             
@@ -241,6 +321,7 @@ void HandleWindowSize(MMDApp* app) {
     ToggleVisible(hwnd, 402, 414);
     ToggleVisible(hwnd, 531, 535);
 
+    LayoutEditorDock(app);
     RefreshMainWindowViewport(app);
     LayoutViewportPanels(app);  
 }
@@ -280,6 +361,7 @@ void RelayoutSidebarControls(MMDApp* app) {
     ToggleVisible(hwnd, 415, 426);
     ToggleVisible(hwnd, 558, 559);
     ToggleVisible(hwnd, 434, 434);
+    LayoutEditorDock(app);
     RefreshMainWindowViewport(app);
     LayoutViewportPanels(app);
 }
