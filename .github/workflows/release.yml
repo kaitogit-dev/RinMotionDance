@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ui-redesign
     tags:
       - 'v*'
   workflow_dispatch:

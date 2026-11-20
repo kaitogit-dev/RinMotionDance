@@ -13,6 +13,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -23,12 +24,18 @@ const int kThemeFileOrder[] = {
 };
 
 const COLORREF kDefaultThemeColors[] = {
-    8421504, 0x545454, 0x464646, 1315860, 3289700, 1315880,
-    0x464646, 1315860, 3289700, 1315880, 6566450, 1971220,
-    3302450, 1318420, 3302500, 1321000, 6566450, 2626580,
-    0x464646, 1315860, 0x464646, 1315860, 1250067, 3946295,
-    868768, 1250132, 3946345, 5401478, 4418967, 100,
-    9895830, 16750230, 4934475, 0, 6579455,
+    RGB(19, 23, 29), RGB(39, 46, 56), RGB(33, 41, 50),
+    RGB(27, 34, 42), RGB(26, 33, 42), RGB(26, 33, 42),
+    RGB(31, 38, 47), RGB(31, 38, 47), RGB(34, 43, 53),
+    RGB(34, 43, 53), RGB(34, 43, 53), RGB(34, 43, 53),
+    RGB(31, 40, 49), RGB(31, 40, 49), RGB(33, 41, 50),
+    RGB(33, 41, 50), RGB(27, 35, 44), RGB(27, 35, 44),
+    RGB(26, 33, 42), RGB(26, 33, 42), RGB(33, 41, 50),
+    RGB(33, 41, 50), RGB(23, 28, 36), RGB(37, 45, 55),
+    RGB(54, 63, 74), RGB(44, 53, 63), RGB(33, 40, 49),
+    RGB(43, 52, 62), RGB(31, 39, 49), RGB(60, 72, 85),
+    RGB(237, 190, 116), RGB(124, 92, 55), RGB(54, 65, 77),
+    RGB(169, 183, 198), RGB(110, 186, 202),
 };
 
 void StripNewline(wchar_t* s) {
@@ -109,14 +116,14 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
     wcscpy_s(app->DirMotion(), 0x3E8, L"UserFile\\Motion");
     wcscpy_s(app->DirUser(), 0x3E8, L"UserFile");
 
-    s.UiTextRed() = 0xFF;
-    s.UiTextGreen() = 0xFF;
-    s.UiTextBlue() = 0xFF;
+    s.UiTextRed() = 225;
+    s.UiTextGreen() = 233;
+    s.UiTextBlue() = 241;
     for (int i = 0; i < static_cast<int>(_countof(kDefaultThemeColors)); ++i)
         s.ThemeColorAt(i) = kDefaultThemeColors[i];
 
     FILE* stream = nullptr;                                     
-    if (fopen_s(&stream, "Data\\color.txt", "rt") == 0) {
+    if (fopen_s(&stream, "Data\\color-redesign.txt", "rt") == 0) {
         char line[256];
         int colorIndex = -1;
         const int colorCount = static_cast<int>(_countof(kThemeFileOrder));
@@ -325,6 +332,18 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
     if (!hwnd) {
         MessageBoxA(nullptr, "RegisterClass failed", "create main window", MB_OK);
         return false;
+    }
+
+    HMODULE dwm = LoadLibraryW(L"dwmapi.dll");
+    if (dwm != nullptr) {
+        using SetDwmAttribute = HRESULT (WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+        auto setAttribute = reinterpret_cast<SetDwmAttribute>(
+            GetProcAddress(dwm, "DwmSetWindowAttribute"));
+        if (setAttribute != nullptr) {
+            const BOOL dark = TRUE;
+            setAttribute(hwnd, 20, &dark, sizeof(dark));
+        }
+        FreeLibrary(dwm);
     }
 
     LocalizeUI(app);                                            

@@ -7,6 +7,7 @@
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 
@@ -21,15 +22,15 @@ void TimelineDrawTicks(int frameOffset, int width) {
     char* bufA = reinterpret_cast<char*>(audio->waveformMax);
     char* bufB = reinterpret_cast<char*>(audio->waveformMin);
 
-    HPEN whitePen = CreatePen(PS_SOLID, 1, 0xFFFFFF);       
-    HBRUSH whiteBrush = CreateSolidBrush(0xFFFFFF);
+    HPEN whitePen = CreatePen(PS_SOLID, 1, ui_style::Input);       
+    HBRUSH whiteBrush = CreateSolidBrush(ui_style::Input);
     HGDIOBJ oldPen = SelectObject(strip, whitePen);         
     HGDIOBJ oldBrush = SelectObject(strip, whiteBrush);     
     Rectangle(strip, 0, 0, xMax, 50);                       
     SelectObject(strip, oldPen);
     DeleteObject(whitePen);
 
-    HPEN redPen = CreatePen(PS_SOLID, 1, 0xFF0000);         
+    HPEN redPen = CreatePen(PS_SOLID, 1, ui_style::Accent);         
     SelectObject(strip, redPen);                            
     int xa = 0;                                             
     int columnX = 0;                                        
@@ -45,7 +46,7 @@ void TimelineDrawTicks(int frameOffset, int width) {
     SelectObject(strip, oldPen);
     DeleteObject(redPen);
 
-    HPEN blackPen = CreatePen(PS_SOLID, 1, 0);              
+    HPEN blackPen = CreatePen(PS_SOLID, 1, ui_style::Border);              
     SelectObject(strip, blackPen);
     MoveToEx(strip, 0, 25, nullptr);
     LineTo(strip, xMax, 25);                                

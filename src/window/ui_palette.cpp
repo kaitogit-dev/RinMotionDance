@@ -10,6 +10,7 @@
 #include "rinmotiondance/accessory_layout.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -161,9 +162,9 @@ void HandlePaletteChanged2(HDC hdc) {
     const std::int32_t hideBottom = app->state.hideBottom;  
 
     FillPanelBottom(hdc, xBase, hideTop - 25, right, hideTop - 1,
-                    0x969696u, 0x646464u, 1);                    
+                    ui_style::Header, ui_style::Header, 1);                    
     FillPanelBottom(hdc, xBase, hideBottom, right, hideBottom + 32,
-                    0x787878u, 0xC8C8C8u, 1);                    
+                    ui_style::Surface, ui_style::Surface, 1);                    
 
     HDC compat = CreateCompatibleDC(nullptr);                    
     SelectObject(compat,
@@ -195,10 +196,8 @@ void HandlePaletteChanged2(HDC hdc) {
                               0xFF, 0xFF, 0xFF, 1);              
                 }
             }
-            DrawGlyph(app, "camera", hdc, 14, xBase + 90, hideBottom + 10,
-                      0, 0, 0, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10,
-                      0, 0, 0, 1);                               
+            DrawGlyph(app, "camera", hdc, 14, xBase + 90, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -216,8 +215,7 @@ void HandlePaletteChanged2(HDC hdc) {
                           0xFF, 0xFF, 0xFF, 1);                  
             }
         }
-        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 72, hideBottom + 11,
-                  0, 0, 0, 1);                                   
+        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 72, hideBottom + 11, 228, 234, 240, 1);                                   
     } else {                                                     
         if (app->EnglishUI() != 0) {
             if (playing) {
@@ -261,10 +259,8 @@ void HandlePaletteChanged2(HDC hdc) {
                     }
                 }
             }
-            DrawGlyph(app, "bone place", hdc, 14, xBase + 66, hideBottom + 10,
-                      0, 0, 0, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10,
-                      0, 0, 0, 1);                               
+            DrawGlyph(app, "bone place", hdc, 14, xBase + 66, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -297,12 +293,10 @@ void HandlePaletteChanged2(HDC hdc) {
                 }
             }
         }
-        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 68, hideBottom + 11,
-                  0, 0, 0, 1);                                   
+        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 68, hideBottom + 11, 228, 234, 240, 1);                                   
     }
 
-    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 369, hideBottom + 11,
-              0, 0, 0, 1);                                       
+    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 369, hideBottom + 11, 228, 234, 240, 1);                                       
 }
 
 }  

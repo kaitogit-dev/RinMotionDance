@@ -9,6 +9,7 @@
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -57,7 +58,7 @@ void HandleWindowPaint(MMDApp* app) {
     DeleteObject(pen);
     HandlePaletteChanged(hdc);                                    
 
-    HPEN black = CreatePen(0, 1, 0);
+    HPEN black = CreatePen(PS_SOLID, 1, ui_style::Border);
     SelectObject(hdc, black);
     MoveToEx(hdc, 3, 50, nullptr);
     LineTo(hdc, side - 3, 50);
@@ -104,7 +105,7 @@ void HandleWindowPaint(MMDApp* app) {
         Lbl(app, kJpLblAutoSet, hdc, 12, 160, rc.bottom - 104);
     }
 
-    HBRUSH gray = CreateSolidBrush(0x00DCDCDC);
+    HBRUSH gray = CreateSolidBrush(ui_style::Surface);
     SelectObject(hdc, gray);
     Rectangle(hdc, side, 0, side + 6, rc.bottom - 159);
     SelectObject(hdc, oldPen);
