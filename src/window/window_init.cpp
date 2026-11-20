@@ -269,6 +269,15 @@ bool InitMainWindowAndD3D(MMDApp* app, void* hInstanceIn, int nShowCmd) {
             static_cast<float>(static_cast<double>(s.SidebarWidth()) /
                                static_cast<double>(nWidth));
 
+    if (HMODULE theme = LoadLibraryW(L"uxtheme.dll")) {
+        using SetPreferredAppMode = int (WINAPI*)(int);
+        auto setMode = reinterpret_cast<SetPreferredAppMode>(
+            GetProcAddress(theme, MAKEINTRESOURCEA(135)));
+        if (setMode != nullptr)
+            setMode(2);
+        FreeLibrary(theme);
+    }
+
     InitCommonControls();                                       
     s.HInstance() = hInstance;                                  
 

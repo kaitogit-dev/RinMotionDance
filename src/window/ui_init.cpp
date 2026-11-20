@@ -132,7 +132,8 @@ void ClearTimelineAndCurveDCs(MMDApp* app) {
     HGDIOBJ oldPen = SelectObject(timeline, whitePen);
     HGDIOBJ oldBrush = SelectObject(timeline, whiteBrush);
     HGDIOBJ oldCurvePen = SelectObject(curve, GetStockObject(NULL_PEN));
-    HGDIOBJ oldCurveBrush = SelectObject(curve, GetStockObject(LTGRAY_BRUSH));
+    HBRUSH curveBrush = CreateSolidBrush(ui_style::SurfaceAlt);
+    HGDIOBJ oldCurveBrush = SelectObject(curve, curveBrush);
     Rectangle(timeline, 0, 0, backbufferWidth, 49);
     Rectangle(curve, 0, 0, 127, 127);
     SelectObject(timeline, oldPen);
@@ -140,6 +141,7 @@ void ClearTimelineAndCurveDCs(MMDApp* app) {
     DeleteObject(whitePen);
     SelectObject(timeline, oldBrush);
     SelectObject(curve, oldCurveBrush);
+    DeleteObject(curveBrush);
     DeleteObject(whiteBrush);
 
     HPEN blackPen = CreatePen(PS_SOLID, 1, ui_style::Border);
@@ -464,7 +466,9 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
         ApplyUiFontToControl(app, control, c.id);
         if (isButton)
             ui_style::InstallToggle(control, c.style);
-        if (isCombo || isTrackbar)
+        if (isCombo || isTrackbar ||
+            (!c.wide && c.acls != nullptr &&
+             std::strcmp(c.acls, "SCROLLBAR") == 0))
             ui_style::InstallNativeTheme(control);
         initializeTrackRange(control, c.id);
         InstallControlSubclass(app, control, c.id);
