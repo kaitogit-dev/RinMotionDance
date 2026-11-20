@@ -109,10 +109,17 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             s.WindowLayoutReady() = 1;
             return 0;
 
-        case WM_DRAWITEM:
-            if (ui_style::PaintButton(reinterpret_cast<const DRAWITEMSTRUCT*>(lParam)))
+        case WM_MEASUREITEM:
+            if (ui_style::MeasureCombo(reinterpret_cast<MEASUREITEMSTRUCT*>(lParam)))
                 return TRUE;
             return DefWindowProcA(hwnd, msg, wParam, lParam);
+
+        case WM_DRAWITEM: {
+            const auto* item = reinterpret_cast<const DRAWITEMSTRUCT*>(lParam);
+            if (ui_style::PaintButton(item) || ui_style::PaintCombo(item))
+                return TRUE;
+            return DefWindowProcA(hwnd, msg, wParam, lParam);
+        }
 
         case WM_PAINT:
             HandleWindowPaint(app);                               
@@ -145,8 +152,13 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         case WM_ERASEBKGND:
             return 0;
 
-        case WM_NOTIFY:
-            return HandleNotify(hwnd, msg, wParam, lParam);       
+        case WM_NOTIFY: {
+            LRESULT drawing = 0;
+            if (ui_style::PaintTrackbar(
+                    reinterpret_cast<NMCUSTOMDRAW*>(lParam), &drawing))
+                return drawing;
+            return HandleNotify(hwnd, msg, wParam, lParam);
+        }       
 
         default:
             return DefWindowProcA(hwnd, msg, wParam, lParam);

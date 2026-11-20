@@ -433,16 +433,21 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
     };
 
     for (const ui::ControlSpec& c : ui::kControls) {
+        const bool isCombo = !c.wide && c.acls != nullptr &&
+                             std::strcmp(c.acls, "COMBOBOX") == 0;
+        const bool isTrackbar = !c.wide && c.acls != nullptr &&
+                                std::strcmp(c.acls, "msctls_trackbar32") == 0;
         const bool isButton = (c.wide && c.wcls != nullptr &&
                                std::wcscmp(c.wcls, L"BUTTON") == 0) ||
                               (!c.wide && c.acls != nullptr &&
                                std::strcmp(c.acls, "BUTTON") == 0);
         const DWORD buttonType = c.style & BS_TYPEMASK;
-        const DWORD style = isButton &&
-                            (buttonType == BS_PUSHBUTTON ||
-                             buttonType == BS_DEFPUSHBUTTON)
-            ? (c.style & ~static_cast<DWORD>(BS_TYPEMASK)) | BS_OWNERDRAW
-            : c.style;
+        const DWORD style = isCombo
+            ? c.style | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS
+            : isButton && (buttonType == BS_PUSHBUTTON ||
+                           buttonType == BS_DEFPUSHBUTTON)
+                ? (c.style & ~static_cast<DWORD>(BS_TYPEMASK)) | BS_OWNERDRAW
+                : c.style;
         HWND control = c.wide
             ? CreateWindowExW(c.ex, c.wcls, c.wtext, style,
                               EvalPos(c.x, sidebar), EvalPos(c.y, sidebar),
@@ -459,6 +464,8 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
         ApplyUiFontToControl(app, control, c.id);
         if (isButton)
             ui_style::InstallToggle(control, c.style);
+        if (isCombo || isTrackbar)
+            ui_style::InstallNativeTheme(control);
         initializeTrackRange(control, c.id);
         InstallControlSubclass(app, control, c.id);
     }
