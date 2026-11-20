@@ -25,7 +25,7 @@ struct EditorDock {
     int bottom{};
 };
 
-inline EditorDock ComputeEditorDock(const MMDApp* app, int clientWidth,
+inline EditorDock ComputeEditorDock(MMDApp* app, int clientWidth,
                                     int clientHeight) {
     EditorDock dock{};
     dock.camera = app->state.optflag[0] != 0;
