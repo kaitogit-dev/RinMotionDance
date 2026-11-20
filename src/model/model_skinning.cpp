@@ -542,8 +542,9 @@ float PmdEdgeDistance(MMDApp* app, unsigned char* model,
 }
 
 void SkinPmd(unsigned char* model, float edgeDistance,
-             bool parallelSkinning, mdl::EdgeVertex* edgeVertices,
-             mdl::SkinnedVertexBase* mainVertices) {
+             mdl::EdgeVertex* edgeVertices,
+             mdl::SkinnedVertexBase* mainVertices,
+             bool parallelSkinning = false) {
     const mdl::ModelRecord& record = *mdl::Mdl(model);
     const std::uint32_t vertexCount = record.vertexCount;
     auto* vertices = record.rawVertices;
@@ -748,9 +749,9 @@ void UpdateModelVertexBuffers(MMDApp* app, unsigned char* model,
         return;
     }
 
-    SkinPmd(model, PmdEdgeDistance(app, model, frameWorld),
-            app->PlaybackActive() != 0 || app->RecordingWindow() != nullptr,
-            edgeVertices, mainVertices);
+    SkinPmd(model, PmdEdgeDistance(app, model, frameWorld), edgeVertices,
+            mainVertices,
+            app->PlaybackActive() != 0 || app->RecordingWindow() != nullptr);
     DumpModelVertexBuffers(app, model, mainVertices, edgeVertices, count, 32);
     mainVb->Unlock();
     edgeVb->Unlock();
