@@ -10,6 +10,8 @@
 #include "rinmotiondance/panel_controls.hpp"
 #include "rinmotiondance/ui_style.hpp"
 #include <commctrl.h>
+#include <string>
+#include <cwchar>
 
 namespace rinmotiondance {
 namespace {
@@ -38,41 +40,50 @@ LRESULT HandleCtlColor(HWND control, HDC dc, UINT message) {
             reinterpret_cast<std::intptr_t>(app->UiBrush(index)));
     };
 
-    if (ctrl == GetDlgItem(main, panel::kFovSlider))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kFovSlider))  
         return brushResult(9);
 
-    if (ctrl == GetDlgItem(main, panel::kFrameVolumeSlider))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kFrameVolumeSlider))  
         return brushResult(10);
 
-    if (ctrl == GetDlgItem(main, panel::kLightColorSliderR))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightColorSliderR))  
         return brushResult(0);
 
-    if (ctrl == GetDlgItem(main, panel::kLightColorSliderG))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightColorSliderG))  
         return brushResult(1);
 
-    if (ctrl == GetDlgItem(main, panel::kLightColorSliderB))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightColorSliderB))  
         return brushResult(2);
 
-    if (ctrl == GetDlgItem(main, panel::kLightDirSliderX))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightDirSliderX))  
         return brushResult(3);
 
-    if (ctrl == GetDlgItem(main, panel::kLightDirSliderY))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightDirSliderY))  
         return brushResult(4);
 
-    if (ctrl == GetDlgItem(main, panel::kLightDirSliderZ))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kLightDirSliderZ))  
         return brushResult(5);
 
     const bool hit515 = ctrl == GetDlgItem(main, panel::kMorphSlider2);
     const bool hit510 = ctrl == GetDlgItem(main, panel::kMorphSlider1);
-    if (hit515 || hit510)
+    if (message == WM_CTLCOLORSTATIC && (hit515 || hit510))
         return brushResult(6);
 
     const bool hit520 = ctrl == GetDlgItem(main, panel::kMorphSlider3);
     const bool hit505 = ctrl == GetDlgItem(main, panel::kMorphSlider0);
-    if (hit520 || hit505)
+    if (message == WM_CTLCOLORSTATIC && (hit520 || hit505))
         return brushResult(7);
 
-    if (ctrl == GetDlgItem(main, panel::kSelfShadowRangeSlider))  
+    if (message == WM_CTLCOLORSTATIC &&
+        ctrl == GetDlgItem(main, panel::kSelfShadowRangeSlider))  
         return brushResult(8);
 
     if (message == WM_CTLCOLOREDIT || message == WM_CTLCOLORLISTBOX) {
@@ -265,6 +276,125 @@ bool PaintButton(const DRAWITEMSTRUCT* item) {
         DrawFocusRect(item->hDC, &focus);
     }
     return true;
+}
+
+bool MeasureCombo(MEASUREITEMSTRUCT* item) {
+    if (item == nullptr || item->CtlType != ODT_COMBOBOX)
+        return false;
+    item->itemHeight = 19;
+    return true;
+}
+
+bool PaintCombo(const DRAWITEMSTRUCT* item) {
+    if (item == nullptr || item->CtlType != ODT_COMBOBOX ||
+        item->hDC == nullptr || item->hwndItem == nullptr)
+        return false;
+
+    const bool disabled = !IsWindowEnabled(item->hwndItem);
+    const bool selected = (item->itemState & ODS_SELECTED) != 0;
+    HBRUSH background = CreateSolidBrush(selected ? AccentDim : Input);
+    FillRect(item->hDC, &item->rcItem, background);
+    DeleteObject(background);
+
+    if (item->itemID != static_cast<UINT>(-1)) {
+        const LRESULT length = SendMessageA(item->hwndItem, CB_GETLBTEXTLEN,
+                                            item->itemID, 0);
+        if (length >= 0 && length < 65536) {
+            std::string label(static_cast<std::size_t>(length) + 1, '\0');
+            SendMessageA(item->hwndItem, CB_GETLBTEXT, item->itemID,
+                         reinterpret_cast<LPARAM>(&label[0]));
+            RECT area = item->rcItem;
+            area.left += 7;
+            area.right -= 5;
+            HFONT font = reinterpret_cast<HFONT>(
+                SendMessageA(item->hwndItem, WM_GETFONT, 0, 0));
+            HGDIOBJ previous = font != nullptr
+                ? SelectObject(item->hDC, font) : nullptr;
+            SetBkMode(item->hDC, TRANSPARENT);
+            SetTextColor(item->hDC, disabled ? Disabled : Text);
+            DrawTextA(item->hDC, label.c_str(), -1, &area,
+                      DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+            if (previous != nullptr)
+                SelectObject(item->hDC, previous);
+        }
+    }
+
+    if ((item->itemState & ODS_FOCUS) != 0 &&
+        (item->itemState & ODS_COMBOBOXEDIT) == 0) {
+        RECT focus = item->rcItem;
+        InflateRect(&focus, -2, -2);
+        DrawFocusRect(item->hDC, &focus);
+    }
+    return true;
+}
+
+bool PaintTrackbar(NMCUSTOMDRAW* draw, LRESULT* result) {
+    if (draw == nullptr || result == nullptr || draw->hdr.hwndFrom == nullptr ||
+        draw->hdr.code != NM_CUSTOMDRAW)
+        return false;
+    wchar_t className[64]{};
+    GetClassNameW(draw->hdr.hwndFrom, className, 64);
+    if (std::wcscmp(className, TRACKBAR_CLASSW) != 0)
+        return false;
+    if (draw->dwDrawStage == CDDS_PREPAINT) {
+        *result = CDRF_NOTIFYITEMDRAW;
+        return true;
+    }
+    if (draw->dwDrawStage != CDDS_ITEMPREPAINT)
+        return false;
+
+    const DWORD item = static_cast<DWORD>(draw->dwItemSpec);
+    if (item == TBCD_TICS) {
+        *result = CDRF_SKIPDEFAULT;
+        return true;
+    }
+    if (item == TBCD_CHANNEL) {
+        const HWND hwnd = draw->hdr.hwndFrom;
+        RECT channel = draw->rc;
+        const bool vertical = (GetWindowLongPtrW(hwnd, GWL_STYLE) & TBS_VERT) != 0;
+        const int minValue = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMIN, 0, 0));
+        const int maxValue = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMAX, 0, 0));
+        const int position = static_cast<int>(SendMessageW(hwnd, TBM_GETPOS, 0, 0));
+        const double percent = maxValue > minValue ?
+            static_cast<double>(position - minValue) /
+            static_cast<double>(maxValue - minValue) : 0.0;
+        HBRUSH base = CreateSolidBrush(Border);
+        FillRect(draw->hdc, &channel, base);
+        DeleteObject(base);
+        RECT active = channel;
+        if (vertical)
+            active.top = channel.bottom - static_cast<int>(
+                (channel.bottom - channel.top) * percent);
+        else
+            active.right = channel.left + static_cast<int>(
+                (channel.right - channel.left) * percent);
+        HBRUSH fill = CreateSolidBrush(Accent);
+        FillRect(draw->hdc, &active, fill);
+        DeleteObject(fill);
+        *result = CDRF_SKIPDEFAULT;
+        return true;
+    }
+    if (item == TBCD_THUMB) {
+        HBRUSH knob = CreateSolidBrush(Accent);
+        FillRect(draw->hdc, &draw->rc, knob);
+        DeleteObject(knob);
+        *result = CDRF_SKIPDEFAULT;
+        return true;
+    }
+    return false;
+}
+
+void InstallNativeTheme(HWND control) {
+    using SetWindowThemePtr = HRESULT (WINAPI*)(HWND, LPCWSTR, LPCWSTR);
+    static const auto theme = []() -> SetWindowThemePtr {
+        const HMODULE library = LoadLibraryW(L"uxtheme.dll");
+        return library != nullptr
+            ? reinterpret_cast<SetWindowThemePtr>(
+                GetProcAddress(library, "SetWindowTheme"))
+            : nullptr;
+    }();
+    if (theme != nullptr)
+        theme(control, L"DarkMode_Explorer", nullptr);
 }
 
 void InstallToggle(HWND control, DWORD style) {
