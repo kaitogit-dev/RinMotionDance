@@ -192,16 +192,16 @@ void LayoutEditorDock(MMDApp* app) {
     for (int i = 0; i < 6; ++i)
         put(playback, 402 + i, 10 + (i % 3) * (viewW + 7),
             29 + (i / 3) * 26, viewW, 23);
-    put(playback, 408, 10, 84, 86, 26);
-    put(playback, 535, 103, 84, 78, 26);
-    put(playback, 411, 185, 89, 16, 16);
-    put(playback, 412, 10, 115, 16, 16);
-    put(playback, 531, 103, 115, 16, 16);
-    put(playback, 409, 82, 134, 54, 20);
-    put(playback, 410, 207, 134, 57, 20);
-    put(playback, 414, 10, 137, 16, 16);
+    put(playback, 534, 10, 82, 19, 72);
+    put(playback, 408, 37, 84, 75, 26);
+    put(playback, 535, 119, 84, 64, 26);
+    put(playback, 411, 190, 89, 16, 16);
+    put(playback, 412, 37, 115, 16, 16);
+    put(playback, 531, 119, 115, 16, 16);
+    put(playback, 414, 37, 137, 16, 16);
+    put(playback, 409, 98, 134, 51, 20);
     put(playback, 413, 154, 137, 16, 16);
-    put(playback, 534, playW - 28, 86, 20, 68);
+    put(playback, 410, 199, 134, playW - 210, 20);
 }
 
 void PanelPaint(MMDApp* app);  
