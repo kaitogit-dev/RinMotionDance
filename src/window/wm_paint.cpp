@@ -106,7 +106,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;
         text(camera, L"FIELD OF VIEW", 12, 60, size(camera) - 90, ui_style::Muted);
-        text(camera, L"FOLLOW BONE", 12, 101, size(camera) - 24, ui_style::Muted);
+        text(camera, L"FOLLOW BONE", 12, 98, size(camera) - 24, ui_style::Muted);
 
         const DockSection light = DockSection::Secondary;
         const wchar_t* axes[] = {L"R", L"G", L"B", L"X", L"Y", L"Z"};
@@ -126,23 +126,23 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         const wchar_t* second[] = {L"RX", L"RY", L"RZ", L"TRANS."};
         for (int i = 0; i < 4; ++i) {
             const int x = 10 + i * (fieldW + 4);
-            text(accessory, first[i], x, 94, fieldW, ui_style::Muted);
-            text(accessory, second[i], x, 120, fieldW, ui_style::Muted);
+            text(accessory, first[i], x, 90, fieldW, ui_style::Muted);
+            text(accessory, second[i], x, 117, fieldW, ui_style::Muted);
         }
     } else {
         const DockSection facial = DockSection::Secondary;
         const int column = size(facial) / 2;
-        text(facial, L"EYES", 12, 26, column - 22, ui_style::Muted);
-        text(facial, L"MOUTH", column + 12, 26, column - 22, ui_style::Muted);
-        text(facial, L"BROW", 12, 94, column - 22, ui_style::Muted);
-        text(facial, L"OTHER", column + 12, 94, column - 22, ui_style::Muted);
+        text(facial, L"EYES", 12, 24, column - 22, ui_style::Muted);
+        text(facial, L"MOUTH", column + 12, 24, column - 22, ui_style::Muted);
+        text(facial, L"BROW", 12, 92, column - 22, ui_style::Muted);
+        text(facial, L"OTHER", column + 12, 92, column - 22, ui_style::Muted);
     }
 
     const DockSection playback = DockSection::Playback;
-    text(playback, L"REPEAT", 212, 88, 65, ui_style::Muted);
+    text(playback, L"LOOP", 205, 88, 45, ui_style::Muted);
     text(playback, L"MODEL", 30, 113, 67, ui_style::Muted);
     text(playback, L"BONE", 123, 113, 60, ui_style::Muted);
-    text(playback, L"FROM", 31, 136, 43, ui_style::Muted);
+    text(playback, L"FROM", 31, 136, 46, ui_style::Muted);
     text(playback, L"TO", 176, 136, 28, ui_style::Muted);
 }
 

@@ -194,10 +194,10 @@ void LayoutEditorDock(MMDApp* app) {
             29 + (i / 3) * 26, viewW, 23);
     put(playback, 408, 10, 84, 86, 26);
     put(playback, 535, 103, 84, 78, 26);
-    put(playback, 411, 193, 89, 16, 16);
+    put(playback, 411, 185, 89, 16, 16);
     put(playback, 412, 10, 115, 16, 16);
     put(playback, 531, 103, 115, 16, 16);
-    put(playback, 409, 73, 134, 63, 20);
+    put(playback, 409, 82, 134, 54, 20);
     put(playback, 410, 207, 134, 57, 20);
     put(playback, 414, 10, 137, 16, 16);
     put(playback, 413, 154, 137, 16, 16);
