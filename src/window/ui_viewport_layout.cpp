@@ -60,12 +60,12 @@ void LayoutViewportPanels(MMDApp* app) {
     moveLeft(550, 616, 11, 53, 14);
 
     moveRight(557, 140, -22, 50, 20);
-    moveRight(552, 220, -22, 75, 20);
-    moveRight(551, 277, -22, 50, 20);
-    moveRight(556, 382, -22, 100, 20);
-    moveRight(553, 427, -22, 40, 20);
-    moveRight(554, 487, -19, 55, 18);
-    moveRight(555, 537, -22, 45, 20);
+    moveRight(552, 235, -22, 90, 20);
+    moveRight(551, 290, -22, 50, 20);
+    moveRight(556, 405, -22, 110, 20);
+    moveRight(553, 450, -22, 40, 20);
+    moveRight(554, 510, -19, 55, 18);
+    moveRight(555, 560, -22, 45, 20);
 
     for (int i = 536; i <= 557; ++i) {                            
         HWND overlay = GetDlgItem(base, i);
