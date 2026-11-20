@@ -36,10 +36,10 @@ inline EditorDock ComputeEditorDock(MMDApp* app, int clientWidth,
         return dock;
 
     const std::array<int, 7> cameraWidths{
-        240, 240, 240, 245, 165, 250, 270
+        260, 235, 230, 240, 165, 245, 275
     };
     const std::array<int, 7> modelWidths{
-        240, 240, 330, 560, 0, 0, 280
+        260, 235, 330, 550, 0, 0, 275
     };
     const auto& desired = dock.camera ? cameraWidths : modelWidths;
     int x = 0;

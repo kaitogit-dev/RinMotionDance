@@ -18,7 +18,7 @@ inline constexpr COLORREF Text = RGB(216, 221, 228);
 inline constexpr COLORREF Muted = RGB(154, 165, 178);
 inline constexpr COLORREF Accent = RGB(115, 160, 171);
 inline constexpr COLORREF AccentDim = RGB(57, 78, 87);
-inline constexpr COLORREF Disabled = RGB(106, 116, 128);
+inline constexpr COLORREF Disabled = RGB(145, 154, 166);
 
 HBRUSH InputBrush();
 HBRUSH AreaBrush(bool header, bool bottom);
