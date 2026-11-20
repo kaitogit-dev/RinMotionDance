@@ -50,29 +50,35 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         return;
 
     const HWND hwnd = app->MainWindow();
-    HBRUSH background = CreateSolidBrush(ui_style::Surface);
+    HBRUSH background = CreateSolidBrush(ui_style::Window);
     RECT area{0, dock.top, width, height};
     FillRect(dc, &area, background);
     DeleteObject(background);
 
-    HBRUSH head = CreateSolidBrush(ui_style::Header);
-    RECT heading{0, dock.top, width, dock.top + 20};
-    FillRect(dc, &heading, head);
-    DeleteObject(head);
-
-    HPEN line = CreatePen(PS_SOLID, 1, ui_style::Border);
-    HGDIOBJ oldPen = SelectObject(dc, line);
-    MoveToEx(dc, 0, dock.top, nullptr);
-    LineTo(dc, width, dock.top);
-    for (int i = 1; i < 7; ++i) {
+    for (int i = 0; i < 7; ++i) {
         if (dock.width[i] <= 0)
             continue;
-        const int x = dock.left[i];
-        MoveToEx(dc, x, dock.top, nullptr);
-        LineTo(dc, x, height);
+        const int left = dock.left[i] + 2;
+        const int right = dock.left[i] + dock.width[i] - 2;
+        RECT body{left, dock.top + 2, right, height - 3};
+        HBRUSH surface = CreateSolidBrush(
+            (i & 1) != 0 ? ui_style::SurfaceAlt : ui_style::Surface);
+        FillRect(dc, &body, surface);
+        DeleteObject(surface);
+
+        RECT heading{left, dock.top + 2, right, dock.top + 23};
+        HBRUSH header = CreateSolidBrush(ui_style::Header);
+        FillRect(dc, &heading, header);
+        DeleteObject(header);
+
+        const bool contextual = i == DockIndex(DockSection::Edit);
+        if (contextual) {
+            RECT active{left, dock.top + 2, left + 3, dock.top + 23};
+            HBRUSH accent = CreateSolidBrush(ui_style::Accent);
+            FillRect(dc, &active, accent);
+            DeleteObject(accent);
+        }
     }
-    SelectObject(dc, oldPen);
-    DeleteObject(line);
 
     const wchar_t* cameraNames[] = {
         L"INTERPOLATION", L"MODEL", L"CAMERA",
@@ -88,8 +94,10 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         if (dock.width[i] <= 0)
             continue;
         DrawDockLabel(dc, font, names[i],
-                      dock.left[i] + 15, dock.top + 2,
-                      dock.width[i] - 25, ui_style::Text);
+                      dock.left[i] + 15, dock.top + 4,
+                      dock.width[i] - 25,
+                      i == DockIndex(DockSection::Edit) ?
+                          ui_style::Text : ui_style::Muted);
     }
 
     const auto drawHint = [&](int id, const wchar_t* label, int dx, int dy) {
