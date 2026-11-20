@@ -99,14 +99,14 @@ void LayoutEditorDock(MMDApp* app) {
         const int sliders[] = {455, 456, 457, 458, 459, 460};
         const int values[] = {461, 462, 463, 464, 465, 466};
         for (int i = 0; i < 6; ++i) {
-            put(light, sliders[i], 28, 27 + 17 * i,
-                lightW - 93, 18);
-            put(light, values[i], lightW - 59, 27 + 17 * i,
-                47, 19);
+            put(light, sliders[i], 28, 27 + 18 * i,
+                lightW - 93, 17);
+            put(light, values[i], lightW - 59, 27 + 18 * i,
+                47, 17);
         }
-        put(light, 467, 11, 133, (lightW - 35) / 2, 23);
-        put(light, 468, 22 + (lightW - 35) / 2, 133,
-            (lightW - 35) / 2, 23);
+        put(light, 467, 11, 136, (lightW - 35) / 2, 21);
+        put(light, 468, 22 + (lightW - 35) / 2, 136,
+            (lightW - 35) / 2, 21);
         put(light, 469, lightW - 21, 4, 15, 15);
         put(light, 470, lightW - 21, 4, 15, 15);
 
@@ -134,14 +134,16 @@ void LayoutEditorDock(MMDApp* app) {
         put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
         put(accessory, 475, 20 + (accW - 30) / 2, 79,
             (accW - 30) / 2, 130);
-        const int fields[8] = {478, 479, 480, 484, 481, 482, 483, 485};
-        for (int i = 0; i < 8; ++i) {
-            const int column = i % 4;
-            const int row = i / 4;
-            const int fieldW = (accW - 34) / 4;
-            put(accessory, fields[i], 10 + column * (fieldW + 4),
-                108 + row * 26, fieldW, 20);
+        const int cellW = (accW - 20) / 3;
+        for (int i = 0; i < 3; ++i) {
+            put(accessory, 478 + i, 10 + i * cellW + 25, 102,
+                cellW - 28, 17);
+            put(accessory, 481 + i, 10 + i * cellW + 30, 120,
+                cellW - 33, 17);
         }
+        put(accessory, 484, 58, 138, accW / 2 - 65, 17);
+        put(accessory, 485, accW / 2 + 58, 138,
+            accW / 2 - 68, 17);
         put(accessory, 487, accW - 89, 3, 65, 20);
         put(accessory, 488, accW - 20, 4, 14, 14);
         put(accessory, 489, accW - 20, 4, 14, 14);
@@ -174,7 +176,7 @@ void LayoutEditorDock(MMDApp* app) {
         for (int i = 0; i < 4; ++i) {
             const int x = 11 + (i % 2) * colWidth;
             const int y = 41 + (i / 2) * 68;
-            put(facial, comboIds[i], x, y, colWidth - 79, 150);
+            put(facial, comboIds[i], x, y, colWidth - 86, 150);
             put(facial, prevIds[i], x + colWidth - 70, y, 26, 23);
             put(facial, nextIds[i], x + colWidth - 38, y, 26, 23);
             put(facial, sliderIds[i], x, y + 25, colWidth - 142, 20);

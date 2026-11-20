@@ -99,7 +99,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     text(interp, L"AUTO", 164, 58, 65, ui_style::Muted);
 
     const DockSection model = DockSection::Model;
-    text(model, L"DISPLAY", 30, 85, 65, ui_style::Muted);
+    text(model, L"SHOW", 30, 85, 50, ui_style::Muted);
     text(model, L"ON", 31, 137, 39, ui_style::Muted);
     text(model, L"OFF", 93, 137, 42, ui_style::Muted);
 
@@ -111,7 +111,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         const DockSection light = DockSection::Secondary;
         const wchar_t* axes[] = {L"R", L"G", L"B", L"X", L"Y", L"Z"};
         for (int i = 0; i < 6; ++i)
-            text(light, axes[i], 12, 28 + i * 17, 18, ui_style::Muted);
+            text(light, axes[i], 12, 28 + i * 18, 18, ui_style::Muted);
 
         const DockSection shadow = DockSection::Shadow;
         text(shadow, L"SHADOW RANGE", 10, 68, size(shadow) - 82, ui_style::Muted);
@@ -121,14 +121,17 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         const DockSection accessory = DockSection::Accessory;
         text(accessory, L"V", size(accessory) - 67, 30, 14, ui_style::Muted);
         text(accessory, L"S", size(accessory) - 27, 30, 14, ui_style::Muted);
-        const int fieldW = (size(accessory) - 34) / 4;
-        const wchar_t* first[] = {L"X", L"Y", L"Z", L"SIZE"};
-        const wchar_t* second[] = {L"RX", L"RY", L"RZ", L"TRANS."};
-        for (int i = 0; i < 4; ++i) {
-            const int x = 10 + i * (fieldW + 4);
-            text(accessory, first[i], x, 90, fieldW, ui_style::Muted);
-            text(accessory, second[i], x, 117, fieldW, ui_style::Muted);
+        const int cellW = (size(accessory) - 20) / 3;
+        const wchar_t* positionLabels[] = {L"X", L"Y", L"Z"};
+        const wchar_t* rotationLabels[] = {L"RX", L"RY", L"RZ"};
+        for (int i = 0; i < 3; ++i) {
+            const int x = 10 + i * cellW;
+            text(accessory, positionLabels[i], x, 102, 19, ui_style::Muted);
+            text(accessory, rotationLabels[i], x, 120, 27, ui_style::Muted);
         }
+        text(accessory, L"SIZE", 10, 138, 43, ui_style::Muted);
+        text(accessory, L"ALPHA", size(accessory) / 2 + 10,
+             138, 46, ui_style::Muted);
     } else {
         const DockSection facial = DockSection::Secondary;
         const int column = size(facial) / 2;
