@@ -542,7 +542,7 @@ float PmdEdgeDistance(MMDApp* app, unsigned char* model,
 }
 
 void SkinPmd(unsigned char* model, float edgeDistance,
-             mdl::EdgeVertex* edgeVertices,
+             bool parallelSkinning, mdl::EdgeVertex* edgeVertices,
              mdl::SkinnedVertexBase* mainVertices) {
     const mdl::ModelRecord& record = *mdl::Mdl(model);
     const std::uint32_t vertexCount = record.vertexCount;
@@ -553,7 +553,7 @@ void SkinPmd(unsigned char* model, float edgeDistance,
         return;
 
 #if defined(_M_X64)
-#pragma omp parallel for
+#pragma omp parallel for if(parallelSkinning && vertexCount >= 131072) num_threads(4)
     for (int i = 0; i < static_cast<int>(vertexCount); ++i) {
 #else
     for (std::uint32_t i = 0; i < vertexCount; ++i) {
@@ -597,7 +597,7 @@ void SkinPmd(unsigned char* model, float edgeDistance,
 
 template <std::size_t AdditionalUvCount>
 void SkinPmx(unsigned char* model, float edgeDistance, bool opaqueEdge,
-             mdl::EdgeVertex* edgeVertices,
+             bool parallelSkinning, mdl::EdgeVertex* edgeVertices,
              mdl::SkinnedVertex<AdditionalUvCount>* mainVertices) {
     const mdl::ModelRecord& record = *mdl::Mdl(model);
     const std::uint32_t vertexCount = record.vertexCount;
@@ -609,7 +609,7 @@ void SkinPmx(unsigned char* model, float edgeDistance, bool opaqueEdge,
     if (vertices == nullptr || bones == nullptr || materials == nullptr)
         return;
 
-#pragma omp parallel for
+#pragma omp parallel for if(parallelSkinning && vertexCount >= 131072) num_threads(4)
     for (int i = 0; i < static_cast<int>(vertexCount); ++i) {
         const mdl::PmxVertex& source = vertices[i];
         mdl::SkinnedVertex<AdditionalUvCount>& main = mainVertices[i];
@@ -683,25 +683,27 @@ void UpdatePmxModelVertexBuffers(MMDApp* app, unsigned char* model,
 
     const float edgeDistance = PmdEdgeDistance(app, model, frameWorld);
     const bool opaqueEdge = app->state.selfShadowEnabled != 0;
+    const bool parallelSkinning = app->PlaybackActive() != 0 ||
+                                  app->RecordingWindow() != nullptr;
     switch (additionalUv) {
     case 0:
-        SkinPmx<0>(model, edgeDistance, opaqueEdge, edgeVertices,
+        SkinPmx<0>(model, edgeDistance, opaqueEdge, parallelSkinning, edgeVertices,
                    reinterpret_cast<mdl::SkinnedVertex<0>*>(mainVertices));
         break;
     case 1:
-        SkinPmx<1>(model, edgeDistance, opaqueEdge, edgeVertices,
+        SkinPmx<1>(model, edgeDistance, opaqueEdge, parallelSkinning, edgeVertices,
                    reinterpret_cast<mdl::SkinnedVertex<1>*>(mainVertices));
         break;
     case 2:
-        SkinPmx<2>(model, edgeDistance, opaqueEdge, edgeVertices,
+        SkinPmx<2>(model, edgeDistance, opaqueEdge, parallelSkinning, edgeVertices,
                    reinterpret_cast<mdl::SkinnedVertex<2>*>(mainVertices));
         break;
     case 3:
-        SkinPmx<3>(model, edgeDistance, opaqueEdge, edgeVertices,
+        SkinPmx<3>(model, edgeDistance, opaqueEdge, parallelSkinning, edgeVertices,
                    reinterpret_cast<mdl::SkinnedVertex<3>*>(mainVertices));
         break;
     default:
-        SkinPmx<4>(model, edgeDistance, opaqueEdge, edgeVertices,
+        SkinPmx<4>(model, edgeDistance, opaqueEdge, parallelSkinning, edgeVertices,
                    reinterpret_cast<mdl::SkinnedVertex<4>*>(mainVertices));
         break;
     }
@@ -746,8 +748,9 @@ void UpdateModelVertexBuffers(MMDApp* app, unsigned char* model,
         return;
     }
 
-    SkinPmd(model, PmdEdgeDistance(app, model, frameWorld), edgeVertices,
-            mainVertices);
+    SkinPmd(model, PmdEdgeDistance(app, model, frameWorld),
+            app->PlaybackActive() != 0 || app->RecordingWindow() != nullptr,
+            edgeVertices, mainVertices);
     DumpModelVertexBuffers(app, model, mainVertices, edgeVertices, count, 32);
     mainVb->Unlock();
     edgeVb->Unlock();
