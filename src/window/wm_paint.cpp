@@ -34,51 +34,29 @@ void DrawDockLabel(HDC dc, HFONT font, const wchar_t* label,
         SelectObject(dc, old);
 }
 
-POINT DockControlPosition(HWND hwnd, int id) {
-    HWND control = GetDlgItem(hwnd, id);
-    RECT r{};
-    if (control != nullptr)
-        GetWindowRect(control, &r);
-    POINT p{r.left, r.top};
-    ScreenToClient(hwnd, &p);
-    return p;
-}
-
 void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     const EditorDock dock = ComputeEditorDock(app, width, height);
     if (!dock.enabled)
         return;
 
     const HWND hwnd = app->MainWindow();
+    const HFONT font = reinterpret_cast<HFONT>(app->state.hFontUI);
+    const auto position = [&](DockSection section) -> int {
+        return dock.left[DockIndex(section)];
+    };
+    const auto size = [&](DockSection section) -> int {
+        return dock.width[DockIndex(section)];
+    };
+    const auto text = [&](DockSection section, const wchar_t* label,
+                          int x, int y, int w, COLORREF color) {
+        DrawDockLabel(dc, font, label, position(section) + x,
+                      dock.top + y, w, color);
+    };
+
     HBRUSH background = CreateSolidBrush(ui_style::Window);
     RECT area{0, dock.top, width, height};
     FillRect(dc, &area, background);
     DeleteObject(background);
-
-    for (int i = 0; i < 7; ++i) {
-        if (dock.width[i] <= 0)
-            continue;
-        const int left = dock.left[i] + 2;
-        const int right = dock.left[i] + dock.width[i] - 2;
-        RECT body{left, dock.top + 2, right, height - 3};
-        HBRUSH surface = CreateSolidBrush(
-            (i & 1) != 0 ? ui_style::SurfaceAlt : ui_style::Surface);
-        FillRect(dc, &body, surface);
-        DeleteObject(surface);
-
-        RECT heading{left, dock.top + 2, right, dock.top + 23};
-        HBRUSH header = CreateSolidBrush(ui_style::Header);
-        FillRect(dc, &heading, header);
-        DeleteObject(header);
-
-        const bool contextual = i == DockIndex(DockSection::Edit);
-        if (contextual) {
-            RECT active{left, dock.top + 2, left + 3, dock.top + 23};
-            HBRUSH accent = CreateSolidBrush(ui_style::Accent);
-            FillRect(dc, &active, accent);
-            DeleteObject(accent);
-        }
-    }
 
     const wchar_t* cameraNames[] = {
         L"INTERPOLATION", L"MODEL", L"CAMERA",
@@ -89,56 +67,84 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         L"FACIAL MORPHS", L"", L"", L"VIEW / PLAYBACK"
     };
     const wchar_t* const* names = dock.camera ? cameraNames : modelNames;
-    HFONT font = reinterpret_cast<HFONT>(app->state.hFontUI);
     for (int i = 0; i < 7; ++i) {
         if (dock.width[i] <= 0)
             continue;
-        DrawDockLabel(dc, font, names[i],
-                      dock.left[i] + 15, dock.top + 4,
-                      dock.width[i] - 25,
-                      i == DockIndex(DockSection::Edit) ?
-                          ui_style::Text : ui_style::Muted);
+        const int left = dock.left[i] + 2;
+        const int right = dock.left[i] + dock.width[i] - 2;
+        RECT body{left, dock.top + 2, right, height - 3};
+        HBRUSH surface = CreateSolidBrush(
+            (i & 1) != 0 ? ui_style::SurfaceAlt : ui_style::Surface);
+        FillRect(dc, &body, surface);
+        DeleteObject(surface);
+        RECT heading{left, dock.top + 2, right, dock.top + 24};
+        HBRUSH header = CreateSolidBrush(ui_style::Header);
+        FillRect(dc, &heading, header);
+        DeleteObject(header);
+        if (i == DockIndex(DockSection::Edit)) {
+            RECT active{left, dock.top + 2, left + 3, dock.top + 24};
+            HBRUSH accent = CreateSolidBrush(ui_style::Accent);
+            FillRect(dc, &active, accent);
+            DeleteObject(accent);
+        }
+        const int reserve = dock.camera && i == DockIndex(DockSection::Accessory)
+            ? 92 : 28;
+        DrawDockLabel(dc, font, names[i], left + 12, dock.top + 5,
+                      dock.width[i] - reserve,
+                      i == DockIndex(DockSection::Edit)
+                          ? ui_style::Text : ui_style::Muted);
     }
 
-    const auto drawHint = [&](int id, const wchar_t* label, int dx, int dy) {
-        const HWND control = GetDlgItem(hwnd, id);
-        if (control == nullptr || !IsWindowVisible(control))
-            return;
-        const POINT p = DockControlPosition(hwnd, id);
-        DrawDockLabel(dc, font, label, p.x + dx, p.y + dy,
-                      92, ui_style::Muted);
-    };
-    drawHint(530, L"AUTO", 16, -1);
-    drawHint(439, L"DISPLAY", 15, -2);
-    drawHint(444, L"ON", 17, -1);
-    drawHint(445, L"OFF", 17, -1);
+    const DockSection interp = DockSection::Interpolation;
+    text(interp, L"AUTO", 164, 58, 65, ui_style::Muted);
+
+    const DockSection model = DockSection::Model;
+    text(model, L"DISPLAY", 30, 85, 65, ui_style::Muted);
+    text(model, L"ON", 31, 137, 39, ui_style::Muted);
+    text(model, L"OFF", 93, 137, 42, ui_style::Muted);
 
     if (dock.camera) {
-        drawHint(447, L"FOV", 8, -15);
-        drawHint(449, L"FOLLOW", 0, -15);
-        const int sliders[] = {455, 456, 457, 458, 459, 460};
+        const DockSection camera = DockSection::Edit;
+        text(camera, L"FIELD OF VIEW", 12, 60, size(camera) - 90, ui_style::Muted);
+        text(camera, L"FOLLOW BONE", 12, 101, size(camera) - 24, ui_style::Muted);
+
+        const DockSection light = DockSection::Secondary;
         const wchar_t* axes[] = {L"R", L"G", L"B", L"X", L"Y", L"Z"};
         for (int i = 0; i < 6; ++i)
-            drawHint(sliders[i], axes[i], -14, 0);
-        const int acc[] = {478, 479, 480, 481, 482, 483, 484, 485};
-        const wchar_t* accLabels[] = {
-            L"X", L"Y", L"Z", L"RX", L"RY", L"RZ", L"S", L"T"
-        };
-        for (int i = 0; i < 8; ++i)
-            drawHint(acc[i], accLabels[i], -17, 0);
-    } else {
-        const int morph[] = {509, 514, 504, 519};
-        const wchar_t* names[] = {L"EYES", L"MOUTH", L"BROW", L"OTHER"};
-        for (int i = 0; i < 4; ++i)
-            drawHint(morph[i], names[i], 0, -16);
-    }
-    drawHint(412, L"MODEL", 16, -2);
-    drawHint(531, L"BONE", 16, -2);
-    drawHint(411, L"REPEAT", 16, -2);
-    drawHint(413, L"END", 14, -2);
-    drawHint(414, L"START", 14, -2);
-}
+            text(light, axes[i], 12, 28 + i * 17, 18, ui_style::Muted);
 
+        const DockSection shadow = DockSection::Shadow;
+        text(shadow, L"SHADOW RANGE", 10, 68, size(shadow) - 82, ui_style::Muted);
+        text(shadow, L"DETAIL", 10, 112, 60, ui_style::Muted);
+        text(shadow, L"DISTANCE", size(shadow) - 82, 112, 71, ui_style::Muted);
+
+        const DockSection accessory = DockSection::Accessory;
+        text(accessory, L"V", size(accessory) - 67, 30, 14, ui_style::Muted);
+        text(accessory, L"S", size(accessory) - 27, 30, 14, ui_style::Muted);
+        const int fieldW = (size(accessory) - 34) / 4;
+        const wchar_t* first[] = {L"X", L"Y", L"Z", L"SIZE"};
+        const wchar_t* second[] = {L"RX", L"RY", L"RZ", L"TRANS."};
+        for (int i = 0; i < 4; ++i) {
+            const int x = 10 + i * (fieldW + 4);
+            text(accessory, first[i], x, 94, fieldW, ui_style::Muted);
+            text(accessory, second[i], x, 120, fieldW, ui_style::Muted);
+        }
+    } else {
+        const DockSection facial = DockSection::Secondary;
+        const int column = size(facial) / 2;
+        text(facial, L"EYES", 12, 26, column - 22, ui_style::Muted);
+        text(facial, L"MOUTH", column + 12, 26, column - 22, ui_style::Muted);
+        text(facial, L"BROW", 12, 94, column - 22, ui_style::Muted);
+        text(facial, L"OTHER", column + 12, 94, column - 22, ui_style::Muted);
+    }
+
+    const DockSection playback = DockSection::Playback;
+    text(playback, L"REPEAT", 212, 88, 65, ui_style::Muted);
+    text(playback, L"MODEL", 30, 113, 67, ui_style::Muted);
+    text(playback, L"BONE", 123, 113, 60, ui_style::Muted);
+    text(playback, L"FROM", 31, 136, 43, ui_style::Muted);
+    text(playback, L"TO", 176, 136, 28, ui_style::Muted);
+}
 
 
 }  

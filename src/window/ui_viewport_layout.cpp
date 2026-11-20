@@ -43,7 +43,7 @@ void LayoutViewportPanels(MMDApp* app) {
             MoveWindow(GetDlgItem(base, id), -9000, -9000, 1, 1, TRUE);
     };
 
-    moveLeft(536,   5,  3, 55, 27);   
+    moveLeft(536,   5,  3, 112, 27);   
     moveLeft(537, 140,  9, 16, 17);   
     moveLeft(544, 157, 11, 53, 14);   
     moveLeft(538, 213,  9, 16, 17);   
@@ -59,13 +59,13 @@ void LayoutViewportPanels(MMDApp* app) {
     moveLeft(543, 579,  8, 36, 21);   
     moveLeft(550, 616, 11, 53, 14);
 
-    moveRight(557, 140, -22, 50, 20); 
-    moveRight(552, 195, -22, 50, 20); 
-    moveRight(551, 250, -22, 50, 20); 
-    moveRight(556, 327, -22, 72, 20);
-    moveRight(553, 382, -22, 40, 20);
-    moveRight(554, 420, -19, 35, 14);
-    moveRight(555, 463, -22, 40, 20);
+    moveRight(557, 140, -22, 50, 20);
+    moveRight(552, 220, -22, 75, 20);
+    moveRight(551, 277, -22, 50, 20);
+    moveRight(556, 382, -22, 100, 20);
+    moveRight(553, 427, -22, 40, 20);
+    moveRight(554, 487, -19, 55, 18);
+    moveRight(555, 537, -22, 45, 20);
 
     for (int i = 536; i <= 557; ++i) {                            
         HWND overlay = GetDlgItem(base, i);

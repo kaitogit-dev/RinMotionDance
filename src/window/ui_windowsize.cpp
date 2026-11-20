@@ -134,11 +134,12 @@ void LayoutEditorDock(MMDApp* app) {
         put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
         put(accessory, 475, 20 + (accW - 30) / 2, 79,
             (accW - 30) / 2, 130);
+        const int fields[8] = {478, 479, 480, 484, 481, 482, 483, 485};
         for (int i = 0; i < 8; ++i) {
-            const int column = i < 4 ? i : i - 4;
-            const int row = i < 4 ? 0 : 1;
+            const int column = i % 4;
+            const int row = i / 4;
             const int fieldW = (accW - 34) / 4;
-            put(accessory, 478 + i, 10 + column * (fieldW + 4),
+            put(accessory, fields[i], 10 + column * (fieldW + 4),
                 108 + row * 26, fieldW, 20);
         }
         put(accessory, 487, accW - 89, 3, 65, 20);
@@ -196,10 +197,10 @@ void LayoutEditorDock(MMDApp* app) {
     put(playback, 411, 193, 89, 16, 16);
     put(playback, 412, 10, 115, 16, 16);
     put(playback, 531, 103, 115, 16, 16);
-    put(playback, 409, 43, 134, 63, 20);
-    put(playback, 410, 158, 134, 63, 20);
+    put(playback, 409, 73, 134, 63, 20);
+    put(playback, 410, 207, 134, 57, 20);
     put(playback, 414, 10, 137, 16, 16);
-    put(playback, 413, 124, 137, 16, 16);
+    put(playback, 413, 154, 137, 16, 16);
     put(playback, 534, playW - 28, 86, 20, 68);
 }
 
