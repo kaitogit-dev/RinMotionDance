@@ -197,7 +197,7 @@ void PlaybackCatchup(MMDApp* app, unsigned char selActive) {
     if (s.state.messageSeen == 0)
         return;                                    
     g_CatchupDtBudget = s.state.deltaTime;                   
-    if (s.PlaybackActive() == 0)
+    if (s.PlaybackActive() == 0 || PlaybackIsPaused(app))
         return;                                    
 
     const int count =

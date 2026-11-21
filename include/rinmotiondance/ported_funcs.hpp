@@ -86,7 +86,11 @@ bool StartMp4Recording(HWND owner, const wchar_t* path, std::int32_t width,
                        std::int32_t height, float fps);
 bool WriteMp4Frame(const void* pixels, std::int32_t width, std::int32_t height);
 bool FinishMp4Recording(HWND owner);  
-void StopPlayback(MMDApp* app);  
+void StopPlayback(MMDApp* app);
+void TogglePlaybackPause(MMDApp* app);
+bool PlaybackIsPaused(const MMDApp* app);
+void RefreshPlaybackPauseButton(MMDApp* app);
+void ResetPlaybackPause(MMDApp* app);  
 void CloseDataFile(void* file);                       
 void WaveCtxReset(void* obj);                         
 bool WaveFindDataChunk(void* obj, FILE* stream);      

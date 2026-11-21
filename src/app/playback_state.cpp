@@ -15,8 +15,73 @@
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/wave_audio_context.hpp"
 
 namespace rinmotiondance {
+
+namespace {
+struct PauseState {
+    const MMDApp* app{};
+    std::uint64_t started{};
+    bool paused{};
+};
+
+PauseState pauseState;
+
+std::uint64_t PlaybackTicks(MMDApp* app) {
+    return (static_cast<std::uint64_t>(app->TimeNowHigh()) << 32) |
+           app->TimeNowLow();
+}
+}
+
+bool PlaybackIsPaused(const MMDApp* app) {
+    return pauseState.app == app && pauseState.paused;
+}
+
+void RefreshPlaybackPauseButton(MMDApp* app) {
+    HWND pause = GetDlgItem(static_cast<HWND>(app->Hwnd()),
+                            panel::kPauseButton);
+    if (pause == nullptr)
+        return;
+    const bool active = app->PlaybackActive() != 0 &&
+                        app->FrameStepPlayback() == 0;
+    EnableWindow(pause, active);
+    SetWindowTextW(pause, PlaybackIsPaused(app) ? L"Resume" : L"Pause");
+}
+
+void ResetPlaybackPause(MMDApp* app) {
+    pauseState = {};
+    RefreshPlaybackPauseButton(app);
+}
+
+void TogglePlaybackPause(MMDApp* app) {
+    if (app == nullptr || app->PlaybackActive() == 0 ||
+        app->FrameStepPlayback() != 0)
+        return;
+
+    WaveAudioContext* audio = app->Audio();
+    if (!PlaybackIsPaused(app)) {
+        pauseState.app = app;
+        pauseState.started = PlaybackTicks(app);
+        pauseState.paused = true;
+        if (app->WaveEnabled() != 0 && audio != nullptr &&
+            audio->streamingBuffer != nullptr)
+            audio->streamingBuffer->Stop();
+    } else {
+        const std::uint64_t delta = PlaybackTicks(app) -
+                                    pauseState.started;
+        const std::uint64_t anchor =
+            ((static_cast<std::uint64_t>(app->PlaybackClockAnchorHigh()) << 32) |
+             app->PlaybackClockAnchorLow()) + delta;
+        app->PlaybackClockAnchorLow() = static_cast<std::uint32_t>(anchor);
+        app->PlaybackClockAnchorHigh() = static_cast<std::uint32_t>(anchor >> 32);
+        pauseState = {};
+        if (app->WaveEnabled() != 0 && audio != nullptr &&
+            audio->streamingBuffer != nullptr)
+            audio->streamingBuffer->Play(0, 0, DSBPLAY_LOOPING);
+    }
+    RefreshPlaybackPauseButton(app);
+}
 
 void SyncModelEditControls(unsigned char* model);  
 void ApplyAccessoryTrack(MMDApp* app, int index);  
@@ -325,10 +390,12 @@ void UpdateBoneFrames(MMDApp* app) {
     HWND overlay = app->FloatingWindow();
     EnableRange(overlay != nullptr ? overlay : hwnd, 536, 550, FALSE);
     DisablePlaybackMenus(hwnd);
+    RefreshPlaybackPauseButton(app);
     PostLanguageSweep2(app);
 }
 
 void StopPlayback(MMDApp* app) {
+    ResetPlaybackPause(app);
 #ifdef RINMOTIONDANCE_DIAG
     if (getenv("RINMOTIONDANCE_TRACE_REC")) {
         FILE* tf = fopen(getenv("RINMOTIONDANCE_TRACE_REC"), "a");

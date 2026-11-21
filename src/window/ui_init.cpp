@@ -474,6 +474,7 @@ bool CreateUIControls(MMDApp* app, HWND hwnd) {
         InstallControlSubclass(app, control, c.id);
     }
 
+    EnableWindow(GetDlgItem(hwnd, panel::kPauseButton), FALSE);
     SetWindowTextA(GetDlgItem(hwnd, panel::kGotoFrameEdit), "0");
 
     InitToonTextures(app);

@@ -5,7 +5,8 @@ namespace panel {
 
 constexpr int kUndoButton = 400;             
 constexpr int kRedoButton = 401;             
-constexpr int kPlayButton = 408;             
+constexpr int kPlayButton = 408;
+constexpr int kPauseButton = 568;             
 constexpr int kPlayStartFrameEdit = 409;     
 constexpr int kPlayStopFrameEdit = 410;      
 constexpr int kCurrentFrameEdit = 417;       

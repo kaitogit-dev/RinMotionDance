@@ -197,11 +197,12 @@ void LayoutEditorDock(MMDApp* app) {
             29 + (i / 3) * 26,
             (i % 3) == 2 ? playW - 20 - 2 * viewW : viewW, 23);
     put(playback, 534, 10, 82, 19, 72);
-    put(playback, 408, 37, 84, 75, 26);
-    put(playback, 535, 119, 84, 64, 26);
-    put(playback, 411, 190, 89, 16, 16);
+    put(playback, 408, 37, 84, 70, 24);
+    put(playback, 568, 107, 84, 70, 24);
+    put(playback, 535, 184, 84, playW - 194, 24);
     put(playback, 412, 37, 115, 16, 16);
     put(playback, 531, 119, 115, 16, 16);
+    put(playback, 411, 204, 115, 16, 16);
     put(playback, 414, 37, 137, 16, 16);
     put(playback, 409, 98, 134, 51, 20);
     put(playback, 413, 154, 137, 16, 16);

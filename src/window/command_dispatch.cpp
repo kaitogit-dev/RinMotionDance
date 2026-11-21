@@ -338,6 +338,10 @@ void CommandDispatch(HWND ctrl, WPARAM wParam) {
     const std::uint16_t notification = HIWORD(wParam);
 
     switch (id) {
+    case panel::kPauseButton:
+        if (notification == BN_CLICKED)
+            TogglePlaybackPause(app);
+        break;
     case 200:        
         s.state.dialogFlags[0] = 1;
         SendMessageA(hwnd, WM_CLOSE, 0, 0);

@@ -142,7 +142,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     }
 
     const DockSection playback = DockSection::Playback;
-    text(playback, L"LOOP", 210, 88, 42, ui_style::Muted);
+    text(playback, L"LOOP", 223, 113, 42, ui_style::Muted);
     text(playback, L"MODEL", 57, 113, 58, ui_style::Muted);
     text(playback, L"BONE", 139, 113, 51, ui_style::Muted);
     text(playback, L"FROM", 57, 136, 41, ui_style::Muted);
