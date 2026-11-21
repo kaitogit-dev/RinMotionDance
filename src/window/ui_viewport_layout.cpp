@@ -76,7 +76,7 @@ void LayoutViewportPanels(MMDApp* app) {
                     SelectObject(dc, font) : nullptr;
                 SIZE size{};
                 GetTextExtentPoint32W(dc, caption, lstrlenW(caption), &size);
-                width = std::max(minimum, size.cx + 10);
+                width = std::max(minimum, static_cast<int>(size.cx) + 10);
                 if (previous != nullptr)
                     SelectObject(dc, previous);
                 ReleaseDC(control, dc);

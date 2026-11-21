@@ -75,7 +75,7 @@ void LayoutEditorDock(MMDApp* app) {
         if (original != nullptr)
             SelectObject(dc, original);
         ReleaseDC(control, dc);
-        return std::max(minimum, extent.cx + 10);
+        return std::max(minimum, static_cast<int>(extent.cx) + 10);
     };
     const auto group = [&](DockSection section, int x, int y, int h,
                            std::initializer_list<int> buttons,
