@@ -3,6 +3,8 @@
 #include <Windows.h>
 
 #include <cstdint>
+#include <algorithm>
+#include <cwchar>
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
@@ -59,13 +61,38 @@ void LayoutViewportPanels(MMDApp* app) {
     moveLeft(543, 757, 3, 43, 22);
     moveLeft(550, 801, 5, 66, 20);
 
-    moveRight(557, 140, -22, 50, 20);
-    moveRight(552, 235, -22, 90, 20);
-    moveRight(551, 290, -22, 50, 20);
-    moveRight(556, 405, -22, 110, 20);
-    moveRight(553, 450, -22, 40, 20);
-    moveRight(554, 510, -19, 55, 18);
-    moveRight(555, 560, -22, 45, 20);
+    int toolbarRight = right - 80;
+    const auto placeToolbar = [&](int id, int minimum, int dy, int height) {
+        const HWND control = GetDlgItem(base, id);
+        int width = minimum;
+        if (control != nullptr && id != 554) {
+            wchar_t caption[160]{};
+            GetWindowTextW(control, caption, 160);
+            HDC dc = GetDC(control);
+            if (dc != nullptr) {
+                const HFONT font = reinterpret_cast<HFONT>(
+                    SendMessageW(control, WM_GETFONT, 0, 0));
+                HGDIOBJ previous = font != nullptr ?
+                    SelectObject(dc, font) : nullptr;
+                SIZE size{};
+                GetTextExtentPoint32W(dc, caption, lstrlenW(caption), &size);
+                width = std::max(minimum, size.cx + 10);
+                if (previous != nullptr)
+                    SelectObject(dc, previous);
+                ReleaseDC(control, dc);
+            }
+        }
+        toolbarRight -= width;
+        moveRight(id, right - toolbarRight, dy, width, height);
+        toolbarRight -= 3;
+    };
+    placeToolbar(557, 36, -22, 20);
+    placeToolbar(552, 62, -22, 20);
+    placeToolbar(551, 34, -22, 20);
+    placeToolbar(556, 80, -22, 20);
+    placeToolbar(553, 29, -22, 20);
+    placeToolbar(554, 52, -19, 18);
+    placeToolbar(555, 31, -22, 20);
 
     for (int i = 536; i <= 557; ++i) {                            
         HWND overlay = GetDlgItem(base, i);
