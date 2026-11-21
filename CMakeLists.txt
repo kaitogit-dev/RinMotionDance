@@ -174,6 +174,7 @@ target_link_libraries(rinmotiondance_core PUBLIC
     gdi32       
     msimg32     
     comctl32    
+    gdiplus
     shell32     
     d3d9        
     vfw32       

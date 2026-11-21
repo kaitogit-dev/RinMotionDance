@@ -10,8 +10,11 @@
 #include "rinmotiondance/panel_controls.hpp"
 #include "rinmotiondance/ui_style.hpp"
 #include <commctrl.h>
+#include <gdiplus.h>
 #include <string>
 #include <cwchar>
+#include <algorithm>
+#include "rinmotiondance/editor_dock.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -112,6 +115,7 @@ namespace ui_style {
 namespace {
 HBRUSH inputBrush = nullptr;
 HBRUSH panelBrush = nullptr;
+HBRUSH panelAltBrush = nullptr;
 HBRUSH canvasBrush = nullptr;
 HBRUSH headerBrush = nullptr;
 
@@ -130,6 +134,20 @@ HBRUSH Background(HWND hwnd) {
     GetClientRect(main, &client);
     POINT point{window.left, window.top};
     ScreenToClient(main, &point);
+    const EditorDock dock = ComputeEditorDock(g_Block, client.right, client.bottom);
+    if (dock.enabled && point.y >= dock.top) {
+        for (int i = 0; i < 7; ++i) {
+            if (dock.width[i] == 0 ||
+                point.x < dock.left[i] ||
+                point.x >= dock.left[i] + dock.width[i])
+                continue;
+            if (point.y < dock.top + 24)
+                return Brush(headerBrush, Header);
+            if ((i & 1) != 0)
+                return Brush(panelAltBrush, SurfaceAlt);
+            return Brush(panelBrush, Surface);
+        }
+    }
     return AreaBrush(point.y < 50 && point.x < g_Block->SidebarWidth(),
                      point.y >= client.bottom - 160);
 }
@@ -147,6 +165,178 @@ void DrawLabel(HDC dc, HWND hwnd, RECT bounds, COLORREF color, UINT align) {
         SelectObject(dc, old);
 }
 
+enum class SegmentPart {
+    Single,
+    First,
+    Middle,
+    Last
+};
+
+SegmentPart SegmentOf(HWND hwnd) {
+    if (g_Block == nullptr)
+        return SegmentPart::Single;
+    RECT client{};
+    GetClientRect(static_cast<HWND>(g_Block->Hwnd()), &client);
+    if (!ComputeEditorDock(g_Block, client.right, client.bottom).enabled)
+        return SegmentPart::Single;
+    const int groups[][3] = {
+        {435, 437, 0}, {440, 441, 0}, {451, 446, 0},
+        {467, 468, 0}, {562, 563, 564}, {472, 473, 477},
+        {402, 403, 404}, {405, 406, 407},
+        {490, 493, 492}, {491, 494, 501},
+        {496, 497, 498}, {500, 495, 499}
+    };
+    const int id = GetDlgCtrlID(hwnd);
+    for (const auto& group : groups) {
+        int n = 0;
+        while (n < 3 && group[n] != 0)
+            ++n;
+        for (int i = 0; i < n; ++i) {
+            if (id == group[i])
+                return i == 0 ? SegmentPart::First :
+                       i == n - 1 ? SegmentPart::Last :
+                                    SegmentPart::Middle;
+        }
+    }
+    return SegmentPart::Single;
+}
+
+struct GraphicsSession {
+    ULONG_PTR token{};
+    GraphicsSession() {
+        Gdiplus::GdiplusStartupInput input;
+        Gdiplus::GdiplusStartup(&token, &input, nullptr);
+    }
+    ~GraphicsSession() {
+        if (token != 0)
+            Gdiplus::GdiplusShutdown(token);
+    }
+};
+
+Gdiplus::Color GraphicsColor(COLORREF color) {
+    return Gdiplus::Color(255, GetRValue(color),
+                         GetGValue(color), GetBValue(color));
+}
+
+void RoundedPath(Gdiplus::GraphicsPath& path,
+                 Gdiplus::RectF rect, float radius, SegmentPart part) {
+    const bool left = part == SegmentPart::Single || part == SegmentPart::First;
+    const bool right = part == SegmentPart::Single || part == SegmentPart::Last;
+    const float x = rect.X;
+    const float y = rect.Y;
+    const float r = x + rect.Width;
+    const float b = y + rect.Height;
+    const float d = radius * 2.0f;
+    if (left)
+        path.AddArc(x, y, d, d, 180.0f, 90.0f);
+    else
+        path.AddLine(x, y, x, y);
+    path.AddLine(x + (left ? radius : 0.0f), y,
+                 r - (right ? radius : 0.0f), y);
+    if (right)
+        path.AddArc(r - d, y, d, d, 270.0f, 90.0f);
+    path.AddLine(r, y + (right ? radius : 0.0f),
+                 r, b - (right ? radius : 0.0f));
+    if (right)
+        path.AddArc(r - d, b - d, d, d, 0.0f, 90.0f);
+    path.AddLine(r - (right ? radius : 0.0f), b,
+                 x + (left ? radius : 0.0f), b);
+    if (left)
+        path.AddArc(x, b - d, d, d, 90.0f, 90.0f);
+    path.AddLine(x, b - (left ? radius : 0.0f),
+                 x, y + (left ? radius : 0.0f));
+    path.CloseFigure();
+}
+
+bool IsHovered(HWND hwnd) {
+    return GetPropW(hwnd, L"RinMotionDance.ButtonHover") != nullptr;
+}
+
+void PaintRoundedButton(HDC dc, HWND hwnd, RECT bounds,
+                        bool pressed, bool checked,
+                        bool enabled, bool focused) {
+    static GraphicsSession session;
+    FillRect(dc, &bounds, Background(hwnd));
+    const int id = GetDlgCtrlID(hwnd);
+    const bool primary = id == 408 || id == 500 || id == 452;
+    COLORREF fill = checked ? AccentDim :
+                    pressed ? ButtonDown :
+                    primary && enabled ? RGB(54, 77, 87) :
+                    IsHovered(hwnd) && enabled ? RGB(61, 67, 77) :
+                    Button;
+    if (!enabled)
+        fill = RGB(39, 43, 50);
+    if (session.token != 0) {
+        Gdiplus::Graphics graphics(dc);
+        graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
+        Gdiplus::RectF rectangle(
+            static_cast<float>(bounds.left) + 0.5f,
+            static_cast<float>(bounds.top) + 0.5f,
+            static_cast<float>(bounds.right - bounds.left) - 1.0f,
+            static_cast<float>(bounds.bottom - bounds.top) - 1.0f);
+        const float radius = std::min(8.0f, rectangle.Height * 0.27f);
+        const SegmentPart segment = SegmentOf(hwnd);
+        Gdiplus::GraphicsPath path;
+        RoundedPath(path, rectangle, radius, segment);
+        Gdiplus::SolidBrush brush(GraphicsColor(fill));
+        graphics.FillPath(&brush, &path);
+        if (segment == SegmentPart::First || segment == SegmentPart::Middle) {
+            Gdiplus::Pen seam(Gdiplus::Color(120, 22, 26, 32), 1.0f);
+            graphics.DrawLine(&seam, rectangle.X + rectangle.Width,
+                              rectangle.Y + 4.0f,
+                              rectangle.X + rectangle.Width,
+                              rectangle.Y + rectangle.Height - 4.0f);
+        }
+        if (focused) {
+            Gdiplus::Pen keyboardFocus(
+                Gdiplus::Color(200, GetRValue(Accent),
+                               GetGValue(Accent), GetBValue(Accent)), 1.0f);
+            graphics.DrawPath(&keyboardFocus, &path);
+        }
+    } else {
+        HBRUSH brush = CreateSolidBrush(fill);
+        HGDIOBJ old = SelectObject(dc, brush);
+        HGDIOBJ pen = SelectObject(dc, GetStockObject(NULL_PEN));
+        RoundRect(dc, bounds.left, bounds.top, bounds.right,
+                  bounds.bottom, 12, 12);
+        SelectObject(dc, pen);
+        SelectObject(dc, old);
+        DeleteObject(brush);
+    }
+    RECT label = bounds;
+    label.left += 5;
+    label.right -= 5;
+    DrawLabel(dc, hwnd, label, enabled ? Text : Disabled, DT_CENTER);
+}
+
+void UpdateHover(HWND hwnd, UINT message) {
+    if (message == WM_MOUSEMOVE && IsWindowEnabled(hwnd) && !IsHovered(hwnd)) {
+        TRACKMOUSEEVENT tracking{sizeof(tracking), TME_LEAVE, hwnd, 0};
+        if (TrackMouseEvent(&tracking)) {
+            SetPropW(hwnd, L"RinMotionDance.ButtonHover",
+                     reinterpret_cast<HANDLE>(static_cast<INT_PTR>(1)));
+            InvalidateRect(hwnd, nullptr, FALSE);
+        }
+    } else if (message == WM_MOUSELEAVE || message == WM_NCDESTROY) {
+        RemovePropW(hwnd, L"RinMotionDance.ButtonHover");
+        if (message == WM_MOUSELEAVE)
+            InvalidateRect(hwnd, nullptr, FALSE);
+    }
+}
+
+LRESULT CALLBACK ButtonProc(HWND hwnd, UINT message, WPARAM wParam,
+                            LPARAM lParam, UINT_PTR id, DWORD_PTR) {
+    UpdateHover(hwnd, message);
+    if (message == WM_NCDESTROY)
+        RemoveWindowSubclass(hwnd, ButtonProc, id);
+    const LRESULT value = DefSubclassProc(hwnd, message, wParam, lParam);
+    if (message == WM_SETTEXT || message == WM_ENABLE ||
+        message == WM_SETFOCUS || message == WM_KILLFOCUS)
+        InvalidateRect(hwnd, nullptr, FALSE);
+    return value;
+}
+
 void PaintToggle(HDC dc, HWND hwnd) {
     RECT r{};
     GetClientRect(hwnd, &r);
@@ -157,16 +347,9 @@ void PaintToggle(HDC dc, HWND hwnd) {
     const COLORREF fg = enabled ? Text : Disabled;
 
     if (pushLike) {
-        HBRUSH b = CreateSolidBrush(checked ? AccentDim : Button);
-        FillRect(dc, &r, b);
-        DeleteObject(b);
-        if (checked) {
-            RECT bar{r.left, r.bottom - 2, r.right, r.bottom};
-            HBRUSH a = CreateSolidBrush(Accent);
-            FillRect(dc, &bar, a);
-            DeleteObject(a);
-        }
-        DrawLabel(dc, hwnd, r, fg, DT_CENTER);
+        PaintRoundedButton(dc, hwnd, r, false, checked, enabled,
+                           GetFocus() == hwnd);
+        return;
     } else {
         FillRect(dc, &r, Background(hwnd));
         RECT indicator{r.left + 2, (r.top + r.bottom - 12) / 2,
@@ -213,6 +396,7 @@ void PaintToggle(HDC dc, HWND hwnd) {
 
 LRESULT CALLBACK ToggleProc(HWND hwnd, UINT message, WPARAM wParam,
                             LPARAM lParam, UINT_PTR id, DWORD_PTR) {
+    UpdateHover(hwnd, message);
     if (message == WM_PAINT) {
         PAINTSTRUCT ps{};
         HDC dc = BeginPaint(hwnd, &ps);
@@ -252,29 +436,10 @@ HBRUSH AreaBrush(bool header, bool bottom) {
 bool PaintButton(const DRAWITEMSTRUCT* item) {
     if (item == nullptr || item->CtlType != ODT_BUTTON)
         return false;
-    const bool pressed = (item->itemState & ODS_SELECTED) != 0;
-    const bool disabled = (item->itemState & ODS_DISABLED) != 0;
-    const bool primary = item->CtlID == 408 || item->CtlID == 500 ||
-                         item->CtlID == 452;
-    const COLORREF face = pressed ? ButtonDown :
-        primary && !disabled ? AccentDim : Button;
-    HBRUSH brush = CreateSolidBrush(face);
-    FillRect(item->hDC, &item->rcItem, brush);
-    DeleteObject(brush);
-    if (primary && !disabled) {
-        RECT bar{item->rcItem.left, item->rcItem.bottom - 2,
-                 item->rcItem.right, item->rcItem.bottom};
-        HBRUSH accent = CreateSolidBrush(Accent);
-        FillRect(item->hDC, &bar, accent);
-        DeleteObject(accent);
-    }
-    DrawLabel(item->hDC, item->hwndItem, item->rcItem,
-              disabled ? Disabled : Text, DT_CENTER);
-    if ((item->itemState & ODS_FOCUS) != 0) {
-        RECT focus = item->rcItem;
-        InflateRect(&focus, -2, -2);
-        DrawFocusRect(item->hDC, &focus);
-    }
+    PaintRoundedButton(item->hDC, item->hwndItem, item->rcItem,
+                       (item->itemState & ODS_SELECTED) != 0, false,
+                       (item->itemState & ODS_DISABLED) == 0,
+                       (item->itemState & ODS_FOCUS) != 0);
     return true;
 }
 
@@ -403,10 +568,13 @@ void InstallToggle(HWND control, DWORD style) {
         type == BS_RADIOBUTTON || type == BS_AUTORADIOBUTTON ||
         type == BS_3STATE || type == BS_AUTO3STATE)
         SetWindowSubclass(control, ToggleProc, 1, 0);
+    else if (type == BS_PUSHBUTTON || type == BS_DEFPUSHBUTTON)
+        SetWindowSubclass(control, ButtonProc, 2, 0);
 }
 
 void ReleaseBrushes() {
-    HBRUSH* brushes[] = {&inputBrush, &panelBrush, &canvasBrush, &headerBrush};
+    HBRUSH* brushes[] = {&inputBrush, &panelBrush, &panelAltBrush,
+                        &canvasBrush, &headerBrush};
     for (HBRUSH* item : brushes) {
         if (*item != nullptr) {
             DeleteObject(*item);

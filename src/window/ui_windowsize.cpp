@@ -67,12 +67,12 @@ void LayoutEditorDock(MMDApp* app) {
 
     const DockSection model = DockSection::Model;
     const int modelW = w(model);
-    const int halfModel = (modelW - 29) / 2;
+    const int halfModel = (modelW - 20) / 2;
     put(model, 436, 10, 28, modelW - 20, 180);
     put(model, 435, 10, 56, halfModel, 23);
-    put(model, 437, 19 + halfModel, 56, halfModel, 23);
+    put(model, 437, 10 + halfModel, 56, halfModel, 23);
     put(model, 440, 10, 83, halfModel, 22);
-    put(model, 441, 19 + halfModel, 83, halfModel, 22);
+    put(model, 441, 10 + halfModel, 83, halfModel, 22);
     put(model, 443, 10, 109, modelW - 20, 160);
     put(model, 439, 10, 138, 15, 15);
     put(model, 444, 88, 138, 15, 15);
@@ -84,11 +84,11 @@ void LayoutEditorDock(MMDApp* app) {
         const DockSection camera = DockSection::Edit;
         const int camW = w(camera);
         put(camera, 451, 10, 29, 80, 24);
-        put(camera, 446, 98, 29, camW - 110, 24);
+        put(camera, 446, 90, 29, camW - 100, 24);
         put(camera, 448, camW - 64, 59, 52, 20);
         put(camera, 447, 10, 79, camW - 20, 19);
-        put(camera, 449, 10, 116, camW - 20, 160);
-        put(camera, 450, 10, 137, camW - 20, 160);
+        put(camera, 449, 10, 112, camW - 20, 143);
+        put(camera, 450, 10, 134, camW - 20, 143);
         put(camera, 452, camW - 104, 3, 79, 20);
         put(camera, 453, camW - 21, 4, 15, 15);
         put(camera, 454, camW - 21, 4, 15, 15);
@@ -103,18 +103,19 @@ void LayoutEditorDock(MMDApp* app) {
             put(light, values[i], lightW - 59, 27 + 18 * i,
                 47, 17);
         }
-        put(light, 467, 11, 136, (lightW - 35) / 2, 21);
-        put(light, 468, 22 + (lightW - 35) / 2, 136,
-            (lightW - 35) / 2, 21);
+        put(light, 467, 10, 136, (lightW - 20) / 2, 21);
+        put(light, 468, 10 + (lightW - 20) / 2, 136,
+            (lightW - 20) / 2, 21);
         put(light, 469, lightW - 21, 4, 15, 15);
         put(light, 470, lightW - 21, 4, 15, 15);
 
         const DockSection shadow = DockSection::Shadow;
         const int shadowW = w(shadow);
-        const int modeW = (shadowW - 28) / 3;
-        put(shadow, 562, 9, 30, modeW, 24);
-        put(shadow, 563, 14 + modeW, 30, modeW, 24);
-        put(shadow, 564, 19 + 2 * modeW, 30, modeW, 24);
+        const int modeW = (shadowW - 20) / 3;
+        put(shadow, 562, 10, 30, modeW, 24);
+        put(shadow, 563, 10 + modeW, 30, modeW, 24);
+        put(shadow, 564, 10 + 2 * modeW, 30,
+            shadowW - 20 - 2 * modeW, 24);
         put(shadow, 561, shadowW - 65, 66, 52, 19);
         put(shadow, 560, 10, 91, shadowW - 20, 20);
         put(shadow, 565, 10, 130, shadowW - 20, 25);
@@ -126,10 +127,11 @@ void LayoutEditorDock(MMDApp* app) {
         put(accessory, 471, 10, 28, accW - 105, 150);
         put(accessory, 476, accW - 86, 31, 15, 15);
         put(accessory, 486, accW - 46, 31, 15, 15);
-        const int accButtonW = (accW - 34) / 3;
+        const int accButtonW = (accW - 20) / 3;
         put(accessory, 472, 10, 54, accButtonW, 22);
-        put(accessory, 473, 17 + accButtonW, 54, accButtonW, 22);
-        put(accessory, 477, 24 + 2 * accButtonW, 54, accButtonW, 22);
+        put(accessory, 473, 10 + accButtonW, 54, accButtonW, 22);
+        put(accessory, 477, 10 + 2 * accButtonW, 54,
+            accW - 20 - 2 * accButtonW, 22);
         put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
         put(accessory, 475, 20 + (accW - 30) / 2, 79,
             (accW - 30) / 2, 130);
@@ -149,7 +151,7 @@ void LayoutEditorDock(MMDApp* app) {
     } else {
         const DockSection bone = DockSection::Edit;
         const int boneW = w(bone);
-        const int cell = (boneW - 40) / 3;
+        const int cell = (boneW - 24) / 3;
         const int controls[4][3] = {
             {490, 493, 492},
             {491, 494, 501},
@@ -158,8 +160,8 @@ void LayoutEditorDock(MMDApp* app) {
         };
         for (int row = 0; row < 4; ++row)
             for (int col = 0; col < 3; ++col)
-                put(bone, controls[row][col], 12 + col * (cell + 8),
-                    30 + row * 31, cell, 26);
+                put(bone, controls[row][col], 12 + col * cell,
+                    30 + row * 31, col == 2 ? boneW - 24 - col * cell : cell, 26);
         put(bone, 502, boneW - 21, 4, 14, 14);
         put(bone, 503, boneW - 21, 4, 14, 14);
 
@@ -189,10 +191,11 @@ void LayoutEditorDock(MMDApp* app) {
 
     const DockSection playback = DockSection::Playback;
     const int playW = w(playback);
-    const int viewW = (playW - 36) / 3;
+    const int viewW = (playW - 20) / 3;
     for (int i = 0; i < 6; ++i)
-        put(playback, 402 + i, 10 + (i % 3) * (viewW + 7),
-            29 + (i / 3) * 26, viewW, 23);
+        put(playback, 402 + i, 10 + (i % 3) * viewW,
+            29 + (i / 3) * 26,
+            (i % 3) == 2 ? playW - 20 - 2 * viewW : viewW, 23);
     put(playback, 534, 10, 82, 19, 72);
     put(playback, 408, 37, 84, 75, 26);
     put(playback, 535, 119, 84, 64, 26);
