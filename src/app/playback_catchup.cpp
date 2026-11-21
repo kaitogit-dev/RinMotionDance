@@ -16,6 +16,9 @@
 #include "rinmotiondance/panel_controls.hpp"
 
 namespace rinmotiondance {
+
+void UpdatePlaybackPlayhead(MMDApp* app, float seconds);
+
 namespace {
 
 float UnsigFlt(std::int32_t v) {
@@ -129,8 +132,6 @@ void FrameStepBeyondEnd(MMDApp* app) {
     Sleep(500);                                             
     FinishAviRecord(app);                                         
 }
-
-void UpdatePlaybackPlayhead(MMDApp* app, float seconds);
 
 void PlayingBeyondEnd(MMDApp* app) {
     auto& s = *app;
