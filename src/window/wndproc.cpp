@@ -125,6 +125,9 @@ bool PaintNonClientMenu(HWND hwnd, UINT message, LPARAM value) {
     return false;
 }
 
+void MoveTimelinePlayhead(MMDApp* app, int x);
+void FinishTimelineScrub(MMDApp* app);
+
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     MMDApp* app = g_Block;
     auto& s = *app;
@@ -307,6 +310,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         return HandleCtlColor(reinterpret_cast<HWND>(lParam),
                               reinterpret_cast<HDC>(wParam), msg);
     case WM_MOUSEMOVE:
+        MoveTimelinePlayhead(app, static_cast<short>(LOWORD(lParam)));
         HandleMouseMove(static_cast<std::uint32_t>(lParam),
                         HIWORD(lParam));                          
         return 0;
@@ -315,6 +319,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         HandleLButtonDown(app);                                   
         return 0;
     case WM_LBUTTONUP:
+        FinishTimelineScrub(app);
         ReleaseCapture();
         HandleLButtonUp(app);                                     
         return 0;

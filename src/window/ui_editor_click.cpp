@@ -4,6 +4,7 @@
 #include <commctrl.h>
 
 #include <cstdint>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -759,6 +760,9 @@ static void HandleLButtonDown_TimelineAreaHit(MMDApp* app, HWND hwnd,
     }
 }
 
+static bool timelineScrubbing = false;
+static std::int32_t scrubStartFrame = 0;
+
 static void HandleLButtonDown_FrameStripHit(MMDApp* app, HWND hwnd,
                                             std::int32_t x, std::int32_t y,
                                             std::int32_t sidebar) {
@@ -788,7 +792,8 @@ static void HandleLButtonDown_FrameStripHit(MMDApp* app, HWND hwnd,
         }
     }
     app->state.currentFrame =
-        Div13(x - 0x64) + app->state.timelineStartFrame;
+        Div13(x - 0x64) + (timelineScrubbing ?
+            scrubStartFrame : app->state.timelineStartFrame);
     const LRESULT textLen = GetWindowTextLengthA(GetDlgItem(hwnd, panel::kCurrentFrameEdit));
     SendMessageA(GetDlgItem(hwnd, panel::kCurrentFrameEdit), EM_SETSEL, 0, textLen);
     char frameText[0x100];
@@ -845,11 +850,13 @@ static void HandleLButtonDown_FrameStripHit(MMDApp* app, HWND hwnd,
     const std::int32_t pages = (sidebar - 0x54) / 26;
     const std::uint32_t frameU =
         static_cast<std::uint32_t>(app->state.currentFrame);
-    if (frameU <= static_cast<std::uint32_t>(pages))  
-        app->state.timelineStartFrame = 0;
-    else
-        app->state.timelineStartFrame =
-            static_cast<std::int32_t>(frameU - static_cast<std::uint32_t>(pages));
+    if (!timelineScrubbing) {
+        if (frameU <= static_cast<std::uint32_t>(pages))
+            app->state.timelineStartFrame = 0;
+        else
+            app->state.timelineStartFrame =
+                static_cast<std::int32_t>(frameU - static_cast<std::uint32_t>(pages));
+    }
     PanelPaint(app);                                  
     if (app->state.waveEnabled != 0) {  
         TimelineDrawTicks(app->state.timelineStartFrame,
@@ -918,6 +925,23 @@ static void HandleLButtonDown_NameRowRectHit(MMDApp* app, std::int32_t x,
     }
 }
 
+void MoveTimelinePlayhead(MMDApp* app, int x) {
+    if (app == nullptr || !timelineScrubbing ||
+        app->PlaybackActive() != 0)
+        return;
+    const int sidebar = app->SidebarWidth();
+    x = std::max(100, std::min(sidebar - 19, x));
+    const int frame = scrubStartFrame + (x - 100) / 13;
+    if (frame == app->state.currentFrame)
+        return;
+    HandleLButtonDown_FrameStripHit(app, static_cast<HWND>(app->Hwnd()),
+                                    x, 151, sidebar);
+}
+
+void FinishTimelineScrub(MMDApp*) {
+    timelineScrubbing = false;
+}
+
 void HandleLButtonDown(MMDApp* app) {
     if (app->FullscreenMode() != 0)
         return;                                              
@@ -953,6 +977,8 @@ void HandleLButtonDown(MMDApp* app) {
     }
 
     if (x < sidebar - 0x12 && y > 0x90 && y < 0xA0 && x > 0x64) {
+        timelineScrubbing = true;
+        scrubStartFrame = app->state.timelineStartFrame;
         HandleLButtonDown_FrameStripHit(app, hwnd, x, y, sidebar);
         return;
     }
