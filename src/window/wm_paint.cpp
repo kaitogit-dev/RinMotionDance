@@ -152,6 +152,8 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
 
 }  
 
+void DrawTimelinePlayhead(MMDApp* app, HDC dc);
+
 void HandleWindowPaint(MMDApp* app) {
     HWND hwnd = static_cast<HWND>(app->Hwnd());
     PAINTSTRUCT ps;
@@ -491,6 +493,7 @@ void HandleWindowPaint(MMDApp* app) {
            app->TimelineDC(), 0, 0, SRCCOPY);
     BitBlt(hdc, 6, 145, side - 25, rc.bottom - 393,
            app->PanelDC(), 0, 0, SRCCOPY);
+    DrawTimelinePlayhead(app, hdc);
     BitBlt(hdc, 8, rc.bottom - 135, 128, 128,
            app->CurveDC(), 0, 0, SRCCOPY);
     EndPaint(hwnd, &ps);

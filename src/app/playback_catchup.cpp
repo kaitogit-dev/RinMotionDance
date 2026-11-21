@@ -130,6 +130,8 @@ void FrameStepBeyondEnd(MMDApp* app) {
     FinishAviRecord(app);                                         
 }
 
+void UpdatePlaybackPlayhead(MMDApp* app, float seconds);
+
 void PlayingBeyondEnd(MMDApp* app) {
     auto& s = *app;
     WaveAudioContext* audio = s.Audio();                    
@@ -146,6 +148,7 @@ void PlayingBeyondEnd(MMDApp* app) {
         s.PlaybackStartSeconds() = UnsigFlt(frame) / 30.0f;
         s.PlaybackPhysicsMode() = s.SavedPlaybackPhysicsMode();
         Cursor(app) = s.PlaybackStartSeconds();
+        UpdatePlaybackPlayhead(app, Cursor(app));
         UpdateBoneFrames(app);                              
         if (s.WaveEnabled() != 0 &&
             s.AutomaticFrameAdvanceEnabled() == 0) {
@@ -157,7 +160,8 @@ void PlayingBeyondEnd(MMDApp* app) {
         s.PlaybackClockAnchorLow() =
             s.TimeNowLow();
         s.PlaybackClockAnchorHigh() = s.TimeNowHigh();
-        PlaybackPoseAdvance(app, 0);                        
+        PlaybackPoseAdvance(app, 0);
+        UpdatePlaybackPlayhead(app, Cursor(app));
         return;
     }
 
@@ -231,7 +235,8 @@ void PlaybackCatchup(MMDApp* app, unsigned char selActive) {
                 }
             }
             Cursor(app) = target;                           
-            PlaybackPoseAdvance(app, 0);                     
+            PlaybackPoseAdvance(app, 0);
+            UpdatePlaybackPlayhead(app, Cursor(app));
             return;                                         
         }
         FrameStepBeyondEnd(app);                            
@@ -362,11 +367,13 @@ void PlaybackCatchup(MMDApp* app, unsigned char selActive) {
             }
         }
         Cursor(app) = target;                               
-        PlaybackPoseAdvance(app, 0);                        
+        PlaybackPoseAdvance(app, 0);
+        UpdatePlaybackPlayhead(app, Cursor(app));
         return;
     }
 
     Cursor(app) = target;
+    UpdatePlaybackPlayhead(app, s.PlaybackEndSeconds());
     PlayingBeyondEnd(app);
 }
 
