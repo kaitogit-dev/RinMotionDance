@@ -82,7 +82,7 @@ void UpdatePlaybackPlayhead(MMDApp* app, float seconds) {
     GetClientRect(hwnd, &client);
     if (previousX >= 0) {
         const int restoreY = 145;
-        const int restoreH = std::max(0, client.bottom - 248 - restoreY);
+        const int restoreH = std::max(0, static_cast<int>(client.bottom) - 248 - restoreY);
         BitBlt(dc, previousX - 7, restoreY, 15, restoreH,
                app->PanelDC(), previousX - 13, 0, SRCCOPY);
     }
