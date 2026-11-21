@@ -12,6 +12,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/version.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
 
@@ -37,11 +38,13 @@ void RepopulateBoneCombo(MMDApp* app, HWND combo, std::int32_t modelSlot) {
         const mdl::BoneType type = bones[i].type;
         if (type == mdl::BoneType::FixedAxis ||
             type < mdl::BoneType::InertTip) {
-            const char* name = app->state.englishUI != 0
-                                   ? bones[i].nameEn
-                                   : bones[i].name;
-            SendMessageA(combo, CB_ADDSTRING, 0,
-                         reinterpret_cast<LPARAM>(name));
+            const std::string name = app->state.englishUI != 0 ?
+                ModelDisplayName(bones[i].name, bones[i].nameEn) :
+                std::string(bones[i].name);
+            const LRESULT row = SendMessageA(combo, CB_ADDSTRING, 0,
+                         reinterpret_cast<LPARAM>(name.c_str()));
+            if (row != CB_ERR && row != CB_ERRSPACE)
+                SendMessageA(combo, CB_SETITEMDATA, row, i);
         }
     }
     SendMessageA(combo, CB_SETCURSEL, 0, 0);
@@ -53,7 +56,8 @@ std::int32_t FindBoneByName(unsigned char* model, const char* text) {
     for (std::int32_t i = 0;
          i < static_cast<std::int32_t>(record->boneCount); ++i) {
         if (strcmp(bones[i].nameEn, text) == 0 ||
-            strcmp(bones[i].name, text) == 0) {
+            strcmp(bones[i].name, text) == 0 ||
+            ModelDisplayName(bones[i].name, bones[i].nameEn) == text) {
             return i;
         }
     }
@@ -74,11 +78,18 @@ void MorphRowSelect(MMDApp* app, HWND hwnd, HWND combo, std::size_t lane,
     const mdl::MorphRecord* morphs = record->morphs;
     std::int32_t index = -1;
     for (std::uint32_t i = 0; i < record->morphCount; ++i) {
-        if (strcmp(morphs[i].nameEn, text) == 0 ||
+        if (ModelDisplayName(morphs[i].name, morphs[i].nameEn) == text ||
+            strcmp(morphs[i].nameEn, text) == 0 ||
             strcmp(morphs[i].name, text) == 0) {
             index = static_cast<std::int32_t>(i);
             break;
         }
+    }
+    if (sel != CB_ERR) {
+        const LRESULT stored = SendMessageA(combo, CB_GETITEMDATA, sel, 0);
+        if (stored != CB_ERR && stored >= 0 &&
+            stored < static_cast<LRESULT>(record->morphCount))
+            index = static_cast<std::int32_t>(stored);
     }
     if (index < 0) {
         return;

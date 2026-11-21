@@ -8,6 +8,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -38,7 +39,7 @@ void DrawFrameName(MMDApp* app, const mdl::DisplayGroup& frame,
                    HDC hdc, int y, const std::uint32_t& color) {
     const bool english = app->EnglishUI() != 0;
     DrawPanelText(app,
-                  english ? frame.nameEn : frame.name,
+                  english ? ModelDisplayName(frame.name, frame.nameEn).c_str() : frame.name,
                   hdc, 12, 12, y, color);
 }
 
@@ -46,7 +47,7 @@ void DrawRecordName(MMDApp* app, const mdl::FrameGroup& record, HDC hdc, int y,
                     const std::uint32_t& color) {
     const bool english = app->EnglishUI() != 0;
     DrawPanelText(app,
-                  english ? record.nameEn : record.name,
+                  english ? ModelDisplayName(record.name, record.nameEn).c_str() : record.name,
                   hdc, 12, 15, y, color);
 }
 
@@ -84,7 +85,10 @@ void PostLanguageSweep(MMDApp* app) {
             static_cast<std::int32_t>(record->displayRootBone);
         unsigned char* const flagTab = record->boneSelection;
         const mdl::BoneRecord& rootBone = mdl::Bones(model)[rootIdx];
-        const char* rootName = english ? rootBone.nameEn : rootBone.name;
+        const std::string rootLabel = english ?
+            ModelDisplayName(rootBone.name, rootBone.nameEn) :
+            std::string(rootBone.name);
+        const char* rootName = rootLabel.c_str();
         if (flagTab[rootIdx] != 0) {
             DrawPanelText(app, rootName, panel, 12, 12, 17,
                           s.state.themeColors[34]);
@@ -224,7 +228,7 @@ void PostLanguageSweep(MMDApp* app) {
                             line < 200) {
                             const mdl::FrameGroup& face = faces[faceIdx];
                             if (english) {
-                                DrawPanelText(app, face.nameEn, panel, 12, 15,
+                                DrawPanelText(app, ModelDisplayName(face.name, face.nameEn).c_str(), panel, 12, 15,
                                               rowY,
                                               s.state.themeColors[face.selected != 0 ? 34 : 33]);
                             } else {

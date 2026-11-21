@@ -12,6 +12,7 @@
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 #include "rinmotiondance/accessory_layout.hpp"
 #include "rinmotiondance/panel_controls.hpp"
 
@@ -211,7 +212,8 @@ void SyncAccessoryEditPanel(MMDApp* app) {
                     if (type < mdl::BoneType::InertTip ||
                         type == mdl::BoneType::FixedAxis)
                         SendMessageA(boneCombo, CB_ADDSTRING, 0,
-                                     reinterpret_cast<LPARAM>(bone->name));
+                                     reinterpret_cast<LPARAM>(
+                ModelDisplayName(bone->name, bone->nameEn).c_str()));
                 }
                 SendMessageA(modelCombo, CB_SETCURSEL,
                              static_cast<WPARAM>(record.comboSelIndex), 0);

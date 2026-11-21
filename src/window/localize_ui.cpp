@@ -6,6 +6,7 @@
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "ui_controls.inc"
 
@@ -193,7 +194,7 @@ void LocalizeUI(MMDApp* app) {
         unsigned char* slot = s.ModelSlot(slotIdx);
         mdl::ModelRecord* model = mdl::Mdl(slot);
         LPARAM name = reinterpret_cast<LPARAM>(
-            english ? model->nameEn : model->name);
+            ModelDisplayName(model->name, english ? model->nameEn : nullptr).c_str());
         SendMessageA(combo436, CB_ADDSTRING, 0, name);
         SendMessageA(combo474, CB_ADDSTRING, 0, name);
         SendMessageA(combo449, CB_ADDSTRING, 0, name);

@@ -12,6 +12,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 #include "rinmotiondance/panel_controls.hpp"
 
 namespace rinmotiondance {
@@ -579,8 +580,12 @@ static void HandleLButtonDown_NameColumnHit(MMDApp* app, HWND hwnd,
                     for (LONG i2 = 0; i2 < count; ++i2) {
                         SendMessageA(hCombo, CB_GETLBTEXT, i2,
                                      reinterpret_cast<LPARAM>(nameBuf));
-                        if (MatchText(nameBuf, morph.name) ||
-                            MatchText(nameBuf, morph.nameEn)) {
+                        const LRESULT stored =
+                            SendMessageA(hCombo, CB_GETITEMDATA, i2, 0);
+                        if (stored == morphIndex ||
+                            MatchText(nameBuf, morph.name) ||
+                            MatchText(nameBuf, morph.nameEn) ||
+                            ModelDisplayName(morph.name, morph.nameEn) == nameBuf) {
                             SendMessageA(hCombo, CB_SETCURSEL, i2, 0);
                         }
                     }

@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "rinmotiondance/model.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -45,10 +46,15 @@ void RefreshMorphGroup(unsigned char* m, mdl::MorphPanel panel, int comboId,
     if (n > 0) {
         for (int i = 0; i < n; ++i) {
             const mdl::MorphRecord& morph = morphs[i];
-            if (morph.panel == panel)
-                SendMessageA(combo, CB_ADDSTRING, 0,
-                             reinterpret_cast<LPARAM>(
-                                 useEnglishNames ? morph.nameEn : morph.name));
+            if (morph.panel == panel) {
+                const std::string text = useEnglishNames ?
+                    ModelDisplayName(morph.name, morph.nameEn) :
+                    std::string(morph.name);
+                const LRESULT row = SendMessageA(combo, CB_ADDSTRING, 0,
+                    reinterpret_cast<LPARAM>(text.c_str()));
+                if (row != CB_ERR && row != CB_ERRSPACE)
+                    SendMessageA(combo, CB_SETITEMDATA, row, i);
+            }
         }
     }
     if (morphs != nullptr) {
@@ -108,10 +114,12 @@ void PostLoadInit(unsigned char* m) {
     if (chainCount > 0) {
         for (int i = 0; i < chainCount; ++i) {
             const std::int32_t boneIdx = mdl::IkChains(m)[i].boneIndex;
+            const std::string text = useEnglishNames ?
+                ModelDisplayName(bones[boneIdx].name,
+                                 bones[boneIdx].nameEn) :
+                std::string(bones[boneIdx].name);
             SendMessageA(boneCombo, CB_ADDSTRING, 0,
-                reinterpret_cast<LPARAM>(
-                    useEnglishNames ? bones[boneIdx].nameEn
-                                    : bones[boneIdx].name));
+                         reinterpret_cast<LPARAM>(text.c_str()));
         }
     }
     if (mdl::IkChains(m) != nullptr) {
@@ -164,7 +172,9 @@ void PostLoadInit(unsigned char* m) {
                      reinterpret_cast<LPARAM>("All frame"));
         SendMessageA(frameCombo, CB_ADDSTRING, 0,
             reinterpret_cast<LPARAM>(
-                bones[model->displayRootBone].nameEn));
+                ModelDisplayName(
+                    bones[model->displayRootBone].name,
+                    bones[model->displayRootBone].nameEn).c_str()));
         SendMessageA(frameCombo, CB_ADDSTRING, 0,
                      reinterpret_cast<LPARAM>("disp/IK/OP"));
         SendMessageA(frameCombo, CB_ADDSTRING, 0,
@@ -177,7 +187,8 @@ void PostLoadInit(unsigned char* m) {
             model->displayFrames;
         for (std::uint8_t g = 0; g < model->facialFrameCount; ++g)
             SendMessageA(frameCombo, CB_ADDSTRING, 0,
-                         reinterpret_cast<LPARAM>(groups[g].nameEn));
+                         reinterpret_cast<LPARAM>(
+                             ModelDisplayName(groups[g].name, groups[g].nameEn).c_str()));
         SendMessageA(frameCombo, CB_ADDSTRING, 0,
                      reinterpret_cast<LPARAM>("All bone"));
         const auto* frames =
@@ -185,7 +196,8 @@ void PostLoadInit(unsigned char* m) {
         const std::int32_t frameCount = model->rigidBodyCount;
         for (int f = 0; f < frameCount; ++f)
             SendMessageA(frameCombo, CB_ADDSTRING, 0,
-                         reinterpret_cast<LPARAM>(frames[f].nameEn));
+                         reinterpret_cast<LPARAM>(
+                             ModelDisplayName(frames[f].name, frames[f].nameEn).c_str()));
     } else {
         SendMessageW(frameCombo, CB_ADDSTRING, 0,
                      reinterpret_cast<LPARAM>(kJpAllFrame));
