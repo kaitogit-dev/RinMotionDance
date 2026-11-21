@@ -12,6 +12,7 @@
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_autokey.hpp"
 
 namespace rinmotiondance {
 namespace {
@@ -76,12 +77,20 @@ void HandleHScroll(LPARAM lParam, WPARAM wParam) {
 
     if (ctrl == GetDlgItem(hwnd, panel::kMorphSlider0)) {
         HandleBoneSlider(app, hwnd, 505, 0, 506);
+        if (code != TB_THUMBTRACK && code != TB_THUMBPOSITION)
+            AutoKeyMorphEdit(app, 0);
     } else if (ctrl == GetDlgItem(hwnd, panel::kMorphSlider1)) {
         HandleBoneSlider(app, hwnd, 510, 1, 511);
+        if (code != TB_THUMBTRACK && code != TB_THUMBPOSITION)
+            AutoKeyMorphEdit(app, 1);
     } else if (ctrl == GetDlgItem(hwnd, panel::kMorphSlider2)) {
         HandleBoneSlider(app, hwnd, 515, 2, 516);
+        if (code != TB_THUMBTRACK && code != TB_THUMBPOSITION)
+            AutoKeyMorphEdit(app, 2);
     } else if (ctrl == GetDlgItem(hwnd, panel::kMorphSlider3)) {
         HandleBoneSlider(app, hwnd, 520, 3, 521);
+        if (code != TB_THUMBTRACK && code != TB_THUMBPOSITION)
+            AutoKeyMorphEdit(app, 3);
     }
     else if (ctrl == GetDlgItem(hwnd, panel::kLightColorSliderR)) {
         const LRESULT pos = SendMessageA(GetDlgItem(hwnd, panel::kLightColorSliderR),

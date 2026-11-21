@@ -12,6 +12,7 @@
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/ui_autokey.hpp"
 #include "frame_state_dump.hpp"
 #include "bone_selection.hpp"
 
@@ -43,6 +44,7 @@ static void ViewRefreshGate(MMDApp* s) {
 namespace {
 
 bool directBoneUndoPending = false;
+bool boneDragChanged = false;
 
 void PollKey(MMDApp* app, std::int32_t& keyState, int virtualKey) {
     const std::int32_t oldState = keyState;
@@ -347,6 +349,7 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
     const int leftState = app->LeftMouseButtonState();
     if (leftState == 1) {
         directBoneUndoPending = false;
+        boneDragChanged = false;
         if (operation == 1 || operation == 2) {
             BeginCenteredDrag(app, operation);
             return;
@@ -402,6 +405,9 @@ void BeginOrEndViewportToolDrag(MMDApp* app, int operation) {
             }
         }
     } else if (leftState == 2) {
+        if (boneDragChanged)
+            AutoKeyBoneEdit(app);
+        boneDragChanged = false;
         directBoneUndoPending = false;
         app->PendingTimelineSelectionRow() = TimelineSelectionRow::None;;
         const int viewOperation =
@@ -538,11 +544,18 @@ void MouseInteractionBegin(MMDApp* app) {
          app->MouseY() != app->PreviousMouseY())) {
         PushBoneEditUndo(app);
         app->SceneModified() = 1;
+        boneDragChanged = true;
         directBoneUndoPending = false;
     }
 
     const int dx = app->MouseX() - app->PreviousMouseX();
     const int dy = app->MouseY() - app->PreviousMouseY();
+    const int editDrag = static_cast<int>(app->InteractionDragMode());
+    if (app->LeftMouseButtonHeld() &&
+        (dx != 0 || dy != 0) &&
+        app->state.optflag[0] == 0 &&
+        editDrag >= 4 && editDrag <= 15)
+        boneDragChanged = true;
 
     if (app->LeftMouseButtonHeld()) {
         const ViewportToolAction viewMode = app->ViewToolDragOperation();

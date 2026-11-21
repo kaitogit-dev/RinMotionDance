@@ -14,6 +14,7 @@
 #include "rinmotiondance/accessory_layout.hpp"
 #include "rinmotiondance/d3dx_dyn.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_autokey.hpp"
 
 namespace rinmotiondance {
 
@@ -68,6 +69,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
                 PushBoneEditUndo(app);
                 rinmotiondance::mdl::Bones(model)[sel].trans[0] = static_cast<float>(v);
                 rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                AutoKeyBoneEdit(app);
             }
             PostViewRefresh(app);
             return;
@@ -88,6 +90,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
                 PushBoneEditUndo(app);
                 rinmotiondance::mdl::Bones(model)[sel].trans[1] = static_cast<float>(v);
                 rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                AutoKeyBoneEdit(app);
             }
             PostViewRefresh(app);
             return;
@@ -108,6 +111,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
                 PushBoneEditUndo(app);
                 rinmotiondance::mdl::Bones(model)[sel].trans[2] = static_cast<float>(v);
                 rinmotiondance::mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+                AutoKeyBoneEdit(app);
             }
             PostViewRefresh(app);
             return;
@@ -140,6 +144,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
                                            app->state.eulerZ) /
                                        180.0);
                 ComposeEulerToBone(app, model, sel);
+                AutoKeyBoneEdit(app);
             }
             PostViewRefresh(app);
             return;
@@ -176,6 +181,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
                                        app->state.eulerZ) /
                                    180.0);
             ComposeEulerToBone(app, model, sel);
+            AutoKeyBoneEdit(app);
         }
         PostViewRefresh(app);
         return;
@@ -206,6 +212,7 @@ void CommitEditControlTail(MMDApp* app, HWND edit) {
             app->state.eulerZ =
                 static_cast<float>(kPiLit * -v / 180.0);
             ComposeEulerToBone(app, model, sel);
+            AutoKeyBoneEdit(app);
         }
         PostViewRefresh(app);
         return;
@@ -363,9 +370,12 @@ void CommitEditControl(MMDApp* app, HWND edit) {
             const int selector =
                 rinmotiondance::mdl::Mdl(model)->selectedMorphs[
                     (morphEdit - 506) / 5];
-            if (rinmotiondance::mdl::Morphs(model) != nullptr && selector >= 0)
+            if (rinmotiondance::mdl::Morphs(model) != nullptr && selector >= 0) {
                 rinmotiondance::mdl::Morphs(model)[selector].value =
                     static_cast<float>(v);
+                AutoKeyMorphEdit(app, static_cast<std::size_t>(
+                    (morphEdit - 506) / 5));
+            }
             SendMessageA(GetDlgItem(main, morphEdit - 1), TBM_SETPOS, 1,
                          static_cast<LPARAM>(static_cast<int>(v * 100.0)));
             CommitEditControlTail(app, edit);

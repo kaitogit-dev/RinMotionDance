@@ -10,6 +10,7 @@
 #include "rinmotiondance/d3dx_dyn.hpp"
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
+#include "rinmotiondance/ui_autokey.hpp"
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/panel_controls.hpp"
 
@@ -114,6 +115,7 @@ void BonePosEdit(MMDApp* app, float* vec, std::size_t axis) {
         rinmotiondance::mdl::Bones(m)[sel].trans[axis] = 0.0f;
         m = ActiveModel(app);
         mdl::Mdl(m)->bonePhysicsState[sel] = 1;
+        AutoKeyBoneEdit(app);
     }
     PostViewRefresh(app);
 }
@@ -172,6 +174,7 @@ void BoneRotEdit(MMDApp* app, float* vec, int axis) {
     }
     unsigned char* model = ActiveModel(app);
     mdl::Mdl(model)->bonePhysicsState[sel] = 1;
+    AutoKeyBoneEdit(app);
     PostViewRefresh(app);
 }
 

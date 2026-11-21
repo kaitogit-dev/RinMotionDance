@@ -105,6 +105,7 @@ add_library(rinmotiondance_core STATIC
     src/render/fill_panel.cpp
     src/window/wm_paint.cpp
     src/window/ui_timeline_gfx.cpp
+    src/window/ui_autokey.cpp
     src/window/ui_control_text.cpp
     src/window/ui_ctlcolor.cpp
     src/window/ui_edit_commit.cpp
