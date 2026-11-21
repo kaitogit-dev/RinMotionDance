@@ -3,6 +3,9 @@
 #include <Windows.h>
 
 #include <cmath>
+#include <algorithm>
+#include <climits>
+#include <cstdio>
 #include <cstdint>
 
 #include "rinmotiondance/mmd_app.hpp"
@@ -10,6 +13,93 @@
 #include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
+
+void PanelPaint(MMDApp* app);
+
+namespace {
+MMDApp* previousApp = nullptr;
+int previousX = -1;
+
+int CurrentPlayheadX(MMDApp* app) {
+    const int column = app->state.currentFrame -
+                       app->state.timelineStartFrame;
+    const int columns = std::max(1, (app->SidebarWidth() - 125) / 13);
+    if (column < 0 || column >= columns)
+        return -1;
+    return 106 + column * 13;
+}
+
+void DrawPlayhead(MMDApp* app, HDC dc, int x) {
+    if (x < 0 || dc == nullptr)
+        return;
+    RECT client{};
+    GetClientRect(static_cast<HWND>(app->Hwnd()), &client);
+    const int bottom = client.bottom - 248;
+    if (bottom <= 157)
+        return;
+    HPEN pen = CreatePen(PS_SOLID, 2, ui_style::Accent);
+    HGDIOBJ oldPen = SelectObject(dc, pen);
+    MoveToEx(dc, x, 154, nullptr);
+    LineTo(dc, x, bottom);
+    SelectObject(dc, oldPen);
+    DeleteObject(pen);
+
+    POINT triangle[3] = {{x - 6, 146}, {x + 6, 146}, {x, 157}};
+    HBRUSH brush = CreateSolidBrush(ui_style::Accent);
+    HGDIOBJ oldBrush = SelectObject(dc, brush);
+    oldPen = SelectObject(dc, GetStockObject(NULL_PEN));
+    Polygon(dc, triangle, 3);
+    SelectObject(dc, oldPen);
+    SelectObject(dc, oldBrush);
+    DeleteObject(brush);
+}
+}
+
+void DrawTimelinePlayhead(MMDApp* app, HDC dc) {
+    if (app != nullptr && dc != nullptr)
+        DrawPlayhead(app, dc, CurrentPlayheadX(app));
+}
+
+void UpdatePlaybackPlayhead(MMDApp* app, float seconds) {
+    if (app == nullptr || app->FloatingWindow() != nullptr ||
+        app->FullscreenMode() != 0 ||
+        !std::isfinite(seconds) || seconds < 0.0f)
+        return;
+    const int frame = static_cast<int>(std::min(
+        static_cast<double>(seconds) * 30.0,
+        static_cast<double>(INT_MAX - 1)));
+    if (app->state.currentFrame == frame)
+        return;
+    const HWND hwnd = static_cast<HWND>(app->Hwnd());
+    if (previousApp != app) {
+        previousApp = app;
+        previousX = -1;
+    }
+    HDC dc = GetDC(hwnd);
+    if (dc == nullptr)
+        return;
+    RECT client{};
+    GetClientRect(hwnd, &client);
+    if (previousX >= 0) {
+        const int restoreY = 145;
+        const int restoreH = std::max(0, client.bottom - 248 - restoreY);
+        BitBlt(dc, previousX - 7, restoreY, 15, restoreH,
+               app->PanelDC(), previousX - 13, 0, SRCCOPY);
+    }
+    app->state.currentFrame = frame;
+    const int columns = std::max(1, (app->SidebarWidth() - 125) / 13);
+    if (frame < app->state.timelineStartFrame ||
+        frame >= app->state.timelineStartFrame + columns) {
+        app->state.timelineStartFrame = std::max(0, frame - columns / 2);
+        PanelPaint(app);
+    }
+    previousX = CurrentPlayheadX(app);
+    DrawPlayhead(app, dc, previousX);
+    ReleaseDC(hwnd, dc);
+    char label[24];
+    sprintf_s(label, "%d", frame);
+    SetWindowTextA(GetDlgItem(hwnd, 417), label);
+}
 
 void TimelineDrawTicks(int frameOffset, int width) {
     MMDApp* app = g_Block;
