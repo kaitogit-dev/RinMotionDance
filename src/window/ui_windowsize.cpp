@@ -186,13 +186,15 @@ void LayoutEditorDock(MMDApp* app) {
         for (int i = 0; i < 4; ++i) {
             const int x = 11 + (i % 2) * colWidth;
             const int y = 41 + (i / 2) * 68;
-            put(facial, comboIds[i], x, y, colWidth - 86, 150);
-            put(facial, prevIds[i], x + colWidth - 70, y, 26, 23);
-            put(facial, nextIds[i], x + colWidth - 38, y, 26, 23);
-            put(facial, sliderIds[i], x, y + 25, colWidth - 142, 20);
-            put(facial, valueIds[i], x + colWidth - 131, y + 25, 47, 20);
-            put(facial, registerIds[i], x + colWidth - 76,
-                y + 24, 64, 24);
+            const int usable = colWidth - 22;
+            const int comboWidth = usable - 70;
+            put(facial, comboIds[i], x, y, comboWidth, 150);
+            put(facial, prevIds[i], x + comboWidth + 4, y, 31, 23);
+            put(facial, nextIds[i], x + comboWidth + 35, y, 31, 23);
+            put(facial, sliderIds[i], x, y + 26, usable - 124, 19);
+            put(facial, valueIds[i], x + usable - 121, y + 26, 49, 19);
+            put(facial, registerIds[i], x + usable - 68, y + 25,
+                68, 23);
         }
         put(facial, 528, faceW - 21, 4, 14, 14);
         put(facial, 529, faceW - 21, 4, 14, 14);

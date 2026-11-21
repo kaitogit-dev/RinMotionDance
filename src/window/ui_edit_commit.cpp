@@ -388,15 +388,27 @@ void CommitEditControl(MMDApp* app, HWND edit) {
 LRESULT CALLBACK EditSubclassProc(HWND hWnd, UINT Msg, WPARAM wParam,
                                   LPARAM lParam) {
     MMDApp* app = g_Block;
-    if (Msg == WM_KEYDOWN) {
-        if (wParam == 13) {                          
-            CommitEditControl(app, hWnd);
-            SetFocus(app->MainWindow());
-            return 0;
-        }
-    } else if (Msg == WM_KILLFOCUS) {
-        CommitEditControl(app, reinterpret_cast<HWND>(wParam));
+    constexpr LPCWSTR dirtyKey = L"RinMotionDance.EditChanged";
+    if ((Msg == WM_CHAR && wParam != VK_RETURN &&
+         wParam != VK_ESCAPE) ||
+        Msg == WM_PASTE || Msg == WM_CUT || Msg == WM_CLEAR ||
+        Msg == WM_UNDO) {
+        SetPropW(hWnd, dirtyKey, reinterpret_cast<HANDLE>(1));
     }
+    if (Msg == WM_KEYDOWN && wParam == VK_RETURN) {
+        const bool dirty = GetPropW(hWnd, dirtyKey) != nullptr;
+        RemovePropW(hWnd, dirtyKey);
+        if (dirty)
+            CommitEditControl(app, hWnd);
+        SetFocus(app->MainWindow());
+        return 0;
+    }
+    if (Msg == WM_KILLFOCUS && GetPropW(hWnd, dirtyKey) != nullptr) {
+        RemovePropW(hWnd, dirtyKey);
+        CommitEditControl(app, hWnd);
+    }
+    if (Msg == WM_NCDESTROY)
+        RemovePropW(hWnd, dirtyKey);
     return CallWindowProcA(
         app->OriginalEditProc(),
         hWnd, Msg, wParam, lParam);

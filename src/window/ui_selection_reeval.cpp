@@ -8,6 +8,7 @@
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
+#include "rinmotiondance/ui_style.hpp"
 
 namespace rinmotiondance {
 
@@ -93,13 +94,10 @@ void DrawControlPoints(MMDApp* app, const Curve& curve) {
 void DragInterpolationControlPoint(MMDApp* app) {  
     const HWND window = static_cast<HWND>(app->Hwnd());
     HDC dc = app->CurveDC();
-    HPEN pen = CreatePen(PS_SOLID, 1, 0x00FFFFFFu);              
-    HBRUSH brush = CreateSolidBrush(0x00FFFFFFu);                
-    SelectObject(dc, pen);
-    SelectObject(dc, brush);
-    Rectangle(dc, 0, 0, 128, 128);                               
-    DeleteObject(pen);
-    DeleteObject(brush);
+    RECT bounds{0, 0, 128, 128};
+    HBRUSH surface = CreateSolidBrush(ui_style::SurfaceAlt);
+    FillRect(dc, &bounds, surface);
+    DeleteObject(surface);
 
     RECT client{};
     GetClientRect(window, &client);                              
