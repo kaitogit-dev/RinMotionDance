@@ -26,6 +26,25 @@ constexpr char kJpCamLightAccessoryPanelFmt[] = "\xb6\xd2\xd7\xa5\x8f\xc6\x96\xb
 
 }  
 
+void DrawViewportTitle(MMDApp* app, HDC dc, const char* title,
+                       int left, int top, int right) {
+    RECT area{left + 10, top - 25, right - 620, top - 1};
+    if (area.right <= area.left + 80)
+        area.right = right - 12;
+    static HFONT titleFont = CreateFontA(
+        -17, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+    const HGDIOBJ old = titleFont != nullptr ? SelectObject(dc, titleFont) : nullptr;
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, ui_style::Text);
+    DrawTextA(dc, title, -1, &area,
+              DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS |
+              DT_NOPREFIX);
+    if (old != nullptr)
+        SelectObject(dc, old);
+}
+
 void HandlePaletteChanged(HDC hdc) {
     MMDApp* app = g_Block;  
 
@@ -181,23 +200,21 @@ void HandlePaletteChanged2(HDC hdc) {
     if (app->state.optflag[0] != 0) {   
         if (app->EnglishUI() != 0) {                             
             if (playing) {
-                DrawGlyph(app, "Playing", hdc, 20, xBase + 10, hideTop - 22,
-                          215, 222, 230, 1);                  
+                DrawViewportTitle(app, hdc, "Playing", xBase, hideTop, right);                  
             } else {
                 mdl::AccessoryRecord* acc =
                     app->AccessorySlot(app->SelectedAccessorySlot());
                 if (acc == nullptr) {
-                    DrawGlyph(app, "Camera / Light / Accessory", hdc, 20,
-                              xBase + 10, hideTop - 22, 215, 222, 230, 1);  
+                    DrawViewportTitle(app, hdc, "Camera / Light / Accessory",
+                                      xBase, hideTop, right);  
                 } else {
                     sprintf_s(buffer, 0x100, "Camera / Light / Accessory / %s",
                               acc->name);                        
-                    DrawGlyph(app, buffer, hdc, 20, xBase + 10, hideTop - 22,
-                              215, 222, 230, 1);              
+                    DrawViewportTitle(app, hdc, buffer, xBase, hideTop, right);              
                 }
             }
-            DrawGlyph(app, "camera", hdc, 14, xBase + 137, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 462, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "camera", hdc, 14, xBase + 119, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 429, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -215,12 +232,11 @@ void HandlePaletteChanged2(HDC hdc) {
                           215, 222, 230, 1);                  
             }
         }
-        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 129, hideBottom + 11, 228, 234, 240, 1);                                   
+        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 112, hideBottom + 11, 228, 234, 240, 1);                                   
     } else {                                                     
         if (app->EnglishUI() != 0) {
             if (playing) {
-                DrawGlyph(app, "Playing", hdc, 20, xBase + 10, hideTop - 22,
-                          215, 222, 230, 1);                  
+                DrawViewportTitle(app, hdc, "Playing", xBase, hideTop, right);                  
             } else {
                 unsigned char* model = app->SelectedModel();
                 if (model != nullptr) {                          
@@ -259,8 +275,8 @@ void HandlePaletteChanged2(HDC hdc) {
                     }
                 }
             }
-            DrawGlyph(app, "bone place", hdc, 14, xBase + 130, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 462, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "bone place", hdc, 14, xBase + 119, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 429, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -293,10 +309,10 @@ void HandlePaletteChanged2(HDC hdc) {
                 }
             }
         }
-        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 130, hideBottom + 11, 228, 234, 240, 1);                                   
+        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 119, hideBottom + 11, 228, 234, 240, 1);                                   
     }
 
-    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 462, hideBottom + 11, 228, 234, 240, 1);                                       
+    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 429, hideBottom + 11, 228, 234, 240, 1);                                       
 }
 
 }  

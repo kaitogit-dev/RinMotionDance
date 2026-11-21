@@ -275,7 +275,7 @@ void PaintRoundedButton(HDC dc, HWND hwnd, RECT bounds,
             static_cast<float>(bounds.top) + 0.5f,
             static_cast<float>(bounds.right - bounds.left) - 1.0f,
             static_cast<float>(bounds.bottom - bounds.top) - 1.0f);
-        const float radius = std::min(8.0f, rectangle.Height * 0.27f);
+        const float radius = std::min(5.0f, rectangle.Height * 0.22f);
         const SegmentPart segment = SegmentOf(hwnd);
         Gdiplus::GraphicsPath path;
         RoundedPath(path, rectangle, radius, segment);
@@ -305,9 +305,41 @@ void PaintRoundedButton(HDC dc, HWND hwnd, RECT bounds,
         DeleteObject(brush);
     }
     RECT label = bounds;
-    label.left += 5;
-    label.right -= 5;
-    DrawLabel(dc, hwnd, label, enabled ? Text : Disabled, DT_CENTER);
+    label.left += 2;
+    label.right -= 2;
+    const int navId = GetDlgCtrlID(hwnd);
+    if (navId == 418 || navId == 419 || navId == 532 ||
+        navId == 533 || navId == 558 || navId == 559) {
+        const bool leftArrow = navId == 418 || navId == 533 || navId == 558;
+        const bool edge = navId == 558 || navId == 559;
+        const int centerX = (bounds.left + bounds.right) / 2 +
+                            (edge ? (leftArrow ? 3 : -3) : 0);
+        const int centerY = (bounds.top + bounds.bottom) / 2;
+        POINT triangle[3] = {
+            {centerX + (leftArrow ? 3 : -3), centerY - 4},
+            {centerX + (leftArrow ? -3 : 3), centerY},
+            {centerX + (leftArrow ? 3 : -3), centerY + 4}
+        };
+        HBRUSH ink = CreateSolidBrush(enabled ? Text : Disabled);
+        HGDIOBJ oldBrush = SelectObject(dc, ink);
+        HGDIOBJ oldPen = SelectObject(dc, GetStockObject(NULL_PEN));
+        Polygon(dc, triangle, 3);
+        if (edge) {
+            HPEN bar = CreatePen(PS_SOLID, 1, enabled ? Text : Disabled);
+            SelectObject(dc, bar);
+            const int x = centerX + (leftArrow ? -5 : 5);
+            MoveToEx(dc, x, centerY - 5, nullptr);
+            LineTo(dc, x, centerY + 6);
+            SelectObject(dc, oldPen);
+            DeleteObject(bar);
+        } else {
+            SelectObject(dc, oldPen);
+        }
+        SelectObject(dc, oldBrush);
+        DeleteObject(ink);
+    } else {
+        DrawLabel(dc, hwnd, label, enabled ? Text : Disabled, DT_CENTER);
+    }
 }
 
 void UpdateHover(HWND hwnd, UINT message) {

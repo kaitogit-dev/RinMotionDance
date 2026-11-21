@@ -37,8 +37,8 @@ void PostLanguageSweep2(MMDApp* app) {
     InvalidateRect(hwnd, &rc, FALSE);               
 
     rc.top = app->state.hideBottom;  
-    rc.left = x + 120;
-    rc.right = x + 850;
+    rc.left = x + 112;
+    rc.right = x + 870;
     rc.bottom = rc.top + 30;
     InvalidateRect(hwnd, &rc, FALSE);               
 }

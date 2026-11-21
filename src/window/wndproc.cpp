@@ -27,10 +27,86 @@ static const char kMsgQuitModifiedJp[] =
     "\x82\xB7\x82\xA9\x81\x48";
 static const char kCaptionQuitJp[] = "\x8F\x49\x97\xB9";  
 
+struct DarkMenuFrame {
+    HMENU menu;
+    HDC dc;
+    DWORD flags;
+};
+
+struct DarkMenuMetrics {
+    DWORD bar[2][2];
+    DWORD popup[4][2];
+};
+
+struct DarkPopupMetrics {
+    DWORD size[4];
+    DWORD flags;
+};
+
+struct DarkMenuItem {
+    int position;
+    DarkMenuMetrics metrics;
+    DarkPopupMetrics popup;
+};
+
+struct DarkMenuDraw {
+    DRAWITEMSTRUCT item;
+    DarkMenuFrame menu;
+    DarkMenuItem entry;
+};
+
+bool PaintNonClientMenu(HWND hwnd, UINT message, LPARAM value) {
+    if (message == 0x0091) {
+        const auto* menu = reinterpret_cast<const DarkMenuFrame*>(value);
+        if (menu == nullptr || menu->dc == nullptr)
+            return false;
+        MENUBARINFO info{};
+        info.cbSize = sizeof(info);
+        if (!GetMenuBarInfo(hwnd, OBJID_MENU, 0, &info))
+            return false;
+        RECT window{};
+        GetWindowRect(hwnd, &window);
+        RECT area = info.rcBar;
+        OffsetRect(&area, -window.left, -window.top);
+        HBRUSH brush = CreateSolidBrush(ui_style::Header);
+        FillRect(menu->dc, &area, brush);
+        DeleteObject(brush);
+        return true;
+    }
+    if (message == 0x0092) {
+        const auto* draw = reinterpret_cast<const DarkMenuDraw*>(value);
+        if (draw == nullptr || draw->menu.dc == nullptr ||
+            draw->menu.menu == nullptr)
+            return false;
+        wchar_t label[256]{};
+        if (GetMenuStringW(draw->menu.menu, draw->entry.position,
+                           label, 256, MF_BYPOSITION) == 0)
+            return false;
+        const bool active = (draw->item.itemState &
+                             (ODS_SELECTED | ODS_HOTLIGHT)) != 0;
+        const bool disabled = (draw->item.itemState &
+                               (ODS_DISABLED | ODS_GRAYED)) != 0;
+        HBRUSH brush = CreateSolidBrush(active ?
+            ui_style::Button : ui_style::Header);
+        FillRect(draw->menu.dc, &draw->item.rcItem, brush);
+        DeleteObject(brush);
+        SetBkMode(draw->menu.dc, TRANSPARENT);
+        SetTextColor(draw->menu.dc, disabled ?
+                     ui_style::Disabled : ui_style::Text);
+        RECT area = draw->item.rcItem;
+        DrawTextW(draw->menu.dc, label, -1, &area,
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+        return true;
+    }
+    return false;
+}
+
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     MMDApp* app = g_Block;
     auto& s = *app;
-    s.MessageSeen() = 1;                                           
+    s.MessageSeen() = 1;
+    if (PaintNonClientMenu(hwnd, msg, lParam))
+        return 0;                                           
 
     if (msg <= WM_COMMAND  ) {
         if (msg == WM_COMMAND) {

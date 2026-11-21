@@ -43,21 +43,21 @@ void LayoutViewportPanels(MMDApp* app) {
             MoveWindow(GetDlgItem(base, id), -9000, -9000, 1, 1, TRUE);
     };
 
-    moveLeft(536,   5,  3, 112, 27);
-    moveLeft(537, 210,  9, 16, 17);
-    moveLeft(544, 227, 11, 53, 14);
-    moveLeft(538, 287,  9, 16, 17);
-    moveLeft(545, 304, 11, 53, 14);
-    moveLeft(539, 364,  9, 16, 17);
-    moveLeft(546, 381, 11, 53, 14);
-    moveLeft(540, 520,  9, 16, 17);
-    moveLeft(547, 537, 11, 53, 14);
-    moveLeft(541, 597,  9, 16, 17);
-    moveLeft(548, 614, 11, 53, 14);
-    moveLeft(542, 674,  9, 16, 17);
-    moveLeft(549, 691, 11, 53, 14);
-    moveLeft(543, 760,  8, 36, 21);
-    moveLeft(550, 797, 11, 53, 14);
+    moveLeft(536, 6, 2, 100, 23);
+    moveLeft(537, 174, 6, 17, 18);
+    moveLeft(544, 193, 5, 57, 20);
+    moveLeft(538, 257, 6, 17, 18);
+    moveLeft(545, 276, 5, 57, 20);
+    moveLeft(539, 340, 6, 17, 18);
+    moveLeft(546, 359, 5, 57, 20);
+    moveLeft(540, 490, 6, 17, 18);
+    moveLeft(547, 509, 5, 57, 20);
+    moveLeft(541, 573, 6, 17, 18);
+    moveLeft(548, 592, 5, 57, 20);
+    moveLeft(542, 656, 6, 17, 18);
+    moveLeft(549, 675, 5, 57, 20);
+    moveLeft(543, 757, 3, 43, 22);
+    moveLeft(550, 801, 5, 66, 20);
 
     moveRight(557, 140, -22, 50, 20);
     moveRight(552, 235, -22, 90, 20);
