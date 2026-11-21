@@ -546,36 +546,61 @@ bool PaintTrackbar(NMCUSTOMDRAW* draw, LRESULT* result) {
         *result = CDRF_SKIPDEFAULT;
         return true;
     }
+
+    static GraphicsSession session;
+    const HWND hwnd = draw->hdr.hwndFrom;
+    Gdiplus::Graphics graphics(draw->hdc);
+    graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
+
     if (item == TBCD_CHANNEL) {
-        const HWND hwnd = draw->hdr.hwndFrom;
-        RECT channel = draw->rc;
+        const RECT channel = draw->rc;
         const bool vertical = (GetWindowLongPtrW(hwnd, GWL_STYLE) & TBS_VERT) != 0;
-        const int minValue = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMIN, 0, 0));
-        const int maxValue = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMAX, 0, 0));
-        const int position = static_cast<int>(SendMessageW(hwnd, TBM_GETPOS, 0, 0));
-        const double percent = maxValue > minValue ?
-            static_cast<double>(position - minValue) /
-            static_cast<double>(maxValue - minValue) : 0.0;
-        HBRUSH base = CreateSolidBrush(Border);
-        FillRect(draw->hdc, &channel, base);
-        DeleteObject(base);
-        RECT active = channel;
-        if (vertical)
-            active.top = channel.bottom - static_cast<int>(
-                (channel.bottom - channel.top) * percent);
-        else
-            active.right = channel.left + static_cast<int>(
-                (channel.right - channel.left) * percent);
-        HBRUSH fill = CreateSolidBrush(Accent);
-        FillRect(draw->hdc, &active, fill);
-        DeleteObject(fill);
+        const int lo = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMIN, 0, 0));
+        const int hi = static_cast<int>(SendMessageW(hwnd, TBM_GETRANGEMAX, 0, 0));
+        const int pos = static_cast<int>(SendMessageW(hwnd, TBM_GETPOS, 0, 0));
+        const double amount = hi > lo
+            ? std::min(1.0, std::max(0.0,
+                static_cast<double>(pos - lo) / static_cast<double>(hi - lo)))
+            : 0.0;
+
+        const Gdiplus::RectF track(
+            static_cast<Gdiplus::REAL>(channel.left),
+            static_cast<Gdiplus::REAL>(channel.top),
+            static_cast<Gdiplus::REAL>(channel.right - channel.left),
+            static_cast<Gdiplus::REAL>(channel.bottom - channel.top));
+        if (track.Width > 0.0f && track.Height > 0.0f) {
+            Gdiplus::GraphicsPath path;
+            const float radius = std::min(track.Width, track.Height) * 0.5f;
+            RoundedPath(path, track, radius, SegmentPart::Single);
+            Gdiplus::SolidBrush background(GraphicsColor(Border));
+            graphics.FillPath(&background, &path);
+            graphics.SetClip(&path);
+            Gdiplus::RectF active = track;
+            if (vertical) {
+                active.Height = static_cast<Gdiplus::REAL>(track.Height * amount);
+                active.Y = track.Y + track.Height - active.Height;
+            } else {
+                active.Width = static_cast<Gdiplus::REAL>(track.Width * amount);
+            }
+            Gdiplus::SolidBrush activeBrush(GraphicsColor(Accent));
+            graphics.FillRectangle(&activeBrush, active);
+            graphics.ResetClip();
+        }
         *result = CDRF_SKIPDEFAULT;
         return true;
     }
     if (item == TBCD_THUMB) {
-        HBRUSH knob = CreateSolidBrush(Accent);
-        FillRect(draw->hdc, &draw->rc, knob);
-        DeleteObject(knob);
+        const RECT thumb = draw->rc;
+        const float width = static_cast<float>(thumb.right - thumb.left);
+        const float height = static_cast<float>(thumb.bottom - thumb.top);
+        const float diameter = std::min(14.0f,
+            std::max(10.0f, std::min(width, height)));
+        const float x = (static_cast<float>(thumb.left + thumb.right) - diameter) * 0.5f;
+        const float y = (static_cast<float>(thumb.top + thumb.bottom) - diameter) * 0.5f;
+        Gdiplus::SolidBrush knob(GraphicsColor(
+            IsWindowEnabled(hwnd) ? Accent : Disabled));
+        graphics.FillEllipse(&knob, x, y, diameter, diameter);
         *result = CDRF_SKIPDEFAULT;
         return true;
     }
