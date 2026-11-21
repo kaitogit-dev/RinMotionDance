@@ -196,8 +196,8 @@ void HandlePaletteChanged2(HDC hdc) {
                               215, 222, 230, 1);              
                 }
             }
-            DrawGlyph(app, "camera", hdc, 14, xBase + 90, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "camera", hdc, 14, xBase + 137, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 462, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -215,7 +215,7 @@ void HandlePaletteChanged2(HDC hdc) {
                           215, 222, 230, 1);                  
             }
         }
-        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 72, hideBottom + 11, 228, 234, 240, 1);                                   
+        DrawGlyph(app, kJpCameraCenter, hdc, 14, xBase + 129, hideBottom + 11, 228, 234, 240, 1);                                   
     } else {                                                     
         if (app->EnglishUI() != 0) {
             if (playing) {
@@ -259,8 +259,8 @@ void HandlePaletteChanged2(HDC hdc) {
                     }
                 }
             }
-            DrawGlyph(app, "bone place", hdc, 14, xBase + 66, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 365, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "bone place", hdc, 14, xBase + 130, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "angle", hdc, 14, xBase + 462, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -293,10 +293,10 @@ void HandlePaletteChanged2(HDC hdc) {
                 }
             }
         }
-        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 68, hideBottom + 11, 228, 234, 240, 1);                                   
+        DrawGlyph(app, kJpBonePosition, hdc, 14, xBase + 130, hideBottom + 11, 228, 234, 240, 1);                                   
     }
 
-    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 369, hideBottom + 11, 228, 234, 240, 1);                                       
+    DrawGlyph(app, kJpAngle, hdc, 14, xBase + 462, hideBottom + 11, 228, 234, 240, 1);                                       
 }
 
 }  

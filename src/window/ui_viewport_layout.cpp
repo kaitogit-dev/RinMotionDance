@@ -31,7 +31,7 @@ void LayoutViewportPanels(MMDApp* app) {
     const int rowY = viewport.top;                                
 
     auto moveLeft = [&](int id, int k, int dy, int w, int h) {
-        if (inset + k <= right)
+        if (inset + k + w <= right - 8)
             MoveWindow(GetDlgItem(base, id), inset + k, stripY + dy, w, h, TRUE);
         else
             MoveWindow(GetDlgItem(base, id), -9000, -9000, 1, 1, TRUE);
@@ -43,21 +43,21 @@ void LayoutViewportPanels(MMDApp* app) {
             MoveWindow(GetDlgItem(base, id), -9000, -9000, 1, 1, TRUE);
     };
 
-    moveLeft(536,   5,  3, 112, 27);   
-    moveLeft(537, 140,  9, 16, 17);   
-    moveLeft(544, 157, 11, 53, 14);   
-    moveLeft(538, 213,  9, 16, 17);   
-    moveLeft(545, 230, 11, 53, 14);   
-    moveLeft(539, 286,  9, 16, 17);   
-    moveLeft(546, 303, 11, 53, 14);   
-    moveLeft(540, 400,  9, 16, 17);   
-    moveLeft(547, 417, 11, 38, 14);
-    moveLeft(541, 458,  9, 16, 17);
-    moveLeft(548, 475, 11, 38, 14);
-    moveLeft(542, 516,  9, 16, 17);
-    moveLeft(549, 533, 11, 38, 14);
-    moveLeft(543, 579,  8, 36, 21);   
-    moveLeft(550, 616, 11, 53, 14);
+    moveLeft(536,   5,  3, 112, 27);
+    moveLeft(537, 210,  9, 16, 17);
+    moveLeft(544, 227, 11, 53, 14);
+    moveLeft(538, 287,  9, 16, 17);
+    moveLeft(545, 304, 11, 53, 14);
+    moveLeft(539, 364,  9, 16, 17);
+    moveLeft(546, 381, 11, 53, 14);
+    moveLeft(540, 520,  9, 16, 17);
+    moveLeft(547, 537, 11, 53, 14);
+    moveLeft(541, 597,  9, 16, 17);
+    moveLeft(548, 614, 11, 53, 14);
+    moveLeft(542, 674,  9, 16, 17);
+    moveLeft(549, 691, 11, 53, 14);
+    moveLeft(543, 760,  8, 36, 21);
+    moveLeft(550, 797, 11, 53, 14);
 
     moveRight(557, 140, -22, 50, 20);
     moveRight(552, 235, -22, 90, 20);
