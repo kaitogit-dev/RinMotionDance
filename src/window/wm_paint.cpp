@@ -114,7 +114,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
             text(light, axes[i], 12, 28 + i * 18, 18, ui_style::Muted);
 
         const DockSection shadow = DockSection::Shadow;
-        text(shadow, L"SHADOW RANGE", 10, 68, size(shadow) - 82, ui_style::Muted);
+        text(shadow, L"RANGE", 10, 68, size(shadow) - 82, ui_style::Muted);
         text(shadow, L"DETAIL", 10, 112, 60, ui_style::Muted);
         text(shadow, L"DISTANCE", size(shadow) - 82, 112, 71, ui_style::Muted);
 

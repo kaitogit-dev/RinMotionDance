@@ -363,7 +363,7 @@ void PaintToggle(HDC dc, HWND hwnd) {
         if (radio)
             Ellipse(dc, indicator.left, indicator.top, indicator.right, indicator.bottom);
         else
-            Rectangle(dc, indicator.left, indicator.top, indicator.right, indicator.bottom);
+            RoundRect(dc, indicator.left, indicator.top, indicator.right, indicator.bottom, 5, 5);
         if (checked) {
             HPEN mark = CreatePen(PS_SOLID, 2, Accent);
             SelectObject(dc, mark);
