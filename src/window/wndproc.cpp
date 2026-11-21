@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 #include <cstdint>
+#include <cwchar>
 
 #include "rinmotiondance/mmd_app.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
@@ -71,6 +72,12 @@ bool PaintNonClientMenu(HWND hwnd, UINT message, LPARAM value) {
         HBRUSH brush = CreateSolidBrush(ui_style::Header);
         FillRect(menu->dc, &area, brush);
         DeleteObject(brush);
+        HPEN rule = CreatePen(PS_SOLID, 1, RGB(58, 65, 75));
+        HGDIOBJ previous = SelectObject(menu->dc, rule);
+        MoveToEx(menu->dc, area.left, area.bottom - 1, nullptr);
+        LineTo(menu->dc, area.right, area.bottom - 1);
+        SelectObject(menu->dc, previous);
+        DeleteObject(rule);
         return true;
     }
     if (message == 0x0092) {
@@ -93,9 +100,26 @@ bool PaintNonClientMenu(HWND hwnd, UINT message, LPARAM value) {
         SetBkMode(draw->menu.dc, TRANSPARENT);
         SetTextColor(draw->menu.dc, disabled ?
                      ui_style::Disabled : ui_style::Text);
+        const size_t length = wcslen(label);
+        if (length >= 4 && label[length - 4] == L'(' &&
+            label[length - 3] == L'&' &&
+            label[length - 1] == L')')
+            label[length - 4] = L'\0';
         RECT area = draw->item.rcItem;
+        InflateRect(&area, -4, 0);
         DrawTextW(draw->menu.dc, label, -1, &area,
-                  DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX |
+                  DT_END_ELLIPSIS);
+        if (draw->entry.position + 1 <
+            GetMenuItemCount(draw->menu.menu)) {
+            const int x = draw->item.rcItem.right - 1;
+            HPEN separator = CreatePen(PS_SOLID, 1, RGB(72, 78, 88));
+            HGDIOBJ previous = SelectObject(draw->menu.dc, separator);
+            MoveToEx(draw->menu.dc, x, draw->item.rcItem.top + 4, nullptr);
+            LineTo(draw->menu.dc, x, draw->item.rcItem.bottom - 4);
+            SelectObject(draw->menu.dc, previous);
+            DeleteObject(separator);
+        }
         return true;
     }
     return false;

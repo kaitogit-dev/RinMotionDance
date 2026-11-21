@@ -8,6 +8,8 @@
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/editor_dock.hpp"
 #include <algorithm>
+#include <initializer_list>
+#include <cwchar>
 
 namespace rinmotiondance {
 
@@ -56,23 +58,48 @@ void LayoutEditorDock(MMDApp* app) {
     const auto w = [&](DockSection section) -> int {
         return dock.width[DockIndex(section)];
     };
+    const auto measureButton = [&](int id, int minimum = 28) -> int {
+        const HWND control = GetDlgItem(hwnd, id);
+        if (control == nullptr)
+            return minimum;
+        wchar_t caption[160]{};
+        GetWindowTextW(control, caption, 160);
+        HDC dc = GetDC(control);
+        if (dc == nullptr)
+            return minimum;
+        HFONT font = reinterpret_cast<HFONT>(
+            SendMessageW(control, WM_GETFONT, 0, 0));
+        HGDIOBJ original = font != nullptr ? SelectObject(dc, font) : nullptr;
+        SIZE extent{};
+        GetTextExtentPoint32W(dc, caption, lstrlenW(caption), &extent);
+        if (original != nullptr)
+            SelectObject(dc, original);
+        ReleaseDC(control, dc);
+        return std::max(minimum, extent.cx + 10);
+    };
+    const auto group = [&](DockSection section, int x, int y, int h,
+                           std::initializer_list<int> buttons,
+                           int minWidth = 28) {
+        for (const int id : buttons) {
+            const int width = measureButton(id, minWidth);
+            put(section, id, x, y, width, h);
+            x += width;
+        }
+    };
 
     const DockSection interp = DockSection::Interpolation;
     const int interpW = w(interp);
     put(interp, 433, 143, 31, interpW - 154, 170);
     put(interp, 530, 145, 58, 15, 15);
-    put(interp, 430, 143, 82, interpW - 154, 23);
-    put(interp, 431, 143, 109, interpW - 154, 23);
-    put(interp, 432, 143, 136, interpW - 154, 21);
+    put(interp, 430, 143, 82, measureButton(430, 44), 23);
+    put(interp, 431, 143, 109, measureButton(431, 44), 23);
+    put(interp, 432, 143, 136, measureButton(432, 44), 21);
 
     const DockSection model = DockSection::Model;
     const int modelW = w(model);
-    const int halfModel = (modelW - 20) / 2;
     put(model, 436, 10, 28, modelW - 20, 180);
-    put(model, 435, 10, 56, halfModel, 23);
-    put(model, 437, 10 + halfModel, 56, halfModel, 23);
-    put(model, 440, 10, 83, halfModel, 22);
-    put(model, 441, 10 + halfModel, 83, halfModel, 22);
+    group(model, 10, 56, 23, {435, 437}, 43);
+    group(model, 10, 83, 22, {440, 441}, 43);
     put(model, 443, 10, 109, modelW - 20, 160);
     put(model, 439, 10, 138, 15, 15);
     put(model, 444, 88, 138, 15, 15);
@@ -83,8 +110,7 @@ void LayoutEditorDock(MMDApp* app) {
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;
         const int camW = w(camera);
-        put(camera, 451, 10, 28, 80, 23);
-        put(camera, 446, 90, 28, camW - 100, 23);
+        group(camera, 10, 28, 23, {451, 446}, 46);
         put(camera, 448, camW - 64, 54, 52, 19);
         put(camera, 447, 10, 75, camW - 20, 17);
         put(camera, 449, 10, 113, camW - 20, 140);
@@ -103,22 +129,16 @@ void LayoutEditorDock(MMDApp* app) {
             put(light, values[i], lightW - 59, 27 + 18 * i,
                 47, 17);
         }
-        put(light, 467, 10, 136, (lightW - 20) / 2, 21);
-        put(light, 468, 10 + (lightW - 20) / 2, 136,
-            (lightW - 20) / 2, 21);
+        group(light, 10, 136, 21, {467, 468}, 44);
         put(light, 469, lightW - 21, 4, 15, 15);
         put(light, 470, lightW - 21, 4, 15, 15);
 
         const DockSection shadow = DockSection::Shadow;
         const int shadowW = w(shadow);
-        const int modeW = (shadowW - 20) / 3;
-        put(shadow, 562, 10, 30, modeW, 24);
-        put(shadow, 563, 10 + modeW, 30, modeW, 24);
-        put(shadow, 564, 10 + 2 * modeW, 30,
-            shadowW - 20 - 2 * modeW, 24);
+        group(shadow, 10, 30, 24, {562, 563, 564}, 32);
         put(shadow, 561, shadowW - 65, 66, 52, 19);
         put(shadow, 560, 10, 91, shadowW - 20, 20);
-        put(shadow, 565, 10, 130, shadowW - 20, 25);
+        put(shadow, 565, 10, 130, measureButton(565, 64), 25);
         put(shadow, 566, shadowW - 20, 4, 14, 14);
         put(shadow, 567, shadowW - 20, 4, 14, 14);
 
@@ -127,11 +147,7 @@ void LayoutEditorDock(MMDApp* app) {
         put(accessory, 471, 10, 28, accW - 105, 150);
         put(accessory, 476, accW - 86, 31, 15, 15);
         put(accessory, 486, accW - 46, 31, 15, 15);
-        const int accButtonW = (accW - 20) / 3;
-        put(accessory, 472, 10, 54, accButtonW, 22);
-        put(accessory, 473, 10 + accButtonW, 54, accButtonW, 22);
-        put(accessory, 477, 10 + 2 * accButtonW, 54,
-            accW - 20 - 2 * accButtonW, 22);
+        group(accessory, 10, 54, 22, {472, 473, 477}, 42);
         put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
         put(accessory, 475, 20 + (accW - 30) / 2, 79,
             (accW - 30) / 2, 130);
@@ -151,17 +167,10 @@ void LayoutEditorDock(MMDApp* app) {
     } else {
         const DockSection bone = DockSection::Edit;
         const int boneW = w(bone);
-        const int cell = (boneW - 24) / 3;
-        const int controls[4][3] = {
-            {490, 493, 492},
-            {491, 494, 501},
-            {496, 497, 498},
-            {500, 495, 499}
-        };
-        for (int row = 0; row < 4; ++row)
-            for (int col = 0; col < 3; ++col)
-                put(bone, controls[row][col], 12 + col * cell,
-                    30 + row * 31, col == 2 ? boneW - 24 - col * cell : cell, 26);
+        group(bone, 12, 30, 26, {490, 493, 492}, 40);
+        group(bone, 12, 61, 26, {491, 494, 501}, 40);
+        group(bone, 12, 92, 26, {496, 497, 498}, 40);
+        group(bone, 12, 123, 26, {500, 495, 499}, 40);
         put(bone, 502, boneW - 21, 4, 14, 14);
         put(bone, 503, boneW - 21, 4, 14, 14);
 
@@ -191,15 +200,11 @@ void LayoutEditorDock(MMDApp* app) {
 
     const DockSection playback = DockSection::Playback;
     const int playW = w(playback);
-    const int viewW = (playW - 20) / 3;
-    for (int i = 0; i < 6; ++i)
-        put(playback, 402 + i, 10 + (i % 3) * viewW,
-            29 + (i / 3) * 26,
-            (i % 3) == 2 ? playW - 20 - 2 * viewW : viewW, 23);
+    group(playback, 10, 29, 23, {402, 403, 404}, 45);
+    group(playback, 10, 55, 23, {405, 406, 407}, 45);
     put(playback, 534, 10, 82, 19, 72);
-    put(playback, 408, 37, 84, 70, 24);
-    put(playback, 568, 107, 84, 70, 24);
-    put(playback, 535, 184, 84, playW - 194, 24);
+    group(playback, 37, 84, 24, {408, 568}, 52);
+    put(playback, 535, 153, 84, measureButton(535, 52), 24);
     put(playback, 412, 37, 115, 16, 16);
     put(playback, 531, 119, 115, 16, 16);
     put(playback, 411, 204, 115, 16, 16);
@@ -247,8 +252,8 @@ void HandleWindowSize(MMDApp* app) {
     GetClientRect(hwnd, &cb);                                  
     const std::int32_t bottom = cb.bottom;
 
-    MoveCtrl(hwnd, 400, side / 2 - 80, 21, 70, 24);
-    MoveCtrl(hwnd, 401, side / 2 + 10, 21, 70, 24);
+    MoveCtrl(hwnd, 400, side / 2 - 64, 21, 58, 24);
+    MoveCtrl(hwnd, 401, side / 2 + 6, 21, 58, 24);
     MoveCtrl(hwnd, 418, side / 2 - 49, 67, 20, 24);
     MoveCtrl(hwnd, 419, side / 2 + 29, 67, 20, 24);
     MoveCtrl(hwnd, 533, side / 2 - 79, 69, 20, 22);
@@ -435,8 +440,8 @@ void RelayoutSidebarControls(MMDApp* app) {
     RECT client{};
     GetClientRect(hwnd, &client);
 
-    MoveCtrl(hwnd, 400, side / 2 - 80, 21, 70, 24);
-    MoveCtrl(hwnd, 401, side / 2 + 10, 21, 70, 24);
+    MoveCtrl(hwnd, 400, side / 2 - 64, 21, 58, 24);
+    MoveCtrl(hwnd, 401, side / 2 + 6, 21, 58, 24);
     MoveCtrl(hwnd, 418, side / 2 - 49, 67, 20, 24);
     MoveCtrl(hwnd, 419, side / 2 + 29, 67, 20, 24);
     MoveCtrl(hwnd, 533, side / 2 - 79, 69, 20, 22);
