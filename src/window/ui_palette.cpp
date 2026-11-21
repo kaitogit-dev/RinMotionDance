@@ -11,13 +11,15 @@
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/model.hpp"
 #include "rinmotiondance/ui_style.hpp"
+#include "rinmotiondance/ui_model_names.hpp"
+#include <string>
 
 namespace rinmotiondance {
 namespace {
 
 constexpr char kJpPlaying[] = "\x8d\xc4\x90\xb6\x92\x86";  
 constexpr char kJpAngle[] = "\x8a\x70\x93\x78";          
-constexpr char kJpBonePosition[] = "\x83\x7b\x81\x5b\x83\x93\x88\xca\x92\x75";  
+constexpr char kJpBonePosition[] = "\x88\xca\x92\x75";  
 constexpr char kJpCameraFollowMode[] = "\x83\x4a\x83\x81\x83\x89\x83\x7b\x81\x5b\x83\x93\x92\xc7\x8f\x5d\x83\x82\x81\x5b\x83\x68\x92\x86";  
 constexpr char kJpCameraFollowModeHint[] = "\x83\x4a\x83\x81\x83\x89\x83\x7b\x81\x5b\x83\x93\x92\xc7\x8f\x5d\x83\x82\x81\x5b\x83\x68\x92\x86\x20\x28\x92\xc7\x8f\x5d\x83\x7b\x83\x5e\x83\x93\x82\xf0\x89\xf0\x8f\x9c\x82\xb5\x82\xc4\x89\xba\x82\xb3\x82\xa2\x29";  
 constexpr char kJpCameraCenter[] = "\x83\x4a\x83\x81\x83\x89\x92\x86\x90\x53";  
@@ -213,8 +215,8 @@ void HandlePaletteChanged2(HDC hdc) {
                     DrawViewportTitle(app, hdc, buffer, xBase, hideTop, right);              
                 }
             }
-            DrawGlyph(app, "camera", hdc, 14, xBase + 119, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 429, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "pos", hdc, 14, xBase + 121, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "rot", hdc, 14, xBase + 435, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {
@@ -243,40 +245,26 @@ void HandlePaletteChanged2(HDC hdc) {
                     const rinmotiondance::mdl::ModelRecord& record =
                         *rinmotiondance::mdl::Mdl(model);
                     const std::int32_t boneIdx = record.selectedBone;
-                    if (boneIdx < 0) {
-                        sprintf_s(buffer, 0x100, "%s", record.nameEn);
-                    } else {
-                        sprintf_s(buffer, 0x100, "%s : %s",
-                                  record.nameEn,
-                                  record.boneTable[boneIdx].nameEn);
+                    std::string title = ModelDisplayName(record.name, record.nameEn);
+                    if (boneIdx >= 0 &&
+                        boneIdx < static_cast<std::int32_t>(record.boneCount)) {
+                        title += " / ";
+                        title += ModelDisplayName(record.boneTable[boneIdx].name,
+                                                  record.boneTable[boneIdx].nameEn);
                     }
-                    const int width = DrawGlyph(app, buffer, hdc, 20,
-                                                xBase + 10, hideTop - 22,
-                                                215, 222, 230, 1);  
-                    const std::int32_t traceTarget =
-                        app->CameraParentModel();
-                    const bool traceActive =
-                        (app->state.followCameraEnabled != 0) &
-                        (app->SelectedModelSlot() == traceTarget) &
-                        (traceTarget >= 0);                      
-                    if (traceActive) {
-                        if (app->state.viewDirty != 0) {  
-                            DrawGlyph(app, "camera bone trace mode (release trace button)",
-                                      hdc, 16, xBase + width + 30, hideTop - 22,
-                                      215, 222, 230, 1);      
-                            DrawGlyph(app, "camera bone trace mode (release trace button)",
-                                      hdc, 16, xBase + width + 29, hideTop - 23,
-                                      0xFF, 0x32, 0x32, 1);      
-                        } else {
-                            DrawGlyph(app, "camera bone trace mode",
-                                      hdc, 16, xBase + width + 30, hideTop - 22,
-                                      215, 222, 230, 1);      
-                        }
+                    const std::int32_t traceTarget = app->CameraParentModel();
+                    if (app->state.followCameraEnabled != 0 &&
+                        app->SelectedModelSlot() == traceTarget &&
+                        traceTarget >= 0) {
+                        title += app->state.viewDirty != 0
+                            ? " / Camera follow (release track)"
+                            : " / Camera follow";
                     }
+                    DrawViewportTitle(app, hdc, title.c_str(), xBase, hideTop, right);
                 }
             }
-            DrawGlyph(app, "bone place", hdc, 14, xBase + 119, hideBottom + 10, 228, 234, 240, 1);                               
-            DrawGlyph(app, "angle", hdc, 14, xBase + 429, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "pos", hdc, 14, xBase + 121, hideBottom + 10, 228, 234, 240, 1);                               
+            DrawGlyph(app, "rot", hdc, 14, xBase + 435, hideBottom + 10, 228, 234, 240, 1);                               
             return;
         }
         if (playing) {

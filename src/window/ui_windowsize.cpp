@@ -75,11 +75,11 @@ void LayoutEditorDock(MMDApp* app) {
         if (original != nullptr)
             SelectObject(dc, original);
         ReleaseDC(control, dc);
-        return std::max(minimum, static_cast<int>(extent.cx) + 10);
+        return std::max(minimum, static_cast<int>(extent.cx) + 6);
     };
     const auto group = [&](DockSection section, int x, int y, int h,
                            std::initializer_list<int> buttons,
-                           int minWidth = 28) {
+                           int minWidth = 25) {
         for (const int id : buttons) {
             const int width = measureButton(id, minWidth);
             put(section, id, x, y, width, h);
@@ -98,8 +98,8 @@ void LayoutEditorDock(MMDApp* app) {
     const DockSection model = DockSection::Model;
     const int modelW = w(model);
     put(model, 436, 10, 28, modelW - 20, 180);
-    group(model, 10, 56, 23, {435, 437}, 43);
-    group(model, 10, 83, 22, {440, 441}, 43);
+    group(model, 10, 56, 21, {435, 437}, 29);
+    group(model, 10, 83, 20, {440, 441}, 29);
     put(model, 443, 10, 109, modelW - 20, 160);
     put(model, 439, 10, 138, 15, 15);
     put(model, 444, 88, 138, 15, 15);
@@ -110,7 +110,7 @@ void LayoutEditorDock(MMDApp* app) {
     if (dock.camera) {
         const DockSection camera = DockSection::Edit;
         const int camW = w(camera);
-        group(camera, 10, 28, 23, {451, 446}, 46);
+        group(camera, 10, 28, 21, {451, 446}, 28);
         put(camera, 448, camW - 64, 54, 52, 19);
         put(camera, 447, 10, 75, camW - 20, 17);
         put(camera, 449, 10, 113, camW - 20, 140);
@@ -129,13 +129,13 @@ void LayoutEditorDock(MMDApp* app) {
             put(light, values[i], lightW - 59, 27 + 18 * i,
                 47, 17);
         }
-        group(light, 10, 136, 21, {467, 468}, 44);
+        group(light, 10, 135, 21, {467, 468}, 28);
         put(light, 469, lightW - 21, 4, 15, 15);
         put(light, 470, lightW - 21, 4, 15, 15);
 
         const DockSection shadow = DockSection::Shadow;
         const int shadowW = w(shadow);
-        group(shadow, 10, 30, 24, {562, 563, 564}, 32);
+        group(shadow, 10, 30, 21, {562, 563, 564}, 26);
         put(shadow, 561, shadowW - 65, 66, 52, 19);
         put(shadow, 560, 10, 91, shadowW - 20, 20);
         put(shadow, 565, 10, 130, measureButton(565, 64), 25);
@@ -147,7 +147,7 @@ void LayoutEditorDock(MMDApp* app) {
         put(accessory, 471, 10, 28, accW - 105, 150);
         put(accessory, 476, accW - 86, 31, 15, 15);
         put(accessory, 486, accW - 46, 31, 15, 15);
-        group(accessory, 10, 54, 22, {472, 473, 477}, 42);
+        group(accessory, 10, 54, 21, {472, 473, 477}, 28);
         put(accessory, 474, 10, 79, (accW - 30) / 2, 130);
         put(accessory, 475, 20 + (accW - 30) / 2, 79,
             (accW - 30) / 2, 130);
@@ -167,10 +167,10 @@ void LayoutEditorDock(MMDApp* app) {
     } else {
         const DockSection bone = DockSection::Edit;
         const int boneW = w(bone);
-        group(bone, 12, 30, 26, {490, 493, 492}, 40);
-        group(bone, 12, 61, 26, {491, 494, 501}, 40);
-        group(bone, 12, 92, 26, {496, 497, 498}, 40);
-        group(bone, 12, 123, 26, {500, 495, 499}, 40);
+        group(bone, 10, 29, 22, {490, 493, 492}, 26);
+        group(bone, 10, 56, 22, {491, 494, 501}, 26);
+        group(bone, 10, 83, 22, {496, 497, 498}, 26);
+        group(bone, 10, 110, 22, {500, 495, 499}, 26);
         put(bone, 502, boneW - 21, 4, 14, 14);
         put(bone, 503, boneW - 21, 4, 14, 14);
 
@@ -184,17 +184,18 @@ void LayoutEditorDock(MMDApp* app) {
         const int nextIds[4] = {513, 518, 508, 523};
         const int registerIds[4] = {524, 527, 525, 526};
         for (int i = 0; i < 4; ++i) {
-            const int x = 11 + (i % 2) * colWidth;
-            const int y = 41 + (i / 2) * 68;
-            const int usable = colWidth - 22;
-            const int comboWidth = usable - 70;
+            const int x = 10 + (i % 2) * colWidth;
+            const int y = 41 + (i / 2) * 64;
+            const int usable = colWidth - 20;
+            const int comboWidth = usable - 56;
+            const int sliderWidth = usable - 122;
             put(facial, comboIds[i], x, y, comboWidth, 150);
-            put(facial, prevIds[i], x + comboWidth + 4, y, 31, 23);
-            put(facial, nextIds[i], x + comboWidth + 35, y, 31, 23);
-            put(facial, sliderIds[i], x, y + 26, usable - 124, 19);
-            put(facial, valueIds[i], x + usable - 121, y + 26, 49, 19);
-            put(facial, registerIds[i], x + usable - 68, y + 25,
-                68, 23);
+            put(facial, prevIds[i], x + comboWidth + 4, y, 24, 21);
+            put(facial, nextIds[i], x + comboWidth + 28, y, 24, 21);
+            put(facial, sliderIds[i], x, y + 25, sliderWidth, 18);
+            put(facial, valueIds[i], x + sliderWidth + 4, y + 25, 51, 18);
+            put(facial, registerIds[i], x + sliderWidth + 59, y + 24,
+                63, 20);
         }
         put(facial, 528, faceW - 21, 4, 14, 14);
         put(facial, 529, faceW - 21, 4, 14, 14);
@@ -202,11 +203,11 @@ void LayoutEditorDock(MMDApp* app) {
 
     const DockSection playback = DockSection::Playback;
     const int playW = w(playback);
-    group(playback, 10, 29, 23, {402, 403, 404}, 45);
-    group(playback, 10, 55, 23, {405, 406, 407}, 45);
-    put(playback, 534, 10, 82, 19, 72);
-    group(playback, 37, 84, 24, {408, 568}, 52);
-    put(playback, 535, 153, 84, measureButton(535, 52), 24);
+    group(playback, 10, 29, 21, {402, 403, 404}, 28);
+    group(playback, 10, 54, 21, {405, 406, 407}, 28);
+    put(playback, 534, 10, 81, 19, 69);
+    group(playback, 37, 81, 22, {408, 568}, 34);
+    put(playback, 535, 153, 81, measureButton(535, 32), 22);
     put(playback, 412, 37, 115, 16, 16);
     put(playback, 531, 119, 115, 16, 16);
     put(playback, 411, 204, 115, 16, 16);
@@ -278,6 +279,15 @@ void HandleWindowSize(MMDApp* app) {
     MoveCtrl(hwnd, 434, side / 2 - 118, bottom - 193, 100, 400);
     MoveCtrl(hwnd, 415, side / 2 - 14, bottom - 181, 70, 18);
     MoveCtrl(hwnd, 424, side / 2 + 60, bottom - 181, 60, 18);
+
+    if (ComputeEditorDock(app, cb.right, cb.bottom).enabled) {
+        LayoutEditorDock(app);
+        RefreshMainWindowViewport(app);
+        LayoutViewportPanels(app);
+        InvalidateRect(hwnd, nullptr, FALSE);
+        return;
+    }
+
     MoveCtrl(hwnd, 432, 144, bottom - 26, 63, 18);
     MoveCtrl(hwnd, 431, 144, bottom - 52, 63, 18);
     MoveCtrl(hwnd, 430, 144, bottom - 78, 63, 18);

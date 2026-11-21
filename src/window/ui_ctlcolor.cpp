@@ -306,8 +306,8 @@ void PaintRoundedButton(HDC dc, HWND hwnd, RECT bounds,
         DeleteObject(brush);
     }
     RECT label = bounds;
-    label.left += 2;
-    label.right -= 2;
+    label.left += 1;
+    label.right -= 1;
     const int navId = GetDlgCtrlID(hwnd);
     if (navId == 418 || navId == 419 || navId == 532 ||
         navId == 533 || navId == 558 || navId == 559) {

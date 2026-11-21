@@ -137,8 +137,8 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         const int column = size(facial) / 2;
         text(facial, L"EYES", 12, 24, column - 22, ui_style::Muted);
         text(facial, L"MOUTH", column + 12, 24, column - 22, ui_style::Muted);
-        text(facial, L"BROW", 12, 92, column - 22, ui_style::Muted);
-        text(facial, L"OTHER", column + 12, 92, column - 22, ui_style::Muted);
+        text(facial, L"BROW", 12, 88, column - 22, ui_style::Muted);
+        text(facial, L"OTHER", column + 12, 88, column - 22, ui_style::Muted);
     }
 
     const DockSection playback = DockSection::Playback;
