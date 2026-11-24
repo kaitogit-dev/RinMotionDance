@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "rinmotiondance/d3dx_dyn.hpp"
 #include "rinmotiondance/mmd_app.hpp"
@@ -433,6 +434,30 @@ void AccumPmxVertexMorph(mdl::PmxVertex* vertices,
     }
 }
 
+void AccumNestedPmxVertexMorph(
+    mdl::PmxVertex* vertices, std::uint32_t vertexCount,
+    const mdl::MorphRecord* morphs, int morphCount, int index,
+    float weight, std::vector<std::uint8_t>& visiting) {
+    if (index < 0 || index >= morphCount || weight == 0.0f ||
+        !std::isfinite(weight) || visiting[index] != 0)
+        return;
+    const mdl::MorphRecord& morph = morphs[index];
+    if (morph.type != 0) {
+        AccumPmxVertexMorph(vertices, vertexCount, morph, weight, 1.0f);
+        return;
+    }
+    if (morph.groupEntries == nullptr)
+        return;
+    visiting[index] = 1;
+    for (int k = 0; k < morph.groupCount; ++k) {
+        const mdl::PmxGroupMorphEntry& ref = morph.groupEntries[k];
+        AccumNestedPmxVertexMorph(vertices, vertexCount, morphs, morphCount,
+                                  ref.morphIndex, weight * ref.weight,
+                                  visiting);
+    }
+    visiting[index] = 0;
+}
+
 void ApplyPmxVertexMorphs(unsigned char* model) {
     mdl::ModelRecord& record = *mdl::Mdl(model);
     mdl::MorphRecord* morphs = mdl::Morphs(model);
@@ -475,26 +500,14 @@ void ApplyPmxVertexMorphs(unsigned char* model) {
     }
 
     const int morphCount = record.morphCount;
+    std::vector<std::uint8_t> visiting(static_cast<std::size_t>(
+        std::max(morphCount, 0)), 0);
     for (int i = 0; i < morphCount; ++i) {
-        const mdl::MorphRecord& morph = morphs[i];
-        const float weight = morph.value;
+        const float weight = morphs[i].value;
         if (weight == 0.0f)
             continue;
-        if (morph.type != 0) {
-            AccumPmxVertexMorph(vertices, record.vertexCount,
-                                morph, weight, 1.0f);
-            continue;
-        }
-        const int groupCount = morph.groupCount;
-        if (morph.groupEntries == nullptr)
-            continue;
-        for (int k = 0; k < groupCount; ++k) {
-            const mdl::PmxGroupMorphEntry& ref = morph.groupEntries[k];
-            if (ref.morphIndex < 0 || ref.morphIndex >= morphCount)
-                continue;
-            AccumPmxVertexMorph(vertices, record.vertexCount,
-                                morphs[ref.morphIndex], weight, ref.weight);
-        }
+        AccumNestedPmxVertexMorph(vertices, record.vertexCount,
+                                  morphs, morphCount, i, weight, visiting);
     }
 }
 
