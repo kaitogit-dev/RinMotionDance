@@ -68,8 +68,9 @@ void LayoutEditorDock(MMDApp* app) {
             ShowWindow(control, SW_HIDE);
     }
 
+    HDWP pendingPositions = BeginDeferWindowPos(96);
     const auto put = [&](DockSection section, int id, int x, int y,
-                         int w, int h) {
+                         int width, int height) {
         const int i = DockIndex(section);
         if (dock.width[i] <= 0)
             return;
@@ -77,10 +78,25 @@ void LayoutEditorDock(MMDApp* app) {
         if (control == nullptr)
             return;
         const int available = dock.width[i] - x - 9;
-        if (available <= 0)
+        if (available <= 0 || width <= 0 || height <= 0) {
+            ShowWindow(control, SW_HIDE);
             return;
-        MoveCtrl(hwnd, id, dock.left[i] + x, dock.top + y,
-                 std::min(w, available), h);
+        }
+        const int actualWidth = std::min(width, available);
+        const int actualHeight = std::max(1,
+            std::min(height, dock.bottom - (dock.top + y) - 4));
+        const int left = dock.left[i] + x;
+        const int top = dock.top + y;
+        if (pendingPositions != nullptr) {
+            pendingPositions = DeferWindowPos(
+                pendingPositions, control, nullptr, left, top,
+                actualWidth, actualHeight,
+                SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREDRAW);
+        } else {
+            SetWindowPos(control, nullptr, left, top,
+                         actualWidth, actualHeight,
+                         SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREDRAW);
+        }
     };
     const auto w = [&](DockSection section) -> int {
         return dock.width[DockIndex(section)];
@@ -243,6 +259,9 @@ void LayoutEditorDock(MMDApp* app) {
     put(playback, 409, 99, 134, 52, 20);
     put(playback, 413, 157, 137, 16, 16);
     put(playback, 410, 212, 134, playW - 224, 20);
+    if (pendingPositions != nullptr)
+        EndDeferWindowPos(pendingPositions);
+    InvalidateRect(hwnd, nullptr, FALSE);
 }
 
 void PanelPaint(MMDApp* app);  
