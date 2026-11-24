@@ -8,6 +8,7 @@
 #include <cwchar>
 
 #include "rinmotiondance/mmd_app.hpp"
+#include "rinmotiondance/editor_dock.hpp"
 #include "rinmotiondance/ported_funcs.hpp"
 #include "rinmotiondance/panel_controls.hpp"
 #include "rinmotiondance/ui_style.hpp"
@@ -125,6 +126,7 @@ bool PaintNonClientMenu(HWND hwnd, UINT message, LPARAM value) {
     return false;
 }
 
+void LayoutEditorDock(MMDApp* app);
 void MoveTimelinePlayhead(MMDApp* app, int x);
 void FinishTimelineScrub(MMDApp* app);
 
@@ -314,10 +316,20 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         HandleMouseMove(static_cast<std::uint32_t>(lParam),
                         HIWORD(lParam));                          
         return 0;
-    case WM_LBUTTONDOWN:
+    case WM_LBUTTONDOWN: {
+        RECT client{};
+        GetClientRect(hwnd, &client);
+        if (HitEditorDockTab(app, static_cast<short>(LOWORD(lParam)),
+                             static_cast<short>(HIWORD(lParam)),
+                             client.right, client.bottom)) {
+            LayoutEditorDock(app);
+            InvalidateRect(hwnd, nullptr, FALSE);
+            return 0;
+        }
         SetCapture(static_cast<HWND>(s.Hwnd()));
-        HandleLButtonDown(app);                                   
+        HandleLButtonDown(app);
         return 0;
+    }
     case WM_LBUTTONUP:
         FinishTimelineScrub(app);
         ReleaseCapture();

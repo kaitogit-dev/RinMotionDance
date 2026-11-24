@@ -49,6 +49,8 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     };
     const auto text = [&](DockSection section, const wchar_t* label,
                           int x, int y, int w, COLORREF color) {
+        if (size(section) <= 0 || w <= 0)
+            return;
         DrawDockLabel(dc, font, label, position(section) + x,
                       dock.top + y, w, color);
     };
@@ -81,18 +83,40 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
         HBRUSH header = CreateSolidBrush(ui_style::Header);
         FillRect(dc, &heading, header);
         DeleteObject(header);
-        if (i == DockIndex(DockSection::Edit)) {
+        if (i == DockIndex(dock.page)) {
             RECT active{left, dock.top + 2, left + 3, dock.top + 24};
             HBRUSH accent = CreateSolidBrush(ui_style::Accent);
             FillRect(dc, &active, accent);
             DeleteObject(accent);
         }
-        const int reserve = dock.camera && i == DockIndex(DockSection::Accessory)
-            ? 92 : 28;
-        DrawDockLabel(dc, font, names[i], left + 12, dock.top + 5,
-                      dock.width[i] - reserve,
-                      i == DockIndex(DockSection::Edit)
-                          ? ui_style::Text : ui_style::Muted);
+        if (i != DockIndex(dock.page))
+            DrawDockLabel(dc, font, names[i], left + 12, dock.top + 5,
+                          dock.width[i] - 24, ui_style::Muted);
+    }
+
+    const int tabWidth = InspectorTabWidth(dock);
+    const int tabLeft = position(dock.page) + 9;
+    for (int i = 0; i < InspectorPageCount(dock.camera); ++i) {
+        const DockSection page = InspectorPageAt(dock.camera, i);
+        const bool selected = page == dock.page;
+        const int left = tabLeft + tabWidth * i;
+        RECT tab{left, dock.top + 3, left + tabWidth - 2, dock.top + 23};
+        if (selected) {
+            HBRUSH selectedBg = CreateSolidBrush(ui_style::SurfaceAlt);
+            FillRect(dc, &tab, selectedBg);
+            DeleteObject(selectedBg);
+            RECT accent{left, dock.top + 21, left + tabWidth - 2, dock.top + 23};
+            HBRUSH accentBrush = CreateSolidBrush(ui_style::Accent);
+            FillRect(dc, &accent, accentBrush);
+            DeleteObject(accentBrush);
+        }
+        HGDIOBJ old = font != nullptr ? SelectObject(dc, font) : nullptr;
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, selected ? ui_style::Text : ui_style::Muted);
+        DrawTextW(dc, InspectorPageLabel(dock.camera, i), -1, &tab,
+                  DT_SINGLELINE | DT_CENTER | DT_VCENTER | DT_NOPREFIX);
+        if (old != nullptr)
+            SelectObject(dc, old);
     }
 
     const DockSection interp = DockSection::Interpolation;
@@ -135,10 +159,10 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     } else {
         const DockSection facial = DockSection::Secondary;
         const int column = size(facial) / 2;
-        text(facial, L"EYES", 12, 24, column - 22, ui_style::Muted);
-        text(facial, L"MOUTH", column + 12, 24, column - 22, ui_style::Muted);
-        text(facial, L"BROW", 12, 88, column - 22, ui_style::Muted);
-        text(facial, L"OTHER", column + 12, 88, column - 22, ui_style::Muted);
+        text(facial, L"EYES", 12, 25, column - 22, ui_style::Muted);
+        text(facial, L"MOUTH", column + 12, 25, column - 22, ui_style::Muted);
+        text(facial, L"BROW", 12, 89, column - 22, ui_style::Muted);
+        text(facial, L"OTHER", column + 12, 89, column - 22, ui_style::Muted);
     }
 
     const DockSection playback = DockSection::Playback;
@@ -146,7 +170,7 @@ void PaintEditorDock(MMDApp* app, HDC dc, int width, int height) {
     text(playback, L"MODEL", 57, 113, 58, ui_style::Muted);
     text(playback, L"BONE", 139, 113, 51, ui_style::Muted);
     text(playback, L"FROM", 57, 136, 41, ui_style::Muted);
-    text(playback, L"TO", 174, 136, 22, ui_style::Muted);
+    text(playback, L"TO", 177, 136, 29, ui_style::Muted);
 }
 
 

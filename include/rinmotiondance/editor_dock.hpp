@@ -72,7 +72,7 @@ inline EditorDock ComputeEditorDock(MMDApp* app, int clientWidth,
 
     const int interpolationWidth = std::clamp(clientWidth / 8, 180, 228);
     const int modelWidth = std::clamp(clientWidth / 7, 210, 253);
-    const int playbackWidth = std::clamp(clientWidth / 6, 240, 302);
+    const int playbackWidth = std::clamp(clientWidth / 6, 280, 310);
     const int inspectorLeft = interpolationWidth + modelWidth;
 
     dock.left[0] = 0;

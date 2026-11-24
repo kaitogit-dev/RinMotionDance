@@ -41,6 +41,33 @@ void LayoutEditorDock(MMDApp* app) {
     if (!dock.enabled)
         return;
 
+    const auto displayRange = [&](int first, int last, bool visible) {
+        for (int id = first; id <= last; ++id) {
+            HWND control = GetDlgItem(hwnd, id);
+            if (control != nullptr &&
+                (IsWindowVisible(control) != FALSE) != visible)
+                ShowWindow(control, visible ? SW_SHOWNA : SW_HIDE);
+        }
+    };
+    const bool bone = !dock.camera && dock.page == DockSection::Edit;
+    const bool morph = !dock.camera && dock.page == DockSection::Secondary;
+    const bool camera = dock.camera && dock.page == DockSection::Edit;
+    const bool light = dock.camera && dock.page == DockSection::Secondary;
+    displayRange(446, 454, camera);
+    displayRange(455, 470, light);
+    displayRange(471, 489, dock.camera && dock.page == DockSection::Accessory);
+    displayRange(490, 503, bone);
+    displayRange(504, 529, morph);
+    displayRange(560, 567, dock.camera && dock.page == DockSection::Shadow);
+    const int collapsedButtons[] = {
+        453, 454, 469, 470, 488, 489, 502, 503, 528, 529, 566, 567
+    };
+    for (int id : collapsedButtons) {
+        HWND control = GetDlgItem(hwnd, id);
+        if (control != nullptr && IsWindowVisible(control))
+            ShowWindow(control, SW_HIDE);
+    }
+
     const auto put = [&](DockSection section, int id, int x, int y,
                          int w, int h) {
         const int i = DockIndex(section);
@@ -167,10 +194,11 @@ void LayoutEditorDock(MMDApp* app) {
     } else {
         const DockSection bone = DockSection::Edit;
         const int boneW = w(bone);
-        group(bone, 10, 29, 22, {490, 493, 492}, 26);
-        group(bone, 10, 56, 22, {491, 494, 501}, 26);
-        group(bone, 10, 83, 22, {496, 497, 498}, 26);
-        group(bone, 10, 110, 22, {500, 495, 499}, 26);
+        const int rightColumn = std::max(245, boneW / 2);
+        group(bone, 18, 59, 26, {490, 493, 492}, 38);
+        group(bone, 18, 98, 26, {491, 494, 501}, 38);
+        group(bone, rightColumn, 59, 26, {496, 497, 498}, 38);
+        group(bone, rightColumn, 98, 26, {500, 495, 499}, 38);
         put(bone, 502, boneW - 21, 4, 14, 14);
         put(bone, 503, boneW - 21, 4, 14, 14);
 
@@ -212,9 +240,9 @@ void LayoutEditorDock(MMDApp* app) {
     put(playback, 531, 119, 115, 16, 16);
     put(playback, 411, 204, 115, 16, 16);
     put(playback, 414, 37, 137, 16, 16);
-    put(playback, 409, 98, 134, 51, 20);
-    put(playback, 413, 154, 137, 16, 16);
-    put(playback, 410, 199, 134, playW - 210, 20);
+    put(playback, 409, 99, 134, 52, 20);
+    put(playback, 413, 157, 137, 16, 16);
+    put(playback, 410, 212, 134, playW - 224, 20);
 }
 
 void PanelPaint(MMDApp* app);  
