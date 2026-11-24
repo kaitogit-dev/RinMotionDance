@@ -292,7 +292,7 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
         mdl::PmxVertex* verts = static_cast<mdl::PmxVertex*>(
             operator new(sizeof(*verts) * vertCount));
         model.pmxVertices = verts;
-        std::memset(verts, 0, 40 * vertCount);
+        std::memset(verts, 0, sizeof(*verts) * vertCount);
 
         const std::uint8_t boneIdxSize = model.pmxBoneIndexSize;
         auto readIdx = [fh](int size) -> std::int32_t {

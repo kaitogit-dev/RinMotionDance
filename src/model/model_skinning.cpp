@@ -675,9 +675,8 @@ void SkinPmd(unsigned char* model, float edgeDistance,
         const float* matrix1 = bone1 >= 0 && bone1 < boneCount
             ? bones[bone1].matInit
             : nullptr;
-        static const float zero[16]{};
-        if (matrix0 == nullptr) matrix0 = zero;
-        if (matrix1 == nullptr) matrix1 = zero;
+        if (matrix0 == nullptr) matrix0 = kPmxIdentityMatrix;
+        if (matrix1 == nullptr) matrix1 = kPmxIdentityMatrix;
 
         for (int component = 0; component < 3; ++component) {
             main.position[component] = BlendTransformComponent(
