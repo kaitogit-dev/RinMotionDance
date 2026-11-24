@@ -64,13 +64,13 @@ inline EditorDock ComputeEditorDock(MMDApp* app, int clientWidth,
     dock.camera = app->state.optflag[0] != 0;
     dock.page = CurrentInspectorPage(dock.camera);
     dock.enabled = app->FloatingWindow() == nullptr &&
-                   clientWidth >= 1120 && clientHeight >= 590;
+                   clientWidth >= 1280 && clientHeight >= 590;
     dock.top = clientHeight - 160;
     dock.bottom = clientHeight;
     if (!dock.enabled)
         return dock;
 
-    const int interpolationWidth = std::clamp(clientWidth / 8, 180, 228);
+    const int interpolationWidth = std::clamp(clientWidth / 8, 245, 260);
     const int modelWidth = std::clamp(clientWidth / 7, 210, 253);
     const int playbackWidth = std::clamp(clientWidth / 6, 280, 310);
     const int inspectorLeft = interpolationWidth + modelWidth;

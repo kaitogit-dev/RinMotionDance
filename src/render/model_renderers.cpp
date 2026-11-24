@@ -252,7 +252,7 @@ IDirect3DTexture9* FindCachedTexture(D3DRenderer* sub, const wchar_t* path) {
             sub->resourcePool[i].heapBuffer);
         if (name == nullptr)
             return nullptr;
-        if (wcscmp(name, path) == 0)
+        if (_wcsicmp(name, path) == 0)
             return reinterpret_cast<IDirect3DTexture9*>(
                 sub->resourcePool[i].comObject);
     }
@@ -268,7 +268,7 @@ void CachedTextureColor(D3DRenderer* sub, const wchar_t* path, float out[4]) {
             sub->resourcePool[i].heapBuffer);
         if (name == nullptr)
             return;
-        if (wcscmp(name, path) == 0) {
+        if (_wcsicmp(name, path) == 0) {
             const unsigned char* tag = reinterpret_cast<const unsigned char*>(
                 &sub->resourcePool[i].tag);
             out[0] = tag[0] * (1.0f / 256.0f);
@@ -416,6 +416,8 @@ void ResetMaterialTextureStages(IDirect3DDevice9* device) {
     device->SetTexture(2, nullptr);
     for (DWORD stage = 1; stage <= 2; ++stage) {
         device->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_DISABLE);
+        device->SetTextureStageState(stage, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+        device->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_CURRENT);
         device->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
         device->SetTextureStageState(stage, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
         device->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
