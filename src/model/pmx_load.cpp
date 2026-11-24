@@ -194,6 +194,21 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
     _read(fh, &model.pmxBoneIndexSize, 1);
     _read(fh, &model.pmxMorphIndexSize, 1);
     _read(fh, &model.pmxRigidIndexSize, 1);
+    const auto validIndexSize = [](std::uint8_t size) {
+        return size == 1 || size == 2 || size == 4;
+    };
+    if (model.pmxAdditionalUvCount > 4 ||
+        !validIndexSize(model.pmxVertexIndexSize) ||
+        !validIndexSize(model.pmxTextureIndexSize) ||
+        !validIndexSize(model.pmxMaterialIndexSize) ||
+        !validIndexSize(model.pmxBoneIndexSize) ||
+        !validIndexSize(model.pmxMorphIndexSize) ||
+        !validIndexSize(model.pmxRigidIndexSize)) {
+        MessageBoxA(hwnd, "Invalid PMX vertex or index format.",
+                    "Open model", MB_OK | MB_ICONERROR);
+        _close(fh);
+        return false;
+    }
     if (model.pmxTextEncoding != 0) {
         sprintf_s(text, 0x100, enData
             ? "MMD can't read UTF8 encorded PMX.\nPlease exchange it to "
@@ -219,6 +234,12 @@ bool LoadPMX(unsigned char* m, D3DRenderer* sub, std::uint8_t showInfo,
     for (int i = 0; i < 4; ++i) {
         std::uint32_t len = 0;
         _read(fh, &len, 4);
+        if (len > 16u * 1024u * 1024u || (len & 1u) != 0) {
+            MessageBoxA(hwnd, "Invalid PMX model text data.",
+                        "Open model", MB_OK | MB_ICONERROR);
+            _close(fh);
+            return false;
+        }
         wchar_t* buf;
         if (len != 0) {
             buf = static_cast<wchar_t*>(operator new(2 * len));
