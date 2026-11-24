@@ -252,6 +252,12 @@ void HandleWindowPaint(MMDApp* app) {
         DeleteObject(blk);
     }
 
+    if (en)
+        Lbl(app, "bone/frame manipulation", hdc, 12, side / 2 - 70, 7);
+    else
+        Lbl(app, kJpLblBoneFrameManip, hdc, 12, side / 2 - 55, 7);
+
+    if (!ComputeEditorDock(app, rc.right, rc.bottom).enabled) {
     if (en) {
         Lbl(app, "Interpolation curve", hdc, 12, 60, rc.bottom - 155);
         Lbl(app, "auto", hdc, 12, 160, rc.bottom - 104);
@@ -268,10 +274,6 @@ void HandleWindowPaint(MMDApp* app) {
     SelectObject(hdc, oldBrush);
     DeleteObject(gray);
 
-    if (en)
-        Lbl(app, "bone/frame manipulation", hdc, 12, side / 2 - 70, 7);
-    else
-        Lbl(app, kJpLblBoneFrameManip, hdc, 12, side / 2 - 55, 7);
 
     if (en) {
         Lbl(app, "model manipulation", hdc, 12, 238, rc.bottom - 155);
@@ -507,6 +509,8 @@ void HandleWindowPaint(MMDApp* app) {
         Lbl(app, "vol", hdc, 12, 1021 - panelShift, rc.bottom - 77);
     else
         Lbl(app, kJpLblVolume, hdc, 12, 1016 - panelShift, rc.bottom - 77);
+
+    }
 
     PaintEditorDock(app, hdc, rc.right, rc.bottom);
 
