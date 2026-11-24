@@ -4,6 +4,7 @@
 #include <d3d9.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -545,8 +546,8 @@ void ApplyPmdVertexMorphs(unsigned char* model) {
         for (std::uint32_t k = 0; k < count; ++k) {
             const mdl::PmdVertexMorphEntry& entry = entries[k];
             if (entry.vertexIndex >= record.vertexCount)
-            continue;
-        mdl::PmdVertex& vertex = vertices[entry.vertexIndex];
+                continue;
+            mdl::PmdVertex& vertex = vertices[entry.vertexIndex];
             vertex.position[0] += entry.offset[0] * weight;
             vertex.position[1] += entry.offset[1] * weight;
             vertex.position[2] += entry.offset[2] * weight;
@@ -577,6 +578,68 @@ float PmdEdgeDistance(MMDApp* app, unsigned char* model,
     return distance * 0.00004500000068219379f *
            (app->CameraFov() * 0.6000000238418579f + 1.0f) *
            record.edgeScale;
+}
+
+struct SkinUploadCache {
+    const unsigned char* model{};
+    const void* vertexBuffer{};
+    const void* edgeBuffer{};
+    std::uint64_t fingerprint{};
+    bool uploaded{};
+};
+
+std::array<SkinUploadCache, kModelSlotCount> skinUploads{};
+
+void HashSkinData(std::uint64_t& hash, const void* data, std::size_t bytes) {
+    const auto* ptr = static_cast<const std::uint8_t*>(data);
+    for (std::size_t i = 0; i < bytes; ++i) {
+        hash ^= ptr[i];
+        hash *= 1099511628211ULL;
+    }
+}
+
+std::uint64_t ModelSkinFingerprint(MMDApp* app, unsigned char* model,
+                                   const float frameWorld[16]) {
+    const mdl::ModelRecord& record = *mdl::Mdl(model);
+    std::uint64_t hash = 14695981039346656037ULL;
+    HashSkinData(hash, &record.physicsMode, sizeof(record.physicsMode));
+    HashSkinData(hash, &record.vertexCount, sizeof(record.vertexCount));
+    HashSkinData(hash, &record.pmxAdditionalUvCount,
+                 sizeof(record.pmxAdditionalUvCount));
+    const auto* bones = mdl::Bones(model);
+    if (bones != nullptr) {
+        for (std::uint32_t i = 0; i < record.boneCount; ++i)
+            HashSkinData(hash, bones[i].matInit, sizeof(bones[i].matInit));
+    }
+    const auto* morphs = mdl::Morphs(model);
+    if (morphs != nullptr) {
+        for (std::uint32_t i = 0; i < record.morphCount; ++i)
+            HashSkinData(hash, &morphs[i].value, sizeof(morphs[i].value));
+    }
+    if (record.physicsMode == 2) {
+        const auto* materials = mdl::Materials(model);
+        if (materials != nullptr) {
+            for (std::uint32_t i = 0; i < record.materialCount; ++i) {
+                HashSkinData(hash, materials[i].edgeColor,
+                             sizeof(materials[i].edgeColor));
+                HashSkinData(hash, &materials[i].edgeSize,
+                             sizeof(materials[i].edgeSize));
+            }
+        }
+        HashSkinData(hash, &app->state.selfShadowEnabled,
+                     sizeof(app->state.selfShadowEnabled));
+    }
+    const float edgeDistance = PmdEdgeDistance(app, model, frameWorld);
+    HashSkinData(hash, &edgeDistance, sizeof(edgeDistance));
+    return hash;
+}
+
+int ActiveModelSlot(MMDApp* app, unsigned char* model) {
+    for (int slot = 0; slot < kModelSlotCount; ++slot) {
+        if (app->ModelSlot(slot) == model)
+            return slot;
+    }
+    return -1;
 }
 
 void SkinPmd(unsigned char* model, float edgeDistance,
@@ -698,20 +761,23 @@ void SkinPmx(unsigned char* model, float edgeDistance, bool opaqueEdge,
     }
 }
 
-void UpdatePmxModelVertexBuffers(MMDApp* app, unsigned char* model,
+bool UpdatePmxModelVertexBuffers(MMDApp* app, unsigned char* model,
                                  const float frameWorld[16]) {
     mdl::ModelRecord& state = *mdl::Mdl(model);
+    if (state.pmxVertices == nullptr || mdl::Bones(model) == nullptr ||
+        mdl::Materials(model) == nullptr || state.materialCount == 0)
+        return false;
     ApplyPmxVertexMorphs(model);
 
     const unsigned int additionalUv = state.pmxAdditionalUvCount;
     if (additionalUv > 4)
-        return;
+        return false;
     auto* mainVb = mdl::ResourceAs<IDirect3DVertexBuffer9>(
         state.vertexBuffer);
     auto* edgeVb = mdl::ResourceAs<IDirect3DVertexBuffer9>(
         state.vertexBuffer2);
     if (mainVb == nullptr || edgeVb == nullptr)
-        return;
+        return false;
     d3dx::Api& d3dxApi = d3dx::Get();
 
     const UINT count = state.vertexCount;
@@ -720,11 +786,11 @@ void UpdatePmxModelVertexBuffers(MMDApp* app, unsigned char* model,
     mdl::EdgeVertex* edgeVertices = nullptr;
     if (FAILED(mainVb->Lock(0, stride * count,
                             reinterpret_cast<void**>(&mainVertices), 0)))
-        return;
+        return false;
     if (FAILED(edgeVb->Lock(0, 16 * count,
                             reinterpret_cast<void**>(&edgeVertices), 0))) {
         mainVb->Unlock();
-        return;
+        return false;
     }
 
     const float edgeDistance = PmdEdgeDistance(app, model, frameWorld);
@@ -757,6 +823,7 @@ void UpdatePmxModelVertexBuffers(MMDApp* app, unsigned char* model,
                            stride);
     mainVb->Unlock();
     edgeVb->Unlock();
+    return true;
 }
 
 }  
@@ -769,12 +836,6 @@ void UpdateModelVertexBuffers(MMDApp* app, unsigned char* model,
     if (state.loadComplete == 0 || state.vertexCount == 0)
         return;
 
-    if (state.physicsMode == 2) {
-        UpdatePmxModelVertexBuffers(app, model, frameWorld);
-        return;
-    }
-
-    ApplyPmdVertexMorphs(model);
     auto* mainVb = mdl::ResourceAs<IDirect3DVertexBuffer9>(
         state.vertexBuffer);
     auto* edgeVb = mdl::ResourceAs<IDirect3DVertexBuffer9>(
@@ -782,24 +843,55 @@ void UpdateModelVertexBuffers(MMDApp* app, unsigned char* model,
     if (mainVb == nullptr || edgeVb == nullptr)
         return;
 
-    const UINT count = state.vertexCount;
-    mdl::SkinnedVertexBase* mainVertices = nullptr;
-    mdl::EdgeVertex* edgeVertices = nullptr;
-    if (FAILED(mainVb->Lock(0, 32 * count,
-                            reinterpret_cast<void**>(&mainVertices), 0)))
-        return;
-    if (FAILED(edgeVb->Lock(0, 16 * count,
-                            reinterpret_cast<void**>(&edgeVertices), 0))) {
-        mainVb->Unlock();
-        return;
+    const int slot = ActiveModelSlot(app, model);
+    std::uint64_t fingerprint = 0;
+    if (slot >= 0) {
+        fingerprint = ModelSkinFingerprint(app, model, frameWorld);
+        const SkinUploadCache& cache = skinUploads[slot];
+        if (cache.uploaded && cache.model == model &&
+            cache.vertexBuffer == mainVb && cache.edgeBuffer == edgeVb &&
+            cache.fingerprint == fingerprint)
+            return;
     }
 
-    SkinPmd(model, PmdEdgeDistance(app, model, frameWorld), edgeVertices,
-            mainVertices,
-            app->PlaybackActive() != 0 || app->RecordingWindow() != nullptr);
-    DumpModelVertexBuffers(app, model, mainVertices, edgeVertices, count, 32);
-    mainVb->Unlock();
-    edgeVb->Unlock();
+    bool uploaded = false;
+    if (state.physicsMode == 2) {
+        uploaded = UpdatePmxModelVertexBuffers(app, model, frameWorld);
+    } else if (state.rawVertices != nullptr && mdl::Bones(model) != nullptr) {
+        ApplyPmdVertexMorphs(model);
+        const UINT count = state.vertexCount;
+        mdl::SkinnedVertexBase* mainVertices = nullptr;
+        mdl::EdgeVertex* edgeVertices = nullptr;
+        if (SUCCEEDED(mainVb->Lock(0, 32 * count,
+                   reinterpret_cast<void**>(&mainVertices), 0))) {
+            if (SUCCEEDED(edgeVb->Lock(0, 16 * count,
+                    reinterpret_cast<void**>(&edgeVertices), 0))) {
+                SkinPmd(model, PmdEdgeDistance(app, model, frameWorld),
+                        edgeVertices, mainVertices,
+                        app->PlaybackActive() != 0 ||
+                        app->RecordingWindow() != nullptr);
+                DumpModelVertexBuffers(app, model, mainVertices,
+                                       edgeVertices, count, 32);
+                uploaded = SUCCEEDED(edgeVb->Unlock());
+            }
+            uploaded = SUCCEEDED(mainVb->Unlock()) && uploaded;
+        }
+    }
+
+    if (slot >= 0 && uploaded) {
+#ifdef RINMOTIONDANCE_DIAG
+        char dumpDir[MAX_PATH]{};
+        if (GetEnvironmentVariableA("RINMOTIONDANCE_VB_DUMP_DIR",
+                                    dumpDir, MAX_PATH) != 0)
+            return;
+#endif
+        SkinUploadCache& cache = skinUploads[slot];
+        cache.model = model;
+        cache.vertexBuffer = mainVb;
+        cache.edgeBuffer = edgeVb;
+        cache.fingerprint = fingerprint;
+        cache.uploaded = true;
+    }
 }
 
 }  
