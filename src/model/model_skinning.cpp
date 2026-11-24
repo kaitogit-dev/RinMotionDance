@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <d3d9.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -135,18 +136,18 @@ float EdgeComponent(float position, float normal, float amount) {
 #endif
 }
 
-constexpr float kPmxZeroMatrix[16] = {
-    0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f,
+constexpr float kPmxIdentityMatrix[16] = {
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f,
 };
 
 const float* PmxSkinMatrix(const mdl::BoneRecord* bones, int boneCount,
                            std::int32_t boneIndex) {
     return boneIndex >= 0 && boneIndex < boneCount
         ? bones[boneIndex].matInit
-        : kPmxZeroMatrix;
+        : kPmxIdentityMatrix;
 }
 
 void SkinPmxBdef1(const mdl::PmxVertex& source,
@@ -366,8 +367,10 @@ void SkinPmxSdef(d3dx::Api& d3dxApi, const mdl::PmxVertex& source,
 std::uint32_t PackPmxEdgeColor(const mdl::ModelMaterialRecord& material,
                                bool opaqueAlpha) {
     const auto channel = [](float value) -> std::uint32_t {
-        return static_cast<std::uint8_t>(static_cast<std::int32_t>(
-            value * 255.0f));
+        if (!std::isfinite(value))
+            return 0;
+        return static_cast<std::uint8_t>(
+            std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f));
     };
     const std::uint32_t red = channel(material.edgeColor[0]);
     const std::uint32_t green = channel(material.edgeColor[1]);
@@ -389,12 +392,17 @@ void CopyPmxAdditionalUvs(const mdl::PmxVertex& source,
 }
 
 void AccumPmxVertexMorph(mdl::PmxVertex* vertices,
+                         std::uint32_t vertexCount,
                          const mdl::MorphRecord& morph, float value,
                          float groupWeight) {
     if (morph.type == 1) {
         const int count = morph.offsetCount;
+        if (morph.vertexEntries == nullptr)
+            return;
         for (int k = 0; k < count; ++k) {
             const mdl::PmdVertexMorphEntry& entry = morph.vertexEntries[k];
+            if (entry.vertexIndex >= vertexCount)
+                continue;
             mdl::PmxVertex& vertex = vertices[entry.vertexIndex];
             vertex.position[0] += entry.offset[0] * value * groupWeight;
             vertex.position[1] += entry.offset[1] * value * groupWeight;
@@ -407,8 +415,12 @@ void AccumPmxVertexMorph(mdl::PmxVertex* vertices,
     const int family = morph.type - 3;
     const int count = morph.uvCounts[family];
     const mdl::PmxUvMorphEntry* entries = morph.uvEntries[family];
+    if (entries == nullptr)
+        return;
     for (int k = 0; k < count; ++k) {
         const mdl::PmxUvMorphEntry& entry = entries[k];
+        if (entry.vertexIndex >= vertexCount)
+            continue;
         mdl::PmxVertex& vertex = vertices[entry.vertexIndex];
         if (family == 0) {
             vertex.uv[0] += entry.offset[0] * value * groupWeight;
@@ -432,6 +444,8 @@ void ApplyPmxVertexMorphs(unsigned char* model) {
     const std::uint32_t baseCount = mdl::BaseVertexMorphCount(model);
     if (base != nullptr) {
         for (std::uint32_t i = 0; i < baseCount; ++i) {
+            if (base[i].vertexIndex >= record.vertexCount)
+                continue;
             mdl::PmxVertex& vertex = vertices[base[i].vertexIndex];
             vertex.position[0] = base[i].offset[0];
             vertex.position[1] = base[i].offset[1];
@@ -446,6 +460,8 @@ void ApplyPmxVertexMorphs(unsigned char* model) {
         if (entries == nullptr || count <= 0)
             continue;
         for (int i = 0; i < count; ++i) {
+            if (entries[i].vertexIndex >= record.vertexCount)
+                continue;
             mdl::PmxVertex& vertex = vertices[entries[i].vertexIndex];
             if (family == 0) {
                 vertex.uv[0] = entries[i].offset[0];
@@ -465,14 +481,19 @@ void ApplyPmxVertexMorphs(unsigned char* model) {
         if (weight == 0.0f)
             continue;
         if (morph.type != 0) {
-            AccumPmxVertexMorph(vertices, morph, weight, 1.0f);
+            AccumPmxVertexMorph(vertices, record.vertexCount,
+                                morph, weight, 1.0f);
             continue;
         }
         const int groupCount = morph.groupCount;
+        if (morph.groupEntries == nullptr)
+            continue;
         for (int k = 0; k < groupCount; ++k) {
             const mdl::PmxGroupMorphEntry& ref = morph.groupEntries[k];
-            AccumPmxVertexMorph(vertices, morphs[ref.morphIndex], weight,
-                                ref.weight);
+            if (ref.morphIndex < 0 || ref.morphIndex >= morphCount)
+                continue;
+            AccumPmxVertexMorph(vertices, record.vertexCount,
+                                morphs[ref.morphIndex], weight, ref.weight);
         }
     }
 }
@@ -487,6 +508,8 @@ void ApplyPmdVertexMorphs(unsigned char* model) {
 
     for (std::uint32_t i = 0; i < baseCount; ++i) {
         const mdl::PmdVertexMorphEntry& entry = base[i];
+        if (entry.vertexIndex >= record.vertexCount)
+            continue;
         mdl::PmdVertex& vertex = vertices[entry.vertexIndex];
         vertex.position[0] = entry.offset[0];
         vertex.position[1] = entry.offset[1];
@@ -508,7 +531,9 @@ void ApplyPmdVertexMorphs(unsigned char* model) {
             continue;
         for (std::uint32_t k = 0; k < count; ++k) {
             const mdl::PmdVertexMorphEntry& entry = entries[k];
-            mdl::PmdVertex& vertex = vertices[entry.vertexIndex];
+            if (entry.vertexIndex >= record.vertexCount)
+            continue;
+        mdl::PmdVertex& vertex = vertices[entry.vertexIndex];
             vertex.position[0] += entry.offset[0] * weight;
             vertex.position[1] += entry.offset[1] * weight;
             vertex.position[2] += entry.offset[2] * weight;
@@ -607,7 +632,8 @@ void SkinPmx(unsigned char* model, float edgeDistance, bool opaqueEdge,
     const mdl::ModelMaterialRecord* materials = mdl::Materials(model);
     const int boneCount = static_cast<int>(record.boneCount);
     d3dx::Api& d3dxApi = d3dx::Get();
-    if (vertices == nullptr || bones == nullptr || materials == nullptr)
+    if (vertices == nullptr || bones == nullptr || materials == nullptr ||
+        record.materialCount == 0)
         return;
 
 #pragma omp parallel for if(parallelSkinning && vertexCount >= 131072) num_threads(4)
@@ -629,12 +655,18 @@ void SkinPmx(unsigned char* model, float edgeDistance, bool opaqueEdge,
             SkinPmxSdef(d3dxApi, source, bones, boneCount, main.base);
             break;
         default:
+            SkinPmxBdef1(source, bones, boneCount, main.base);
             break;
         }
         CopyPmxAdditionalUvs(source, main);
 
-        const mdl::ModelMaterialRecord& material =
-            materials[source.materialIndex];
+        const std::uint32_t materialIndex =
+            source.materialIndex >= 0 &&
+            static_cast<std::uint32_t>(source.materialIndex) <
+                record.materialCount
+                ? static_cast<std::uint32_t>(source.materialIndex)
+                : 0u;
+        const mdl::ModelMaterialRecord& material = materials[materialIndex];
         edge.diffuse = PackPmxEdgeColor(material, opaqueEdge);
         if (source.hasPmxEdgeData == 0) {
             for (int component = 0; component < 3; ++component)

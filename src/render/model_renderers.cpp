@@ -411,8 +411,15 @@ void BuildToonTransform(MMDApp* app, Matrix* result) {
     api.multiply(result, &projected, &translation);
 }
 
-void DisableSphereTextureStage(IDirect3DDevice9* device) {
-    device->SetTextureStageState(2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+void ResetMaterialTextureStages(IDirect3DDevice9* device) {
+    device->SetTexture(1, nullptr);
+    device->SetTexture(2, nullptr);
+    for (DWORD stage = 1; stage <= 2; ++stage) {
+        device->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_DISABLE);
+        device->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+        device->SetTextureStageState(stage, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
+        device->SetTextureStageState(stage, D3DTSS_TEXCOORDINDEX, 0);
+    }
 }
 
 void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
@@ -422,7 +429,7 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
     const mdl::ModelMaterialRecord& record = mdl::Material(material);
     const wchar_t* mainPath = record.texturePath;
     const wchar_t* spherePath = record.spherePath;
-    DisableSphereTextureStage(device);
+    ResetMaterialTextureStages(device);
 
     if (mdl::Mdl(model)->physicsMode == 2) {
         const Matrix halfTexel = HalfTexelMatrix();
@@ -561,7 +568,8 @@ void ConfigureMaterialStages(MMDApp* app, D3DRenderer* sub,
 void ResetSphereStageAfterDraw(IDirect3DDevice9* device,
                                unsigned char* material) {
     const wchar_t* mainPath = mdl::Material(material).texturePath;
-    if (HasSuffix(mainPath, L".sp", L".SP")) {
+    if (HasSuffix(mainPath, L".sph", L".SPH") ||
+        HasSuffix(mainPath, L".spa", L".SPA")) {
         device->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
         device->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 0);
     }
@@ -569,8 +577,12 @@ void ResetSphereStageAfterDraw(IDirect3DDevice9* device,
 
 bool HasSuffix(const wchar_t* value, const wchar_t* lower,
                const wchar_t* upper) {
-    return value != nullptr &&
-           (wcsstr(value, lower) != nullptr || wcsstr(value, upper) != nullptr);
+    if (value == nullptr || lower == nullptr)
+        return false;
+    const wchar_t* dot = wcsrchr(value, L'.');
+    return dot != nullptr &&
+           (_wcsicmp(dot, lower) == 0 ||
+            (upper != nullptr && _wcsicmp(dot, upper) == 0));
 }
 
 void SetEffectColor(void* effect, const char* name, const float source[4]) {
