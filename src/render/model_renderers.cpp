@@ -825,10 +825,17 @@ void DrawModelMaterials(MMDApp* app, unsigned char* model, bool effectPass,
     for (UINT i = 0; i < state.materialCount; ++i) {
         unsigned char* material = reinterpret_cast<unsigned char*>(&materials[i]);
         const mdl::ModelMaterialRecord& record = materials[i];
-        const UINT indexCount = static_cast<UINT>(record.faceVertexCount);
         ++state.toonShared;
-        if (indexCount == 0)
+        const UINT remaining = state.indexCount > firstIndex
+            ? state.indexCount - firstIndex : 0;
+        if (record.faceVertexCount <= 0 || remaining < 3)
             continue;
+        const UINT declared = static_cast<UINT>(record.faceVertexCount);
+        const UINT indexCount = std::min(declared, remaining);
+        if (indexCount < 3 || indexCount % 3 != 0) {
+            firstIndex += indexCount;
+            continue;
+        }
 
         bool draw = true;
         if (shadowOnly) {
@@ -971,8 +978,12 @@ void DrawModelEdgeGeometry(MMDApp* app, unsigned char* model,
         auto* material = reinterpret_cast<unsigned char*>(&materials[i]);
         const mdl::ModelMaterialRecord& record = materials[i];
         ++state.toonShared;
-        const UINT count = static_cast<UINT>(record.faceVertexCount);
-        bool draw = count != 0;
+        const UINT remaining = state.indexCount > firstIndex
+            ? state.indexCount - firstIndex : 0;
+        const UINT declared = record.faceVertexCount > 0
+            ? static_cast<UINT>(record.faceVertexCount) : 0;
+        const UINT count = std::min(declared, remaining);
+        bool draw = count >= 3 && count % 3 == 0;
         if (!projectedShadow && record.doubleSided == 0)
             draw = false;
         const bool pmx = mdl::Mdl(model)->physicsMode == 2;
