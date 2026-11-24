@@ -416,7 +416,9 @@ void ResetMaterialTextureStages(IDirect3DDevice9* device) {
     device->SetTexture(2, nullptr);
     for (DWORD stage = 1; stage <= 2; ++stage) {
         device->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_DISABLE);
-        device->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+        device->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+        device->SetTextureStageState(stage, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+        device->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
         device->SetTextureStageState(stage, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
         device->SetTextureStageState(stage, D3DTSS_TEXCOORDINDEX, 0);
     }
