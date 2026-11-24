@@ -210,11 +210,18 @@ void LayoutEditorDock(MMDApp* app) {
     } else {
         const DockSection bone = DockSection::Edit;
         const int boneW = w(bone);
-        const int rightColumn = std::max(245, boneW / 2);
-        group(bone, 18, 59, 26, {490, 493, 492}, 38);
-        group(bone, 18, 98, 26, {491, 494, 501}, 38);
-        group(bone, rightColumn, 59, 26, {496, 497, 498}, 38);
-        group(bone, rightColumn, 98, 26, {500, 495, 499}, 38);
+        if (boneW < 640) {
+            group(bone, 18, 28, 24, {490, 493, 492}, 35);
+            group(bone, 18, 57, 24, {491, 494, 501}, 35);
+            group(bone, 18, 86, 24, {496, 497, 498}, 35);
+            group(bone, 18, 115, 24, {500, 495, 499}, 35);
+        } else {
+            const int rightColumn = boneW / 2;
+            group(bone, 18, 59, 26, {490, 493, 492}, 38);
+            group(bone, 18, 98, 26, {491, 494, 501}, 38);
+            group(bone, rightColumn, 59, 26, {496, 497, 498}, 38);
+            group(bone, rightColumn, 98, 26, {500, 495, 499}, 38);
+        }
         put(bone, 502, boneW - 21, 4, 14, 14);
         put(bone, 503, boneW - 21, 4, 14, 14);
 
